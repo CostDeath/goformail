@@ -1,3 +1,7 @@
+<h1>Coming soon!</h1>
+
+## University instructions
+
 Place your user manual and technical documentation in this directory.
 
 PDF is the preferred format.

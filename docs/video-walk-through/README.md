@@ -1,3 +1,7 @@
+<h1>Coming soon!</h1>
+
+## University instructions
+
 <!--
 The video walk through is [here](FIX-ME).
 -->
