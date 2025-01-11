@@ -1,0 +1,13 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Test" type="GoTestRunConfiguration" factoryName="Go Test">
+    <module name="2025-csc1097-fonseca3-dagohos2" />
+    <working_directory value="$PROJECT_DIR$/src/goformail" />
+    <go_parameters value="-i" />
+    <kind value="DIRECTORY" />
+    <package value="gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2" />
+    <directory value="$PROJECT_DIR$/src/goformail" />
+    <filePath value="$PROJECT_DIR$" />
+    <framework value="gotest" />
+    <method v="2" />
+  </configuration>
+</component>
