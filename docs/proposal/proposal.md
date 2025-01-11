@@ -138,6 +138,6 @@
 <br>
 
 <p align="center">
-  <img src="./res/gfm.png" width="300px" alt="Gopher delivering mail">
+  <img src="../res/gfm.png" width="300px" alt="Gopher delivering mail">
 </p>
 

@@ -1,15 +1,19 @@
-All of your documentation should be placed in subdirectories of this directory.
+# Documentation
 
-- Use the `proposal` sub-directory for your project proposal.
-- Use the `functional-spec` sub-directory for your functional specification.
-- Use the `documentation` sub-directory for your user manual and technical documentation.
-- Use the `video-walk-through` sub-directory for you video walk through.
+This directory features all the required documentation for this project. Below is a description of what to expect in
+each directory.
 
-There are additional instructions in each of those sub-directories.  Please read them.
+- `documentation` features up to date documentation for
+- - A user manual with usage instructions for the app.
+- - A technical manual featuring more complex documentation on the project.
+- `functional-spec` features the initial specifications for the project. These were drafted before commencing work on
+  the project and may not reflect its current state.
+- `proposal` features the initial proposal for the project.
+- `res` features resources used in the md files for the documentation.
+- `video-walk-through` features a video walkthrough of how to use the app.
 
-** Excluding the proposal document, The general rule of thumb that you should 
-adopt is that documents should be converted to PDF when finalised - and
-available for collection from your repo in time for the appropriate deadlines.
-While templates are provided in MS Word format, individual students may select
-whichever editing software they prefer - the only constraint is that
-the final revision of these documents should be converted to PDF.**
+<br>
+
+<p align="center">
+  <img src="res/gfm.png" width="300px" alt="Gopher delivering mail">
+</p>
