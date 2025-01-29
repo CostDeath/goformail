@@ -1,0 +1,60 @@
+stages:
+  - check
+  - build
+  - test
+  - deploy
+
+# Check stage
+
+lint_go:
+  image: golang:1.23.4-alpine
+  stage: check
+  script:
+    - cd src/goformail
+    - wget -O- -nv https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s v1.63.4
+    - ./bin/golangci-lint run --out-format tab
+
+vulncheck_go:
+  image: golang:1.23.4-alpine
+  stage: check
+  script:
+    - cd src/goformail
+    - go install golang.org/x/vuln/cmd/govulncheck@latest
+    - govulncheck ./...
+
+# Build stage
+
+build_go:
+  image: golang:1.23.4-alpine
+  stage: build
+  script:
+    - cd src/goformail
+    - go build ./cmd/goformail
+  artifacts:
+    paths:
+      - src/goformail/goformail
+
+# Test stage
+
+test_go:
+  image: golang:1.23.4-alpine
+  stage: test
+  script:
+    - cd src/goformail
+    - go test ./...
+
+# Deploy stage
+
+deploy:
+  image: docker:20.10.16
+  stage: deploy
+  services:
+    - docker:20.10.16-dind
+  variables:
+    IMAGE_TAG: $CI_REGISTRY_IMAGE
+  script:
+    - echo "$CI_REGISTRY_PASSWORD" | docker login -u $CI_REGISTRY_USER --password-stdin
+    - docker build -t $IMAGE_TAG .
+    - docker push $IMAGE_TAG
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
