@@ -23,20 +23,23 @@ func mailReceiver(socket net.Listener) {
 		log.Fatal(err)
 	}
 
-	conn.Write([]byte("220 LMTP Server Ready\n"))
+	if _, err = conn.Write([]byte("220 LMTP Server Ready\n")); err != nil {
+		log.Fatal(err)
+	}
 	fmt.Println(getCurrentTime() + "Initialising LMTP greeting")
 	inData := false
 
 	for {
 		var resp string
 		var size int
-		var readErr error
 		buffer := make([]byte, 4096)
 
-		size, readErr = conn.Read(buffer)
-		if readErr != nil {
-			fmt.Println(getCurrentTime() + "Error reading from LMTP greeting: " + readErr.Error())
-			conn.Close()
+		size, err = conn.Read(buffer)
+		if err != nil {
+			fmt.Println(getCurrentTime() + "Error reading from LMTP greeting: " + err.Error())
+			if err = conn.Close(); err != nil {
+				log.Fatal(err)
+			}
 			return
 		}
 
@@ -49,35 +52,49 @@ func mailReceiver(socket net.Listener) {
 			switch {
 			case strings.HasPrefix(message, "LHLO"):
 				resp = fmt.Sprintf("250-%s\n250-PIPELINING\n250 SIZE\n", domainName)
-				conn.Write([]byte(resp))
+				if _, err = conn.Write([]byte(resp)); err != nil {
+					log.Fatal(err)
+				}
 				fmt.Println(getCurrentTime() + " S: " + resp)
 			case strings.HasPrefix(message, "MAIL FROM"):
 				// TODO: Handle unknown email addresses
 				// for now, assume all email addresses are currently valid
 				resp = fmt.Sprintf("250 OK\n")
-				conn.Write([]byte(resp))
+				if _, err = conn.Write([]byte(resp)); err != nil {
+					log.Fatal(err)
+				}
 				fmt.Println(getCurrentTime() + " S: " + resp)
 			case strings.HasPrefix(message, "RCPT TO"):
 				// TODO: Similar to MAIL FROM response, need to handle it correctly
 				resp = fmt.Sprintf("250 OK\n")
-				conn.Write([]byte(resp))
+				if _, err = conn.Write([]byte(resp)); err != nil {
+					log.Fatal(err)
+				}
 				fmt.Println(getCurrentTime() + " S: " + resp)
 			case strings.HasPrefix(message, "DATA"):
 				resp = fmt.Sprintf("354 Start mail input; end with <CRLF>.<CRLF>\n")
-				conn.Write([]byte(resp))
+				if _, err = conn.Write([]byte(resp)); err != nil {
+					log.Fatal(err)
+				}
 				fmt.Println(getCurrentTime() + " S: " + resp)
 				inData = true
 			case inData:
 				if strings.TrimSpace(message) == "." {
 					inData = false
-					conn.Write([]byte("250 OK (Sent to mailing list recipients)\n452 temporarily over quota\n"))
+					if _, err = conn.Write([]byte("250 OK (Sent to mailing list recipients)\n452 temporarily over quota\n")); err != nil {
+						log.Fatal(err)
+					}
 				}
 				fmt.Println(message)
 			case strings.TrimSpace(message) == "QUIT":
-				conn.Write([]byte(fmt.Sprintf("221 %s closing connection", domainName)))
+				if _, err = conn.Write([]byte(fmt.Sprintf("221 %s closing connection", domainName))); err != nil {
+					log.Fatal(err)
+				}
 				fmt.Println(getCurrentTime() + " S: Email successfully received, listening for more incoming emails")
 				conn, err = socket.Accept()
-				conn.Write([]byte("220 LMTP Server Ready\n"))
+				if _, err = conn.Write([]byte("220 LMTP Server Ready\n")); err != nil {
+					log.Fatal(err)
+				}
 			}
 		}
 	}
