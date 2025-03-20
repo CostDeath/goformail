@@ -6,8 +6,16 @@ stages:
 
 # Check stage
 
+lint_node:
+  image: node:23-alpine
+  stage: check
+  script:
+    - cd src/web
+    - npm install
+    - npm run lint
+
 lint_go:
-  image: golang:1.23.4-alpine
+  image: golang:1.23-alpine
   stage: check
   script:
     - cd src/goformail
@@ -15,7 +23,7 @@ lint_go:
     - ./bin/golangci-lint run --out-format tab
 
 vulncheck_go:
-  image: golang:1.23.4-alpine
+  image: golang:1.23-alpine
   stage: check
   script:
     - cd src/goformail
@@ -24,20 +32,43 @@ vulncheck_go:
 
 # Build stage
 
+build_node:
+  image: node:23-alpine
+  stage: build
+  script:
+    - cd src/web
+    - npm install
+    - npm run build
+  artifacts:
+    paths:
+      - src/web/out/*
+
 build_go:
-  image: golang:1.23.4-alpine
+  image: golang:1.23-alpine
   stage: build
   script:
     - cd src/goformail
+    - rm -r ./internal/interfaces/out
+    - cp -r ../web/out ./internal/interfaces/out
     - go build ./cmd/goformail
+  needs:
+    - build_node
   artifacts:
     paths:
       - src/goformail/goformail
 
 # Test stage
 
+test_node:
+  image: node:23-alpine
+  stage: test
+  script:
+    - cd src/web
+    - npm install
+    - npm run test
+
 test_go:
-  image: golang:1.23.4-alpine
+  image: golang:1.23-alpine
   stage: test
   script:
     - cd src/goformail
