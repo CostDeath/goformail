@@ -23,25 +23,29 @@ func mailReceiver(socket net.Listener) {
 		log.Fatal(err)
 	}
 
-	conn.Write([]byte("220 LMTP Server Ready\n"))
+	if _, err = conn.Write([]byte("220 LMTP Server Ready\n")); err != nil {
+		log.Fatal(err)
+	}
 	fmt.Println(getCurrentTime() + "Initialising LMTP greeting")
 	inData := false
 
 	for {
 		var resp string
 		var size int
-		var readErr error
 		buffer := make([]byte, 4096)
 
-		size, readErr = conn.Read(buffer)
-		if readErr != nil {
-			fmt.Println(getCurrentTime() + "Error reading from LMTP greeting: " + readErr.Error())
-			conn.Close()
+		size, err = conn.Read(buffer)
+		if err != nil {
+			fmt.Println(getCurrentTime() + "Error reading from LMTP greeting: " + err.Error())
+			if err = conn.Close(); err != nil {
+				log.Fatal(err)
+			}
 			return
 		}
 
 		messages := strings.Lines(string(buffer[:size]))
 
+		var emailMessage string
 		for message := range messages {
 			if debugMode == "true" {
 				fmt.Print("POSTFIX: " + message)
@@ -49,63 +53,170 @@ func mailReceiver(socket net.Listener) {
 			switch {
 			case strings.HasPrefix(message, "LHLO"):
 				resp = fmt.Sprintf("250-%s\n250-PIPELINING\n250 SIZE\n", domainName)
-				conn.Write([]byte(resp))
+				if _, err = conn.Write([]byte(resp)); err != nil {
+					log.Fatal(err)
+				}
 				fmt.Println(getCurrentTime() + " S: " + resp)
 			case strings.HasPrefix(message, "MAIL FROM"):
 				// TODO: Handle unknown email addresses
 				// for now, assume all email addresses are currently valid
 				resp = fmt.Sprintf("250 OK\n")
-				conn.Write([]byte(resp))
+				if _, err = conn.Write([]byte(resp)); err != nil {
+					log.Fatal(err)
+				}
 				fmt.Println(getCurrentTime() + " S: " + resp)
 			case strings.HasPrefix(message, "RCPT TO"):
 				// TODO: Similar to MAIL FROM response, need to handle it correctly
 				resp = fmt.Sprintf("250 OK\n")
-				conn.Write([]byte(resp))
+				if _, err = conn.Write([]byte(resp)); err != nil {
+					log.Fatal(err)
+				}
 				fmt.Println(getCurrentTime() + " S: " + resp)
 			case strings.HasPrefix(message, "DATA"):
 				resp = fmt.Sprintf("354 Start mail input; end with <CRLF>.<CRLF>\n")
-				conn.Write([]byte(resp))
+				if _, err = conn.Write([]byte(resp)); err != nil {
+					log.Fatal(err)
+				}
 				fmt.Println(getCurrentTime() + " S: " + resp)
 				inData = true
 			case inData:
 				if strings.TrimSpace(message) == "." {
 					inData = false
-					conn.Write([]byte("250 OK (Sent to mailing list recipients)\n452 temporarily over quota\n"))
+					mailSender(emailMessage, debugMode)
+					if _, err = conn.Write([]byte("250 OK (Sent to mailing list recipients)\n452 temporarily over quota\n")); err != nil {
+						log.Fatal(err)
+					}
+				} else {
+					emailMessage += message
 				}
 				fmt.Println(message)
 			case strings.TrimSpace(message) == "QUIT":
-				conn.Write([]byte(fmt.Sprintf("221 %s closing connection", domainName)))
+				if _, err = conn.Write([]byte(fmt.Sprintf("221 %s closing connection", domainName))); err != nil {
+					log.Fatal(err)
+				}
 				fmt.Println(getCurrentTime() + " S: Email successfully received, listening for more incoming emails")
 				conn, err = socket.Accept()
-				conn.Write([]byte("220 LMTP Server Ready\n"))
+				if _, err = conn.Write([]byte("220 LMTP Server Ready\n")); err != nil {
+					log.Fatal(err)
+				}
 			}
 		}
 	}
 
 }
 
+func mailSender(emailData string, debugMode string) {
+	addr := os.Getenv("POSTFIX_ADDRESS")
+	port := os.Getenv("POSTFIX_PORT")
+	domainName := os.Getenv("EMAIL_DOMAIN")
+
+	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%s", addr, port))
+	if err != nil {
+		log.Fatal(getCurrentTime() + err.Error())
+	}
+
+	defer func(conn net.Conn) {
+		err = conn.Close()
+		if err != nil {
+			log.Fatal(getCurrentTime() + err.Error())
+		}
+	}(conn)
+
+	fmt.Println(getCurrentTime() + " S: Initiating sending email acknowledgements...")
+	initial := true
+
+	isEnd := false
+	for {
+		var resp string
+		var size int
+		buffer := make([]byte, 4096)
+
+		size, err = conn.Read(buffer)
+		messages := strings.Lines(string(buffer[:size]))
+
+		for message := range messages {
+			if debugMode == "true" {
+				fmt.Print("POSTFIX: " + message)
+			}
+			switch {
+			case initial:
+				resp = fmt.Sprintf("EHLO %s\n", domainName)
+				conn.Write([]byte(resp))
+				fmt.Print(getCurrentTime() + " S: " + resp)
+				initial = false
+			case strings.HasPrefix(message, "250 CHUNKING"):
+				fmt.Println("enters")
+				mailingList := "mailingList"
+				resp = fmt.Sprintf("MAIL FROM: %s@%s\n", mailingList, domainName)
+				conn.Write([]byte(resp))
+				fmt.Print(getCurrentTime() + " S: " + resp)
+			case strings.HasPrefix(message, "250 2.1.0"):
+				// TODO: Handle negative responses (?)
+				recipients := []string{"sdk194", "dags"}
+				for _, recipient := range recipients {
+					resp = fmt.Sprintf("RCPT TO: %s@%s\n", recipient, domainName)
+					conn.Write([]byte(resp))
+					fmt.Print(getCurrentTime() + " S: " + resp)
+				}
+				conn.Write([]byte("DATA\n"))
+				fmt.Println(getCurrentTime() + " S: DATA")
+			case strings.HasPrefix(message, "354"):
+				// TODO: Handle negative response
+				conn.Write([]byte(emailData + "\n.\n"))
+				fmt.Println(getCurrentTime() + " S: " + emailData + "\n.\n")
+				conn.Write([]byte("QUIT\n"))
+				fmt.Println(getCurrentTime() + " S: QUIT")
+				isEnd = true
+			}
+		}
+		if isEnd == true {
+			break
+		}
+	}
+
+}
+
 func main() {
-	socketDirectory := "/var/spool/postfix/goformail/"
-	socketPath := fmt.Sprintf("%sgoformail_lmtp", socketDirectory)
+	/*
+		socketDirectory := "/var/spool/postfix/goformail/"
+		socketPath := fmt.Sprintf("%sgoformail_lmtp", socketDirectory)
+		err := godotenv.Load("configs.env")
+		if err != nil {
+			log.Fatal(getCurrentTime() + "Error loading .env file")
+		}
+
+		err = os.MkdirAll(socketDirectory, 0755)
+
+		err = os.Remove(socketPath) // remove existing socket when app restarts and socket exists
+		if err == nil {
+			fmt.Println(getCurrentTime() + " App has been restarted, recreating socket...")
+		}
+
+		socket, err := net.Listen("unix", socketPath)
+		if err != nil {
+			log.Fatal(err)
+			return
+		}
+
+
+		defer func(socket net.Listener) {
+			err = socket.Close()
+			if err != nil {
+				log.Fatal(getCurrentTime() + err.Error())
+			}
+		}(socket)
+
+
+		if err = os.Chmod(socketPath, 0666); err != nil {
+			log.Fatal(err)
+			return
+		}
+
+	*/
 	err := godotenv.Load("configs.env")
+
+	socket, err := net.Listen("tcp", ":8024")
 	if err != nil {
-		log.Fatal(getCurrentTime() + "Error loading .env file")
-	}
-
-	err = os.MkdirAll(socketDirectory, 0755)
-
-	err = os.Remove(socketPath) // remove existing socket when app restarts and socket exists
-	if err == nil {
-		fmt.Println(getCurrentTime() + " App has been restarted, recreating socket...")
-	}
-
-	socket, err := net.Listen("unix", socketPath)
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
-
-	if err = os.Chmod(socketPath, 0666); err != nil {
 		log.Fatal(err)
 		return
 	}
