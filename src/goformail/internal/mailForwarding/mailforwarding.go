@@ -60,20 +60,20 @@ func mailReceiver(socket net.Listener) {
 			case strings.HasPrefix(message, "MAIL FROM"):
 				// TODO: Handle unknown email addresses
 				// for now, assume all email addresses are currently valid
-				resp = fmt.Sprintf("250 OK\n")
+				resp = "250 OK\n"
 				if _, err = conn.Write([]byte(resp)); err != nil {
 					log.Fatal(err)
 				}
 				fmt.Println(getCurrentTime() + " S: " + resp)
 			case strings.HasPrefix(message, "RCPT TO"):
 				// TODO: Similar to MAIL FROM response, need to handle it correctly
-				resp = fmt.Sprintf("250 OK\n")
+				resp = "250 OK\n"
 				if _, err = conn.Write([]byte(resp)); err != nil {
 					log.Fatal(err)
 				}
 				fmt.Println(getCurrentTime() + " S: " + resp)
 			case strings.HasPrefix(message, "DATA"):
-				resp = fmt.Sprintf("354 Start mail input; end with <CRLF>.<CRLF>\n")
+				resp = "354 Start mail input; end with <CRLF>.<CRLF>\n"
 				if _, err = conn.Write([]byte(resp)); err != nil {
 					log.Fatal(err)
 				}
@@ -141,35 +141,47 @@ func mailSender(emailData string, debugMode string) {
 			switch {
 			case initial:
 				resp = fmt.Sprintf("EHLO %s\n", domainName)
-				conn.Write([]byte(resp))
+				if _, err = conn.Write([]byte(resp)); err != nil {
+					log.Fatal(err)
+				}
 				fmt.Print(getCurrentTime() + " S: " + resp)
 				initial = false
 			case strings.HasPrefix(message, "250 CHUNKING"):
 				fmt.Println("enters")
 				mailingList := "mailingList"
 				resp = fmt.Sprintf("MAIL FROM: %s@%s\n", mailingList, domainName)
-				conn.Write([]byte(resp))
+				if _, err = conn.Write([]byte(resp)); err != nil {
+					log.Fatal(err)
+				}
 				fmt.Print(getCurrentTime() + " S: " + resp)
 			case strings.HasPrefix(message, "250 2.1.0"):
 				// TODO: Handle negative responses (?)
 				recipients := []string{"sdk194", "dags"}
 				for _, recipient := range recipients {
 					resp = fmt.Sprintf("RCPT TO: %s@%s\n", recipient, domainName)
-					conn.Write([]byte(resp))
+					if _, err = conn.Write([]byte(resp)); err != nil {
+						log.Fatal(err)
+					}
 					fmt.Print(getCurrentTime() + " S: " + resp)
 				}
-				conn.Write([]byte("DATA\n"))
+				if _, err = conn.Write([]byte("DATA\n")); err != nil {
+					log.Fatal(err)
+				}
 				fmt.Println(getCurrentTime() + " S: DATA")
 			case strings.HasPrefix(message, "354"):
 				// TODO: Handle negative response
-				conn.Write([]byte(emailData + "\n.\n"))
+				if _, err = conn.Write([]byte(emailData + "\n.\n")); err != nil {
+					log.Fatal(err)
+				}
 				fmt.Println(getCurrentTime() + " S: " + emailData + "\n.\n")
-				conn.Write([]byte("QUIT\n"))
+				if _, err = conn.Write([]byte("QUIT\n")); err != nil {
+					log.Fatal(err)
+				}
 				fmt.Println(getCurrentTime() + " S: QUIT")
 				isEnd = true
 			}
 		}
-		if isEnd == true {
+		if isEnd {
 			break
 		}
 	}
@@ -214,6 +226,10 @@ func main() {
 
 	*/
 	err := godotenv.Load("configs.env")
+	if err != nil {
+		log.Fatal(err)
+		return
+	}
 
 	socket, err := net.Listen("tcp", ":8024")
 	if err != nil {
