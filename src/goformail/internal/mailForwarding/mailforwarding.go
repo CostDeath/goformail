@@ -15,6 +15,13 @@ func getCurrentTime() string {
 	return fmt.Sprintf("[%d-%02d-%02d %02d:%02d:%02d]", t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
 }
 
+func sendResponse(resp string, conn net.Conn) {
+	if _, err := conn.Write([]byte(resp)); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(getCurrentTime() + " S: " + resp)
+}
+
 func mailReceiver(socket net.Listener) {
 	domainName := os.Getenv("EMAIL_DOMAIN")
 	debugMode := os.Getenv("DEBUG_MODE")
@@ -30,7 +37,6 @@ func mailReceiver(socket net.Listener) {
 	inData := false
 
 	for {
-		var resp string
 		var size int
 		buffer := make([]byte, 4096)
 
@@ -52,32 +58,16 @@ func mailReceiver(socket net.Listener) {
 			}
 			switch {
 			case strings.HasPrefix(message, "LHLO"):
-				resp = fmt.Sprintf("250-%s\n250-PIPELINING\n250 SIZE\n", domainName)
-				if _, err = conn.Write([]byte(resp)); err != nil {
-					log.Fatal(err)
-				}
-				fmt.Println(getCurrentTime() + " S: " + resp)
+				sendResponse(fmt.Sprintf("250-%s\n250-PIPELINING\n250 SIZE\n", domainName), conn)
 			case strings.HasPrefix(message, "MAIL FROM"):
 				// TODO: Handle unknown email addresses
 				// for now, assume all email addresses are currently valid
-				resp = "250 OK\n"
-				if _, err = conn.Write([]byte(resp)); err != nil {
-					log.Fatal(err)
-				}
-				fmt.Println(getCurrentTime() + " S: " + resp)
+				sendResponse("250 OK\n", conn)
 			case strings.HasPrefix(message, "RCPT TO"):
 				// TODO: Similar to MAIL FROM response, need to handle it correctly
-				resp = "250 OK\n"
-				if _, err = conn.Write([]byte(resp)); err != nil {
-					log.Fatal(err)
-				}
-				fmt.Println(getCurrentTime() + " S: " + resp)
-			case strings.HasPrefix(message, "DATA"):
-				resp = "354 Start mail input; end with <CRLF>.<CRLF>\n"
-				if _, err = conn.Write([]byte(resp)); err != nil {
-					log.Fatal(err)
-				}
-				fmt.Println(getCurrentTime() + " S: " + resp)
+				sendResponse("250 OK\n", conn)
+			case strings.TrimSpace(message) == "DATA":
+				sendResponse("354 Start mail input; end with <CRLF>.<CRLF>\n", conn)
 				inData = true
 			case inData:
 				if strings.TrimSpace(message) == "." {
@@ -91,9 +81,7 @@ func mailReceiver(socket net.Listener) {
 				}
 				fmt.Println(message)
 			case strings.TrimSpace(message) == "QUIT":
-				if _, err = conn.Write([]byte(fmt.Sprintf("221 %s closing connection", domainName))); err != nil {
-					log.Fatal(err)
-				}
+				sendResponse(fmt.Sprintf("221 %s closing connection", domainName), conn)
 				fmt.Println(getCurrentTime() + " S: Email successfully received, listening for more incoming emails")
 				conn, err = socket.Accept()
 				if _, err = conn.Write([]byte("220 LMTP Server Ready\n")); err != nil {
@@ -126,8 +114,7 @@ func mailSender(emailData string, debugMode string) {
 	initial := true
 
 	isEnd := false
-	for {
-		var resp string
+	for !isEnd {
 		var size int
 		buffer := make([]byte, 4096)
 
@@ -140,49 +127,27 @@ func mailSender(emailData string, debugMode string) {
 			}
 			switch {
 			case initial:
-				resp = fmt.Sprintf("EHLO %s\n", domainName)
-				if _, err = conn.Write([]byte(resp)); err != nil {
-					log.Fatal(err)
-				}
-				fmt.Print(getCurrentTime() + " S: " + resp)
+				sendResponse(fmt.Sprintf("EHLO %s\n", domainName), conn)
 				initial = false
-			case strings.HasPrefix(message, "250 CHUNKING"):
-				fmt.Println("enters")
+			case strings.TrimSpace(message) == "250 CHUNKING":
 				mailingList := "mailingList"
-				resp = fmt.Sprintf("MAIL FROM: %s@%s\n", mailingList, domainName)
-				if _, err = conn.Write([]byte(resp)); err != nil {
-					log.Fatal(err)
-				}
-				fmt.Print(getCurrentTime() + " S: " + resp)
+				sendResponse(fmt.Sprintf("MAIL FROM: %s@%s\n", mailingList, domainName), conn)
 			case strings.HasPrefix(message, "250 2.1.0"):
 				// TODO: Handle negative responses (?)
 				recipients := []string{"sdk194", "dags"}
 				for _, recipient := range recipients {
-					resp = fmt.Sprintf("RCPT TO: %s@%s\n", recipient, domainName)
-					if _, err = conn.Write([]byte(resp)); err != nil {
-						log.Fatal(err)
-					}
-					fmt.Print(getCurrentTime() + " S: " + resp)
+					sendResponse(fmt.Sprintf("RCPT TO: %s@%s\n", recipient, domainName), conn)
 				}
-				if _, err = conn.Write([]byte("DATA\n")); err != nil {
-					log.Fatal(err)
-				}
-				fmt.Println(getCurrentTime() + " S: DATA")
+				sendResponse("DATA\n", conn)
+			case strings.TrimSpace(message) == "554 5.5.1 Error: no valid recipients":
+				sendResponse("QUIT\n", conn)
+				fmt.Println(getCurrentTime() + " ERROR: No valid recipients found!")
 			case strings.HasPrefix(message, "354"):
 				// TODO: Handle negative response
-				if _, err = conn.Write([]byte(emailData + "\n.\n")); err != nil {
-					log.Fatal(err)
-				}
-				fmt.Println(getCurrentTime() + " S: " + emailData + "\n.\n")
-				if _, err = conn.Write([]byte("QUIT\n")); err != nil {
-					log.Fatal(err)
-				}
-				fmt.Println(getCurrentTime() + " S: QUIT")
+				sendResponse(emailData+"\n.\n", conn)
+				sendResponse("QUIT\n", conn)
 				isEnd = true
 			}
-		}
-		if isEnd {
-			break
 		}
 	}
 
