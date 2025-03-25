@@ -5,7 +5,6 @@ import (
 	"github.com/joho/godotenv"
 	"log"
 	"net"
-	"os"
 	"strings"
 	"time"
 )
@@ -22,9 +21,9 @@ func sendResponse(resp string, conn net.Conn) {
 	fmt.Println(getCurrentTime() + " S: " + resp)
 }
 
-func mailReceiver(socket net.Listener) {
-	domainName := os.Getenv("EMAIL_DOMAIN")
-	debugMode := os.Getenv("DEBUG_MODE")
+func mailReceiver(socket net.Listener, configs map[string]string) {
+	domainName := configs["EMAIL_DOMAIN"]
+	debugMode := configs["DEBUG_MODE"]
 	conn, err := socket.Accept()
 	if err != nil {
 		log.Fatal(err)
@@ -61,6 +60,7 @@ func mailReceiver(socket net.Listener) {
 				sendResponse(fmt.Sprintf("250-%s\n250-PIPELINING\n250 SIZE\n", domainName), conn)
 			case strings.HasPrefix(message, "MAIL FROM"):
 				// TODO: Handle unknown email addresses
+				// need db for this
 				// for now, assume all email addresses are currently valid
 				sendResponse("250 OK\n", conn)
 			case strings.HasPrefix(message, "RCPT TO"):
@@ -72,7 +72,7 @@ func mailReceiver(socket net.Listener) {
 			case inData:
 				if strings.TrimSpace(message) == "." {
 					inData = false
-					mailSender(emailMessage, debugMode)
+					mailSender(emailMessage, debugMode, configs)
 					if _, err = conn.Write([]byte("250 OK (Sent to mailing list recipients)\n452 temporarily over quota\n")); err != nil {
 						log.Fatal(err)
 					}
@@ -87,16 +87,25 @@ func mailReceiver(socket net.Listener) {
 				if _, err = conn.Write([]byte("220 LMTP Server Ready\n")); err != nil {
 					log.Fatal(err)
 				}
+			default:
+				if err = conn.Close(); err != nil {
+					log.Fatal(err)
+				}
+				fmt.Println(getCurrentTime() + " ERROR: Unexpected response, closing connection...")
+				conn, err = socket.Accept()
+				if _, err = conn.Write([]byte("220 LMTP Server Ready\n")); err != nil {
+					log.Fatal(err)
+				}
 			}
 		}
 	}
 
 }
 
-func mailSender(emailData string, debugMode string) {
-	addr := os.Getenv("POSTFIX_ADDRESS")
-	port := os.Getenv("POSTFIX_PORT")
-	domainName := os.Getenv("EMAIL_DOMAIN")
+func mailSender(emailData string, debugMode string, configs map[string]string) {
+	addr := configs["POSTFIX_ADDRESS"]
+	port := configs["POSTFIX_PORT"]
+	domainName := configs["EMAIL_DOMAIN"]
 
 	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%s", addr, port))
 	if err != nil {
@@ -128,24 +137,38 @@ func mailSender(emailData string, debugMode string) {
 			switch {
 			case initial:
 				sendResponse(fmt.Sprintf("EHLO %s\n", domainName), conn)
-				initial = false
-			case strings.TrimSpace(message) == "250 CHUNKING":
+
+				size, err = conn.Read(buffer)
+				if err != nil {
+					log.Fatal(err)
+				}
+				// TODO: Remove example once db is set up and ready
 				mailingList := "mailingList"
 				sendResponse(fmt.Sprintf("MAIL FROM: %s@%s\n", mailingList, domainName), conn)
+
+				initial = false
 			case strings.HasPrefix(message, "250 2.1.0"):
-				// TODO: Handle negative responses (?)
-				recipients := []string{"sdk194", "dags"}
+				// TODO: Similar to above...
+				recipients := []string{"sdk194", "dags", "nonExistent"}
 				for _, recipient := range recipients {
 					sendResponse(fmt.Sprintf("RCPT TO: %s@%s\n", recipient, domainName), conn)
+					size, err = conn.Read(buffer)
+					message = string(buffer[:size])
+					if strings.HasPrefix(message, "550 5.1.1") {
+						fmt.Println(getCurrentTime() + message)
+					}
 				}
 				sendResponse("DATA\n", conn)
 			case strings.TrimSpace(message) == "554 5.5.1 Error: no valid recipients":
 				sendResponse("QUIT\n", conn)
 				fmt.Println(getCurrentTime() + " ERROR: No valid recipients found!")
 			case strings.HasPrefix(message, "354"):
-				// TODO: Handle negative response
 				sendResponse(emailData+"\n.\n", conn)
 				sendResponse("QUIT\n", conn)
+				isEnd = true
+			default:
+				sendResponse("QUIT\n", conn)
+				fmt.Println(getCurrentTime() + " ERROR: An unexpected response has occurred...")
 				isEnd = true
 			}
 		}
@@ -154,43 +177,7 @@ func mailSender(emailData string, debugMode string) {
 }
 
 func main() {
-	/*
-		socketDirectory := "/var/spool/postfix/goformail/"
-		socketPath := fmt.Sprintf("%sgoformail_lmtp", socketDirectory)
-		err := godotenv.Load("configs.env")
-		if err != nil {
-			log.Fatal(getCurrentTime() + "Error loading .env file")
-		}
-
-		err = os.MkdirAll(socketDirectory, 0755)
-
-		err = os.Remove(socketPath) // remove existing socket when app restarts and socket exists
-		if err == nil {
-			fmt.Println(getCurrentTime() + " App has been restarted, recreating socket...")
-		}
-
-		socket, err := net.Listen("unix", socketPath)
-		if err != nil {
-			log.Fatal(err)
-			return
-		}
-
-
-		defer func(socket net.Listener) {
-			err = socket.Close()
-			if err != nil {
-				log.Fatal(getCurrentTime() + err.Error())
-			}
-		}(socket)
-
-
-		if err = os.Chmod(socketPath, 0666); err != nil {
-			log.Fatal(err)
-			return
-		}
-
-	*/
-	err := godotenv.Load("configs.env")
+	configs, err := godotenv.Read("configs.cf")
 	if err != nil {
 		log.Fatal(err)
 		return
@@ -203,5 +190,5 @@ func main() {
 	}
 
 	fmt.Println(getCurrentTime() + " Starting up mail forwarding service...")
-	mailReceiver(socket)
+	mailReceiver(socket, configs)
 }
