@@ -78,7 +78,11 @@ func LMTPService(configs map[string]string) {
 		}
 		// SEND MAIL LOGIC
 		if emailData, exists := data["EMAIL_DATA"]; exists {
-			mailForwardSuccess = MailSender(emailData, configs)
+			mailingLists := strings.Fields(data["RCPTS"])
+
+			for _, mailingList := range mailingLists {
+				mailForwardSuccess = MailSender(mailingList, emailData, configs)
+			}
 		}
 		// GOODBYE ACKNOWLEDGEMENT TO RESTART
 		sendGoodbye(conn, mailForwardSuccess, configs["REMAINING_ACK"])
@@ -90,6 +94,7 @@ func MailReceiver(conn net.Conn, configs map[string]string) map[string]string {
 	debugMode := configs["DEBUG_MODE"]
 
 	result := make(map[string]string)
+	result["RCPTS"] = ""
 	result["REMAINING_ACK"] = ""
 
 	if _, err := conn.Write([]byte("220 LMTP Server Ready\n")); err != nil {
@@ -118,12 +123,16 @@ func MailReceiver(conn net.Conn, configs map[string]string) map[string]string {
 			case strings.HasPrefix(message, "LHLO"):
 				sendResponse(fmt.Sprintf("250-%s\n250-PIPELINING\n250 SIZE\n", domainName), conn)
 			case strings.HasPrefix(message, "MAIL FROM"):
-				// TODO: Handle unknown email addresses
+				// TODO: Handle permissions to be able to send from mailing lists
 				// need db for this
 				// for now, assume all email addresses are currently valid
 				sendResponse("250 OK\n", conn)
 			case strings.HasPrefix(message, "RCPT TO"):
-				// TODO: Similar to MAIL FROM response, need to handle it correctly
+				// TODO: Handle possible cases where local recipient table and db are not fully up to date with each other
+				// E.G. Mailing list email was deleted in db but local recipient table still has it mapped to the LMTP port
+				email := strings.Fields(message)[1][4:]
+				email = email[:len(email)-1]
+				result["RCPTS"] += fmt.Sprintf(" %s", email)
 				sendResponse("250 OK\n", conn)
 			case strings.TrimSpace(message) == "DATA":
 				sendResponse("354 Start mail input; end with <CRLF>.<CRLF>\n", conn)
@@ -148,7 +157,7 @@ func MailReceiver(conn net.Conn, configs map[string]string) map[string]string {
 
 }
 
-func MailSender(emailData string, configs map[string]string) bool {
+func MailSender(mailingList string, emailData string, configs map[string]string) bool {
 	addr := configs["POSTFIX_ADDRESS"]
 	port := configs["POSTFIX_PORT"]
 	domainName := configs["EMAIL_DOMAIN"]
@@ -203,8 +212,6 @@ func MailSender(emailData string, configs map[string]string) bool {
 				if err != nil {
 					log.Fatal(err)
 				}
-				// TODO: Remove example once db is set up and ready
-				mailingList := "mailingList"
 				sendResponse(fmt.Sprintf("MAIL FROM: %s@%s\n", mailingList, domainName), conn)
 
 				initial = false
