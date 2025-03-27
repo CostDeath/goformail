@@ -22,31 +22,85 @@ func sendResponse(resp string, conn net.Conn) {
 	fmt.Println(getCurrentTime() + " S: " + resp)
 }
 
-func MailReceiver(socket net.Listener, configs map[string]string) {
-	domainName := configs["EMAIL_DOMAIN"]
-	debugMode := configs["DEBUG_MODE"]
-	conn, err := socket.Accept()
+func sendGoodbye(conn net.Conn, mailForwardSuccess bool, remainingAcks string) {
+	if mailForwardSuccess {
+		sendResponse("250 OK (Email was successfully forwarded)\n452 temporarily over quota\n", conn)
+	} else {
+		sendResponse("250 OK (However, email was not forwarded)\n452 temporarily over quota\n", conn)
+	}
+
+	messages := strings.Lines(remainingAcks)
+	for message := range messages {
+		if strings.TrimSpace(message) == "QUIT" {
+			sendResponse("221 closing connection\n", conn)
+			fmt.Println(getCurrentTime() + " S: Email successfully received, listening for more emails...")
+		} else {
+			if err := conn.Close(); err != nil {
+				fmt.Println(getCurrentTime() + " ERROR: Unexpected response, closing connection...")
+			}
+		}
+	}
+}
+
+func LMTPService(configs map[string]string) {
+	tcpSocket, err := net.Listen("tcp", ":8024")
 	if err != nil {
 		log.Fatal(err)
+		return
 	}
 
-	if _, err = conn.Write([]byte("220 LMTP Server Ready\n")); err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(getCurrentTime() + "Initialising LMTP greeting")
-	inData := false
-	var emailForwardedSuccess bool
+	var mailForwardSuccess bool
 	for {
-		var size int
-		buffer := make([]byte, 4096)
-
-		size, err = conn.Read(buffer)
+		conn, err := tcpSocket.Accept()
 		if err != nil {
+			log.Fatal(err)
+		}
+		mailForwardSuccess = false
+
+		// MAIL RECEIVER LOGIC
+		data := MailReceiver(conn, configs)
+		if _, containsError := data["READ_ERROR"]; containsError {
 			fmt.Println(getCurrentTime() + "Error reading from LMTP greeting: " + err.Error())
 			if err = conn.Close(); err != nil {
 				log.Fatal(err)
 			}
-			return
+			continue // want to go back to loop
+		}
+		if _, containsError := data["RESPONSE_ERROR"]; containsError {
+			fmt.Println(getCurrentTime() + " ERROR: Unexpected response, closing connection...")
+			if err = conn.Close(); err != nil {
+				log.Fatal(err)
+			}
+			continue // want to go back to loop
+		}
+		// SEND MAIL LOGIC
+		if emailData, exists := data["EMAIL_DATA"]; exists {
+			mailForwardSuccess = MailSender(emailData, configs)
+		}
+		// GOODBYE ACKNOWLEDGEMENT TO RESTART
+		sendGoodbye(conn, mailForwardSuccess, configs["REMAINING_ACK"])
+	}
+}
+
+func MailReceiver(conn net.Conn, configs map[string]string) map[string]string {
+	domainName := configs["EMAIL_DOMAIN"]
+	debugMode := configs["DEBUG_MODE"]
+	result := make(map[string]string)
+	result["REMAINING_ACK"] = ""
+
+	if _, err := conn.Write([]byte("220 LMTP Server Ready\n")); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(getCurrentTime() + "Initialising LMTP greeting")
+	inData := false
+	for {
+		var size int
+		buffer := make([]byte, 4096)
+
+		size, err := conn.Read(buffer)
+		if err != nil {
+			result["READ_ERROR"] = err.Error()
+			return result
 		}
 
 		messages := strings.Lines(string(buffer[:size]))
@@ -73,44 +127,35 @@ func MailReceiver(socket net.Listener, configs map[string]string) {
 			case inData:
 				if strings.TrimSpace(message) == "." {
 					inData = false
-					emailForwardedSuccess = MailSender(emailMessage, debugMode, configs)
-					if _, err = conn.Write([]byte("250 OK\n452 temporarily over quota\n")); err != nil {
-						log.Fatal(err)
-					}
+					result["EMAIL_DATA"] = emailMessage
+					/*
+						emailForwardedSuccess = MailSender(emailMessage, debugMode, configs)
+						if _, err = conn.Write([]byte("250 OK\n452 temporarily over quota\n")); err != nil {
+							log.Fatal(err)
+						}
+
+					*/
 				} else {
 					emailMessage += message
 				}
 				fmt.Println(message)
 			case strings.TrimSpace(message) == "QUIT":
-				sendResponse(fmt.Sprintf("221 %s closing connection", domainName), conn)
-				if emailForwardedSuccess {
-					fmt.Println(getCurrentTime() + " S: Email successfully received and forwarded, listening for more incoming emails")
-				} else {
-					fmt.Println(getCurrentTime() + " S: Error occurred on forwarding but email was received to mailing list, listening for more incoming emails")
-				}
-				conn, err = socket.Accept()
-				if _, err = conn.Write([]byte("220 LMTP Server Ready\n")); err != nil {
-					log.Fatal(err)
-				}
+				result["REMAINING_ACK"] += message
+				return result
 			default:
-				if err = conn.Close(); err != nil {
-					log.Fatal(err)
-				}
-				fmt.Println(getCurrentTime() + " ERROR: Unexpected response, closing connection...")
-				conn, err = socket.Accept()
-				if _, err = conn.Write([]byte("220 LMTP Server Ready\n")); err != nil {
-					log.Fatal(err)
-				}
+				result["RESPONSE_ERROR"] = message
+				return result
 			}
 		}
 	}
 
 }
 
-func MailSender(emailData string, debugMode string, configs map[string]string) bool {
+func MailSender(emailData string, configs map[string]string) bool {
 	addr := configs["POSTFIX_ADDRESS"]
 	port := configs["POSTFIX_PORT"]
 	domainName := configs["EMAIL_DOMAIN"]
+	debugMode := configs["DEBUG_MODE"]
 
 	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%s", addr, port))
 	if err != nil {
@@ -134,7 +179,6 @@ func MailSender(emailData string, debugMode string, configs map[string]string) b
 		//TODO: make timeout wait time a configuration
 		err = conn.SetDeadline(time.Now().Add(5 * time.Second)) // Time out after 5 seconds
 
-		time.Sleep(5 * time.Second)
 		size, err = conn.Read(buffer)
 
 		// handle timeout
@@ -198,12 +242,6 @@ func main() {
 		return
 	}
 
-	socket, err := net.Listen("tcp", ":8024")
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
-
-	fmt.Println(getCurrentTime() + " Starting up mail forwarding service...")
-	MailReceiver(socket, configs)
+	fmt.Println(getCurrentTime() + " Starting up LMTP service...")
+	LMTPService(configs)
 }
