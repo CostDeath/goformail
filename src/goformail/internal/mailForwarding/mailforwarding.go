@@ -1,6 +1,7 @@
-package main
+package mailfowarding
 
 import (
+	"errors"
 	"fmt"
 	"github.com/joho/godotenv"
 	"log"
@@ -21,7 +22,7 @@ func sendResponse(resp string, conn net.Conn) {
 	fmt.Println(getCurrentTime() + " S: " + resp)
 }
 
-func mailReceiver(socket net.Listener, configs map[string]string) {
+func MailReceiver(socket net.Listener, configs map[string]string) {
 	domainName := configs["EMAIL_DOMAIN"]
 	debugMode := configs["DEBUG_MODE"]
 	conn, err := socket.Accept()
@@ -34,7 +35,7 @@ func mailReceiver(socket net.Listener, configs map[string]string) {
 	}
 	fmt.Println(getCurrentTime() + "Initialising LMTP greeting")
 	inData := false
-
+	var emailForwardedSuccess bool
 	for {
 		var size int
 		buffer := make([]byte, 4096)
@@ -72,8 +73,8 @@ func mailReceiver(socket net.Listener, configs map[string]string) {
 			case inData:
 				if strings.TrimSpace(message) == "." {
 					inData = false
-					mailSender(emailMessage, debugMode, configs)
-					if _, err = conn.Write([]byte("250 OK (Sent to mailing list recipients)\n452 temporarily over quota\n")); err != nil {
+					emailForwardedSuccess = MailSender(emailMessage, debugMode, configs)
+					if _, err = conn.Write([]byte("250 OK\n452 temporarily over quota\n")); err != nil {
 						log.Fatal(err)
 					}
 				} else {
@@ -82,7 +83,11 @@ func mailReceiver(socket net.Listener, configs map[string]string) {
 				fmt.Println(message)
 			case strings.TrimSpace(message) == "QUIT":
 				sendResponse(fmt.Sprintf("221 %s closing connection", domainName), conn)
-				fmt.Println(getCurrentTime() + " S: Email successfully received, listening for more incoming emails")
+				if emailForwardedSuccess {
+					fmt.Println(getCurrentTime() + " S: Email successfully received and forwarded, listening for more incoming emails")
+				} else {
+					fmt.Println(getCurrentTime() + " S: Error occurred on forwarding but email was received to mailing list, listening for more incoming emails")
+				}
 				conn, err = socket.Accept()
 				if _, err = conn.Write([]byte("220 LMTP Server Ready\n")); err != nil {
 					log.Fatal(err)
@@ -102,7 +107,7 @@ func mailReceiver(socket net.Listener, configs map[string]string) {
 
 }
 
-func mailSender(emailData string, debugMode string, configs map[string]string) {
+func MailSender(emailData string, debugMode string, configs map[string]string) bool {
 	addr := configs["POSTFIX_ADDRESS"]
 	port := configs["POSTFIX_PORT"]
 	domainName := configs["EMAIL_DOMAIN"]
@@ -122,12 +127,23 @@ func mailSender(emailData string, debugMode string, configs map[string]string) {
 	fmt.Println(getCurrentTime() + " S: Initiating sending email acknowledgements...")
 	initial := true
 
-	isEnd := false
-	for !isEnd {
+	for {
 		var size int
 		buffer := make([]byte, 4096)
 
+		//TODO: make timeout wait time a configuration
+		err = conn.SetDeadline(time.Now().Add(5 * time.Second)) // Time out after 5 seconds
+
+		time.Sleep(5 * time.Second)
 		size, err = conn.Read(buffer)
+
+		// handle timeout
+		var netErr net.Error
+		if errors.As(err, &netErr) && netErr.Timeout() {
+			fmt.Println(getCurrentTime() + " S: MTA not responding, is the correct port configured?")
+			return false
+		}
+
 		messages := strings.Lines(string(buffer[:size]))
 
 		for message := range messages {
@@ -165,15 +181,14 @@ func mailSender(emailData string, debugMode string, configs map[string]string) {
 			case strings.HasPrefix(message, "354"):
 				sendResponse(emailData+"\n.\n", conn)
 				sendResponse("QUIT\n", conn)
-				isEnd = true
+				return true
 			default:
 				sendResponse("QUIT\n", conn)
 				fmt.Println(getCurrentTime() + " ERROR: An unexpected response has occurred...")
-				isEnd = true
+				return false
 			}
 		}
 	}
-
 }
 
 func main() {
@@ -190,5 +205,5 @@ func main() {
 	}
 
 	fmt.Println(getCurrentTime() + " Starting up mail forwarding service...")
-	mailReceiver(socket, configs)
+	MailReceiver(socket, configs)
 }
