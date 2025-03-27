@@ -3,7 +3,6 @@ package mailfowarding
 import (
 	"errors"
 	"fmt"
-	"github.com/joho/godotenv"
 	"log"
 	"net"
 	"strings"
@@ -241,15 +240,4 @@ func MailSender(mailingList string, emailData string, configs map[string]string)
 			}
 		}
 	}
-}
-
-func main() {
-	configs, err := godotenv.Read("configs.cf")
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
-
-	fmt.Println(getCurrentTime() + " Starting up LMTP service...")
-	LMTPService(configs)
 }
