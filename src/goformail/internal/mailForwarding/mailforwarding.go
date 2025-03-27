@@ -43,15 +43,18 @@ func sendGoodbye(conn net.Conn, mailForwardSuccess bool, remainingAcks string) {
 }
 
 func LMTPService(configs map[string]string) {
-	tcpSocket, err := net.Listen("tcp", ":8024")
+	lmtpPort := configs["LMTP_PORT"]
+
+	tcpSocket, err := net.Listen("tcp", fmt.Sprintf(":%s", lmtpPort))
 	if err != nil {
 		log.Fatal(err)
 		return
 	}
 
+	var conn net.Conn
 	var mailForwardSuccess bool
 	for {
-		conn, err := tcpSocket.Accept()
+		conn, err = tcpSocket.Accept()
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -85,6 +88,7 @@ func LMTPService(configs map[string]string) {
 func MailReceiver(conn net.Conn, configs map[string]string) map[string]string {
 	domainName := configs["EMAIL_DOMAIN"]
 	debugMode := configs["DEBUG_MODE"]
+
 	result := make(map[string]string)
 	result["REMAINING_ACK"] = ""
 
@@ -128,13 +132,6 @@ func MailReceiver(conn net.Conn, configs map[string]string) map[string]string {
 				if strings.TrimSpace(message) == "." {
 					inData = false
 					result["EMAIL_DATA"] = emailMessage
-					/*
-						emailForwardedSuccess = MailSender(emailMessage, debugMode, configs)
-						if _, err = conn.Write([]byte("250 OK\n452 temporarily over quota\n")); err != nil {
-							log.Fatal(err)
-						}
-
-					*/
 				} else {
 					emailMessage += message
 				}
@@ -156,6 +153,11 @@ func MailSender(emailData string, configs map[string]string) bool {
 	port := configs["POSTFIX_PORT"]
 	domainName := configs["EMAIL_DOMAIN"]
 	debugMode := configs["DEBUG_MODE"]
+	timeoutDuration, err := time.ParseDuration(configs["TIMEOUT_DURATION"] + "s")
+	if err != nil {
+		fmt.Println(getCurrentTime() + " ERROR: Could not parse timeout duration: " + err.Error())
+		return false
+	}
 
 	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%s", addr, port))
 	if err != nil {
@@ -176,8 +178,7 @@ func MailSender(emailData string, configs map[string]string) bool {
 		var size int
 		buffer := make([]byte, 4096)
 
-		//TODO: make timeout wait time a configuration
-		err = conn.SetDeadline(time.Now().Add(5 * time.Second)) // Time out after 5 seconds
+		err = conn.SetDeadline(time.Now().Add(timeoutDuration * time.Second)) // Time out after 5 seconds
 
 		size, err = conn.Read(buffer)
 
