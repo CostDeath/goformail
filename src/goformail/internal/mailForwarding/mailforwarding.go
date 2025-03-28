@@ -14,6 +14,23 @@ func getCurrentTime() string {
 	return fmt.Sprintf("[%d-%02d-%02d %02d:%02d:%02d]", t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
 }
 
+func connectToLMTP(lmtpPort string) net.Listener {
+	tcpSocket, err := net.Listen("tcp", fmt.Sprintf(":%s", lmtpPort))
+	if err != nil {
+		log.Fatal(err)
+	}
+	return tcpSocket
+}
+
+func connectToSMTP(smtpAddress string, smtpPort string) net.Conn {
+	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%s", smtpAddress, smtpPort))
+	if err != nil {
+		log.Fatal(getCurrentTime() + err.Error())
+	}
+
+	return conn
+}
+
 func sendResponse(resp string, conn net.Conn) {
 	if _, err := conn.Write([]byte(resp)); err != nil {
 		log.Fatal(err)
@@ -44,13 +61,10 @@ func sendGoodbye(conn net.Conn, mailForwardSuccess bool, remainingAcks string) {
 func LMTPService(configs map[string]string) {
 	lmtpPort := configs["LMTP_PORT"]
 
-	tcpSocket, err := net.Listen("tcp", fmt.Sprintf(":%s", lmtpPort))
-	if err != nil {
-		log.Fatal(err)
-		return
-	}
+	tcpSocket := connectToLMTP(lmtpPort)
 
 	var conn net.Conn
+	var err error
 	var mailForwardSuccess bool
 	for {
 		conn, err = tcpSocket.Accept()
@@ -143,7 +157,6 @@ func MailReceiver(conn net.Conn, configs map[string]string) map[string]string {
 				} else {
 					emailMessage += message
 				}
-				fmt.Println(message)
 			case strings.TrimSpace(message) == "QUIT":
 				result["REMAINING_ACK"] += message
 				return result
@@ -167,10 +180,7 @@ func MailSender(mailingList string, emailData string, configs map[string]string)
 		return false
 	}
 
-	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%s", addr, port))
-	if err != nil {
-		log.Fatal(getCurrentTime() + err.Error())
-	}
+	conn := connectToSMTP(addr, port)
 
 	defer func(conn net.Conn) {
 		err = conn.Close()
