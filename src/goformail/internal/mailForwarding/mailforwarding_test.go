@@ -50,6 +50,7 @@ func TestConnectToLMTP(t *testing.T) {
 }
 
 func TestConnectToSMTP(t *testing.T) {
+	waitGroup := new(sync.WaitGroup)
 	// MOCK Listener
 	go func() {
 		tcpSocket, err := net.Listen("tcp", "127.0.0.1:8025")
@@ -63,9 +64,12 @@ func TestConnectToSMTP(t *testing.T) {
 			}
 		}(tcpSocket)
 
+		waitGroup.Done()
 		_, err = tcpSocket.Accept()
 	}()
 
+	waitGroup.Add(1)
+	waitGroup.Wait()
 	conn := connectToSMTP("127.0.0.1", "8025")
 
 	if conn == nil {
