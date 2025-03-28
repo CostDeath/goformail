@@ -1,10 +1,12 @@
-package mailfowarding
+package mailforwarding
 
 import (
 	"errors"
 	"fmt"
+	"github.com/joho/godotenv"
 	"log"
 	"net"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -12,6 +14,14 @@ import (
 func getCurrentTime() string {
 	t := time.Now()
 	return fmt.Sprintf("[%d-%02d-%02d %02d:%02d:%02d]", t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
+}
+
+func loadConfigs() map[string]string {
+	configs, err := godotenv.Read("configs.cf")
+	if err != nil {
+		log.Fatal(err)
+	}
+	return configs
 }
 
 func connectToLMTP(lmtpPort string) net.Listener {
@@ -58,13 +68,19 @@ func sendGoodbye(conn net.Conn, mailForwardSuccess bool, remainingAcks string) {
 	}
 }
 
-func LMTPService(configs map[string]string) {
+func LMTPService() {
+	fmt.Println(getCurrentTime() + " Starting LMTP Service...")
+	configs := loadConfigs()
 	lmtpPort := configs["LMTP_PORT"]
 
 	tcpSocket := connectToLMTP(lmtpPort)
 
+	bufferSize, err := strconv.Atoi(configs["BUFFER_SIZE"])
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	var conn net.Conn
-	var err error
 	var mailForwardSuccess bool
 	for {
 		conn, err = tcpSocket.Accept()
@@ -74,7 +90,7 @@ func LMTPService(configs map[string]string) {
 		mailForwardSuccess = false
 
 		// MAIL RECEIVER LOGIC
-		data := MailReceiver(conn, configs)
+		data := MailReceiver(conn, bufferSize, configs)
 		if _, containsError := data["READ_ERROR"]; containsError {
 			fmt.Println(getCurrentTime() + "Error reading from LMTP greeting: " + err.Error())
 			if err = conn.Close(); err != nil {
@@ -94,7 +110,7 @@ func LMTPService(configs map[string]string) {
 			mailingLists := strings.Fields(data["RCPTS"])
 
 			for _, mailingList := range mailingLists {
-				mailForwardSuccess = MailSender(mailingList, emailData, configs)
+				mailForwardSuccess = MailSender(mailingList, emailData, bufferSize, configs)
 			}
 		}
 		// GOODBYE ACKNOWLEDGEMENT TO RESTART
@@ -102,7 +118,7 @@ func LMTPService(configs map[string]string) {
 	}
 }
 
-func MailReceiver(conn net.Conn, configs map[string]string) map[string]string {
+func MailReceiver(conn net.Conn, bufferSize int, configs map[string]string) map[string]string {
 	domainName := configs["EMAIL_DOMAIN"]
 	debugMode := configs["DEBUG_MODE"]
 
@@ -117,7 +133,7 @@ func MailReceiver(conn net.Conn, configs map[string]string) map[string]string {
 	inData := false
 	for {
 		var size int
-		buffer := make([]byte, 4096)
+		buffer := make([]byte, bufferSize)
 
 		size, err := conn.Read(buffer)
 		if err != nil {
@@ -169,7 +185,7 @@ func MailReceiver(conn net.Conn, configs map[string]string) map[string]string {
 
 }
 
-func MailSender(mailingList string, emailData string, configs map[string]string) bool {
+func MailSender(mailingList string, emailData string, bufferSize int, configs map[string]string) bool {
 	addr := configs["POSTFIX_ADDRESS"]
 	port := configs["POSTFIX_PORT"]
 	domainName := configs["EMAIL_DOMAIN"]
@@ -194,7 +210,7 @@ func MailSender(mailingList string, emailData string, configs map[string]string)
 
 	for {
 		var size int
-		buffer := make([]byte, 4096)
+		buffer := make([]byte, bufferSize)
 
 		err = conn.SetDeadline(time.Now().Add(timeoutDuration * time.Second)) // Time out after 5 seconds
 
