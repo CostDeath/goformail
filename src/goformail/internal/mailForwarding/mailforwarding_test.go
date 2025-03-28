@@ -5,6 +5,7 @@ import (
 	"log"
 	"net"
 	"regexp"
+	"sync"
 	"testing"
 )
 
@@ -74,5 +75,48 @@ func TestConnectToSMTP(t *testing.T) {
 
 	if err := conn.Close(); err != nil {
 		t.Error(err)
+	}
+}
+
+func TestSendResponse(t *testing.T) {
+	// MOCK LISTENER
+	waitGroup := new(sync.WaitGroup)
+	go func() {
+		tcpSocket, err := net.Listen("tcp", "127.0.0.1:8025")
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer func(tcpSocket net.Listener) {
+			err = tcpSocket.Close()
+			if err != nil {
+				log.Fatal(err)
+			}
+		}(tcpSocket)
+
+		waitGroup.Done()
+		conn, err := tcpSocket.Accept()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		sendResponse("Response test", conn)
+	}()
+
+	waitGroup.Add(1)
+	waitGroup.Wait()
+	conn, err := net.Dial("tcp", "127.0.0.1:8025")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	buffer := make([]byte, 1024)
+
+	size, err := conn.Read(buffer)
+	if err != nil {
+		t.Error(err)
+	}
+
+	if string(buffer[:size]) != "Response test" {
+		t.Error("There were no responses/response was wrong")
 	}
 }
