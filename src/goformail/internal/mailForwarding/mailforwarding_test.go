@@ -240,11 +240,17 @@ func TestMailReceiver(t *testing.T) {
 			for message := range messages {
 				switch {
 				case strings.TrimSpace(message) == "220 LMTP Server Ready":
-					conn.Write([]byte("LHLO example.domain"))
+					if _, err = conn.Write([]byte("LHLO example.domain")); err != nil {
+						log.Fatal(err)
+					}
 				case strings.TrimSpace(message) == "250 SIZE":
-					conn.Write([]byte("MAIL FROM:<testing@example.domain>\nRCPT TO:<recipient@example.domain>\nDATA\n"))
+					if _, err = conn.Write([]byte("MAIL FROM:<testing@example.domain>\nRCPT TO:<recipient@example.domain>\nDATA\n")); err != nil {
+						log.Fatal(err)
+					}
 				case strings.TrimSpace(message) == "354 Start mail input; end with <CRLF>.<CRLF>":
-					conn.Write([]byte("hello\n.\nQUIT\n"))
+					if _, err = conn.Write([]byte("hello\n.\nQUIT\n")); err != nil {
+						log.Fatal(err)
+					}
 					return
 				}
 			}
@@ -274,5 +280,87 @@ func TestMailReceiver(t *testing.T) {
 		if _, exists := data[key]; !exists {
 			t.Errorf("%s does not exist within the data collected from MailReceiver", key)
 		}
+	}
+}
+
+func TestMailSender(t *testing.T) {
+	configs := loadConfigs()
+	configs["POSTFIX_PORT"] = "8025"
+	waitGroup := new(sync.WaitGroup)
+
+	// MOCK SMTP SERVER
+	go func() {
+		tcpSocket, err := net.Listen("tcp", "127.0.0.1:8025")
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		waitGroup.Done()
+		conn, err := tcpSocket.Accept()
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		defer func(conn net.Conn) {
+			err = conn.Close()
+			if err != nil {
+				log.Fatal(err)
+			}
+		}(conn)
+
+		// Initial greeting
+		if _, err = conn.Write([]byte("Example SMTP Server Greeting\n")); err != nil {
+			log.Fatal(err)
+		}
+
+		for {
+			buffer := make([]byte, 4096)
+			var size int
+
+			if err = conn.SetReadDeadline(time.Now().Add(5 * time.Second)); err != nil {
+				log.Fatal(err)
+			}
+
+			size, err = conn.Read(buffer)
+			var netErr net.Error
+			if errors.As(err, &netErr) && netErr.Timeout() {
+				t.Error("Connection timed out, MailSender cannot seem to send responses through the connection")
+				return
+			}
+
+			messages := strings.Lines(string(buffer[:size]))
+			for message := range messages {
+				switch {
+				case strings.HasPrefix(message, "EHLO"):
+					if _, err = conn.Write([]byte("250-example.domain\n250-PIPELINING\n250 CHUNKING\n")); err != nil {
+						log.Fatal(err)
+					}
+				case strings.HasPrefix(message, "MAIL FROM"):
+					if _, err = conn.Write([]byte("250 2.1.0 OK\n")); err != nil {
+						log.Fatal(err)
+					}
+				case strings.HasPrefix(message, "RCPT TO"):
+					// assume all email addresses are valid
+					if _, err = conn.Write([]byte("250 2.1.5 OK\n")); err != nil {
+						log.Fatal(err)
+					}
+				case strings.TrimSpace(message) == "DATA":
+					if _, err = conn.Write([]byte("354 Start mail input; end with <CRLF>.<CRLF>\n")); err != nil {
+						log.Fatal(err)
+					}
+				case strings.TrimSpace(message) == "QUIT":
+					return
+				}
+			}
+		}
+
+	}()
+	waitGroup.Add(1)
+	waitGroup.Wait()
+
+	hasSent := MailSender("example@example.domain", "hello", 4096, configs)
+
+	if !hasSent {
+		t.Error("The expected response result was not given")
 	}
 }
