@@ -3,6 +3,7 @@ package mailforwarding
 import (
 	"github.com/joho/godotenv"
 	"log"
+	"net"
 	"regexp"
 	"testing"
 )
@@ -32,5 +33,46 @@ func TestLoadConfigs(t *testing.T) {
 		if _, exists := configs[configParam]; !exists {
 			t.Errorf("Config %s is not a parameter within the configs", configParam)
 		}
+	}
+}
+
+func TestConnectToLMTP(t *testing.T) {
+	tcpSocket := connectToLMTP("8024")
+	if tcpSocket == nil {
+		t.Errorf("tcpSocket is nil")
+		return
+	}
+
+	if err := tcpSocket.Close(); err != nil {
+		t.Error(err)
+	}
+}
+
+func TestConnectToSMTP(t *testing.T) {
+	// MOCK Listener
+	go func() {
+		tcpSocket, err := net.Listen("tcp", "127.0.0.1:8025")
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer func(tcpSocket net.Listener) {
+			err = tcpSocket.Close()
+			if err != nil {
+				log.Fatal(err)
+			}
+		}(tcpSocket)
+
+		_, err = tcpSocket.Accept()
+	}()
+
+	conn := connectToSMTP("127.0.0.1", "8025")
+
+	if conn == nil {
+		t.Error("Could not connect to SMTP port")
+		return
+	}
+
+	if err := conn.Close(); err != nil {
+		t.Error(err)
 	}
 }
