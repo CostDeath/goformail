@@ -199,5 +199,80 @@ func TestSendGoodBye(t *testing.T) {
 	if passedTests != 6 {
 		t.Errorf("Not all cases were resolved for sending goodbye acknowledgements (only %d passed)", passedTests)
 	}
+}
 
+func TestMailReceiver(t *testing.T) {
+	tcpSocket := connectToLMTP("8024")
+	configs := loadConfigs()
+	waitGroup := new(sync.WaitGroup)
+
+	// MOCK MTA
+	go func() {
+		conn, err := net.Dial("tcp", "127.0.0.1:8024")
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		defer func(conn net.Conn) {
+			err = conn.Close()
+			if err != nil {
+				log.Fatal(err)
+			}
+			waitGroup.Done()
+		}(conn)
+
+		for {
+			buffer := make([]byte, 4096)
+			var size int
+
+			if err = conn.SetReadDeadline(time.Now().Add(5 * time.Second)); err != nil {
+				log.Fatal(err)
+			}
+
+			size, err = conn.Read(buffer)
+			var netErr net.Error
+			if errors.As(err, &netErr) && netErr.Timeout() {
+				t.Error("Connection timed out, MailReceiver cannot seem to send messages through the connection")
+				return
+			}
+
+			messages := strings.Lines(string(buffer[:size]))
+			for message := range messages {
+				switch {
+				case strings.TrimSpace(message) == "220 LMTP Server Ready":
+					conn.Write([]byte("LHLO example.domain"))
+				case strings.TrimSpace(message) == "250 SIZE":
+					conn.Write([]byte("MAIL FROM:<testing@example.domain>\nRCPT TO:<recipient@example.domain>\nDATA\n"))
+				case strings.TrimSpace(message) == "354 Start mail input; end with <CRLF>.<CRLF>":
+					conn.Write([]byte("hello\n.\nQUIT\n"))
+					return
+				}
+			}
+
+		}
+	}()
+	waitGroup.Add(1)
+
+	conn, err := tcpSocket.Accept()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer func(conn net.Conn) {
+		err = conn.Close()
+		if err != nil {
+
+		}
+	}(conn)
+
+	data := MailReceiver(conn, 4096, configs)
+
+	waitGroup.Wait()
+
+	expectedKeys := []string{"EMAIL_DATA", "RCPTS", "REMAINING_ACK"}
+	for _, key := range expectedKeys {
+		if _, exists := data[key]; !exists {
+			t.Errorf("%s does not exist within the data collected from MailReceiver", key)
+		}
+	}
 }
