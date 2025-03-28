@@ -136,6 +136,13 @@ func TestSendGoodBye(t *testing.T) {
 			log.Fatal(err)
 		}
 
+		defer func(tcpSocket net.Listener) {
+			err = tcpSocket.Close()
+			if err != nil {
+				log.Fatal(err)
+			}
+		}(tcpSocket)
+
 		waitGroup.Done()
 		conn, err := tcpSocket.Accept()
 		if err != nil {
@@ -159,7 +166,7 @@ func TestSendGoodBye(t *testing.T) {
 	defer func(conn net.Conn) {
 		err = conn.Close()
 		if err != nil {
-
+			log.Fatal(err)
 		}
 	}(conn)
 
@@ -205,6 +212,13 @@ func TestMailReceiver(t *testing.T) {
 	tcpSocket := connectToLMTP("8024")
 	configs := loadConfigs()
 	waitGroup := new(sync.WaitGroup)
+
+	defer func(tcpSocket net.Listener) {
+		err := tcpSocket.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}(tcpSocket)
 
 	// MOCK MTA
 	go func() {
@@ -264,13 +278,6 @@ func TestMailReceiver(t *testing.T) {
 		log.Fatal(err)
 	}
 
-	defer func(conn net.Conn) {
-		err = conn.Close()
-		if err != nil {
-
-		}
-	}(conn)
-
 	data := MailReceiver(conn, 4096, configs)
 
 	waitGroup.Wait()
@@ -295,18 +302,18 @@ func TestMailSender(t *testing.T) {
 			log.Fatal(err)
 		}
 
+		defer func(tcpSocket net.Listener) {
+			err = tcpSocket.Close()
+			if err != nil {
+				log.Fatal(err)
+			}
+		}(tcpSocket)
+
 		waitGroup.Done()
 		conn, err := tcpSocket.Accept()
 		if err != nil {
 			log.Fatal(err)
 		}
-
-		defer func(conn net.Conn) {
-			err = conn.Close()
-			if err != nil {
-				log.Fatal(err)
-			}
-		}(conn)
 
 		// Initial greeting
 		if _, err = conn.Write([]byte("Example SMTP Server Greeting\n")); err != nil {
