@@ -263,7 +263,7 @@ func TestMailReceiver(t *testing.T) {
 						log.Fatal(err)
 					}
 				case strings.TrimSpace(message) == "354 Start mail input; end with <CRLF>.<CRLF>":
-					if _, err = conn.Write([]byte("hello\n.\nQUIT\n")); err != nil {
+					if _, err = conn.Write([]byte("hello\n.\nmultiple full stops\n.\nQUIT\n")); err != nil {
 						log.Fatal(err)
 					}
 					return
@@ -285,8 +285,12 @@ func TestMailReceiver(t *testing.T) {
 
 	expectedKeys := []string{"EMAIL_DATA", "RCPTS", "REMAINING_ACK"}
 	for _, key := range expectedKeys {
-		if _, exists := data[key]; !exists {
+		if value, exists := data[key]; !exists {
 			t.Errorf("%s does not exist within the data collected from MailReceiver", key)
+		} else {
+			if key == "EMAIL_DATA" && value != "hello\n.\nmultiple full stops\n.\n" {
+				t.Errorf("The email data was received incorrectly\nExpected:\n hello\n.\nmultiple full stops\n.\n Received: %s\n", value)
+			}
 		}
 	}
 }
