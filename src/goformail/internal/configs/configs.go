@@ -6,7 +6,7 @@ import (
 )
 
 func LoadConfigs() map[string]string {
-	configs, err := godotenv.Read("configs.cf")
+	configs, err := godotenv.Read("../../configs.cf")
 	if err != nil {
 		log.Fatal(err)
 	}
