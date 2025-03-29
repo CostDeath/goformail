@@ -3,6 +3,7 @@ package mailforwarding
 import (
 	"errors"
 	"github.com/joho/godotenv"
+	config "gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal/configs"
 	"log"
 	"net"
 	"regexp"
@@ -41,7 +42,7 @@ func TestLoadConfigs(t *testing.T) {
 }
 
 func TestConnectToLMTP(t *testing.T) {
-	tcpSocket := connectToLMTP("8024")
+	tcpSocket := createLMTPSocket("8024")
 	if tcpSocket == nil {
 		t.Errorf("tcpSocket is nil")
 		return
@@ -209,8 +210,8 @@ func TestSendGoodBye(t *testing.T) {
 }
 
 func TestMailReceiver(t *testing.T) {
-	tcpSocket := connectToLMTP("8024")
-	configs := loadConfigs()
+	tcpSocket := createLMTPSocket("8024")
+	configs := config.LoadConfigs()
 	waitGroup := new(sync.WaitGroup)
 
 	defer func(tcpSocket net.Listener) {
@@ -291,7 +292,7 @@ func TestMailReceiver(t *testing.T) {
 }
 
 func TestMailSender(t *testing.T) {
-	configs := loadConfigs()
+	configs := config.LoadConfigs()
 	configs["POSTFIX_PORT"] = "8025"
 	waitGroup := new(sync.WaitGroup)
 
