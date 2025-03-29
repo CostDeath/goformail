@@ -32,8 +32,8 @@ func LMTPService(configs map[string]string) {
 
 		// MAIL RECEIVER LOGIC
 		data := MailReceiver(conn, bufferSize, configs)
-		if _, containsError := data["READ_ERROR"]; containsError {
-			fmt.Println(getCurrentTime() + "Error reading from LMTP greeting: " + err.Error())
+		if dataError, containsError := data["READ_ERROR"]; containsError {
+			fmt.Println(getCurrentTime() + "Error reading from LMTP greeting: " + dataError)
 			if err = conn.Close(); err != nil {
 				log.Fatal(err)
 			}
@@ -154,16 +154,12 @@ func MailReceiver(conn net.Conn, bufferSize int, configs map[string]string) map[
 			case strings.TrimSpace(message) == "DATA":
 				sendResponse("354 Start mail input; end with <CRLF>.<CRLF>\n", conn)
 				inData = true
-			case inData:
-				if strings.TrimSpace(message) == "." {
-					inData = false
-					result["EMAIL_DATA"] = emailMessage
-				} else {
-					emailMessage += message
-				}
 			case strings.TrimSpace(message) == "QUIT":
+				result["EMAIL_DATA"] = emailMessage
 				result["REMAINING_ACK"] += message
 				return result
+			case inData:
+				emailMessage += message
 			default:
 				result["RESPONSE_ERROR"] = message
 				return result
@@ -244,7 +240,7 @@ func MailSender(mailingList string, emailData string, bufferSize int, configs ma
 				sendResponse("QUIT\n", conn)
 				fmt.Println(getCurrentTime() + " ERROR: No valid recipients found!")
 			case strings.HasPrefix(message, "354"):
-				sendResponse(emailData+"\n.\n", conn)
+				sendResponse(emailData, conn)
 				sendResponse("QUIT\n", conn)
 				return true
 			default:
