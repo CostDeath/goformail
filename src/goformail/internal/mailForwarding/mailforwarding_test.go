@@ -121,7 +121,7 @@ func TestSendResponse(t *testing.T) {
 	defer func(conn net.Conn) {
 		err = conn.Close()
 		if err != nil {
-
+			log.Fatal(err)
 		}
 	}(conn)
 
