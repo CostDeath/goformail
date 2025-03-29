@@ -1,7 +1,6 @@
-package mailforwarding
+package forwarding
 
 import (
-	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -51,7 +50,7 @@ func LMTPService(configs map[string]string) {
 		mailForwardSuccess = false
 
 		// MAIL RECEIVER LOGIC
-		data, err = MailReceiver(conn, bufferSize, configs)
+		data, err = mailReceiver(conn, bufferSize, configs)
 		if err != nil {
 			fmt.Printf("%s %s\n", getCurrentTime(), err)
 			if err = conn.Close(); err != nil {
@@ -63,7 +62,7 @@ func LMTPService(configs map[string]string) {
 		// SEND MAIL LOGIC
 		if data.data != "" {
 			for _, mailingList := range data.rcpt {
-				mailForwardSuccess = MailSender(mailingList, data.data, bufferSize, configs)
+				mailForwardSuccess = mailSender(mailingList, data.data, bufferSize, configs)
 			}
 		}
 
@@ -116,146 +115,6 @@ func sendGoodbye(conn net.Conn, mailForwardSuccess bool, remainingAcks string) {
 		} else {
 			if err := conn.Close(); err != nil {
 				fmt.Println(getCurrentTime() + " ERROR: Unexpected response, closing connection...")
-			}
-		}
-	}
-}
-
-func MailReceiver(conn net.Conn, bufferSize int, configs map[string]string) (EmailData, error) {
-	domainName := configs["EMAIL_DOMAIN"]
-	debugMode := configs["DEBUG_MODE"]
-
-	data := EmailData{}
-
-	if _, err := conn.Write([]byte("220 LMTP Server Ready\n")); err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(getCurrentTime() + "Initialising LMTP greeting")
-	inData := false
-	for {
-		var size int
-		buffer := make([]byte, bufferSize)
-
-		size, err := conn.Read(buffer)
-		if err != nil {
-			return data, &emailCollectionError{"READ_ERROR", err}
-		}
-
-		messages := strings.Lines(string(buffer[:size]))
-
-		var emailMessage string
-		for message := range messages {
-			if debugMode == "true" {
-				fmt.Print("POSTFIX: " + message)
-			}
-			switch {
-			case strings.HasPrefix(message, "LHLO"):
-				sendResponse(fmt.Sprintf("250-%s\n250-PIPELINING\n250 SIZE\n", domainName), conn)
-			case strings.HasPrefix(message, "MAIL FROM"):
-				email := strings.Fields(message)[1][6:]
-				email = email[:len(email)-1]
-				data.from = email
-				sendResponse("250 OK\n", conn)
-			case strings.HasPrefix(message, "RCPT TO"):
-				email := strings.Fields(message)[1][4:]
-				email = email[:len(email)-1]
-				data.rcpt = append(data.rcpt, email)
-				sendResponse("250 OK\n", conn)
-			case strings.TrimSpace(message) == "DATA":
-				sendResponse("354 Start mail input; end with <CRLF>.<CRLF>\n", conn)
-				inData = true
-			case strings.TrimSpace(message) == "QUIT":
-				data.data = emailMessage
-				data.remainingAcks = append(data.remainingAcks, message)
-				return data, nil
-			case inData:
-				emailMessage += message
-			default:
-				return data, &emailCollectionError{"UNEXPECTED_RESPONSE_ERROR", errors.New(message)}
-			}
-		}
-	}
-
-}
-
-func MailSender(mailingList string, emailData string, bufferSize int, configs map[string]string) bool {
-	addr := configs["POSTFIX_ADDRESS"]
-	port := configs["POSTFIX_PORT"]
-	domainName := configs["EMAIL_DOMAIN"]
-	debugMode := configs["DEBUG_MODE"]
-	timeoutDuration, err := time.ParseDuration(configs["TIMEOUT_DURATION"] + "s")
-	if err != nil {
-		fmt.Println(getCurrentTime() + " ERROR: Could not parse timeout duration: " + err.Error())
-		return false
-	}
-
-	conn := connectToSMTP(addr, port)
-
-	defer func(conn net.Conn) {
-		err = conn.Close()
-		if err != nil {
-			log.Fatal(getCurrentTime() + err.Error())
-		}
-	}(conn)
-
-	fmt.Println(getCurrentTime() + " S: Initiating sending email acknowledgements...")
-	initial := true
-
-	for {
-		var size int
-		buffer := make([]byte, bufferSize)
-
-		err = conn.SetDeadline(time.Now().Add(timeoutDuration * time.Second)) // Time out after 5 seconds
-
-		size, err = conn.Read(buffer)
-
-		// handle timeout
-		var netErr net.Error
-		if errors.As(err, &netErr) && netErr.Timeout() {
-			fmt.Println(getCurrentTime() + " S: MTA not responding, is the correct port configured?")
-			return false
-		}
-
-		messages := strings.Lines(string(buffer[:size]))
-
-		for message := range messages {
-			if debugMode == "true" {
-				fmt.Print("POSTFIX: " + message)
-			}
-			switch {
-			case initial:
-				sendResponse(fmt.Sprintf("EHLO %s\n", domainName), conn)
-
-				size, err = conn.Read(buffer)
-				if err != nil {
-					log.Fatal(err)
-				}
-				sendResponse(fmt.Sprintf("MAIL FROM: %s@%s\n", mailingList, domainName), conn)
-
-				initial = false
-			case strings.HasPrefix(message, "250 2.1.0"):
-				// TODO: Similar to above...
-				recipients := []string{"sdk194", "dags", "nonExistent"}
-				for _, recipient := range recipients {
-					sendResponse(fmt.Sprintf("RCPT TO: %s@%s\n", recipient, domainName), conn)
-					size, err = conn.Read(buffer)
-					message = string(buffer[:size])
-					if strings.HasPrefix(message, "550 5.1.1") {
-						fmt.Println(getCurrentTime() + message)
-					}
-				}
-				sendResponse("DATA\n", conn)
-			case strings.TrimSpace(message) == "554 5.5.1 Error: no valid recipients":
-				sendResponse("QUIT\n", conn)
-				fmt.Println(getCurrentTime() + " ERROR: No valid recipients found!")
-			case strings.HasPrefix(message, "354"):
-				sendResponse(emailData, conn)
-				sendResponse("QUIT\n", conn)
-				return true
-			default:
-				sendResponse("QUIT\n", conn)
-				fmt.Println(getCurrentTime() + " ERROR: An unexpected response has occurred...")
-				return false
 			}
 		}
 	}

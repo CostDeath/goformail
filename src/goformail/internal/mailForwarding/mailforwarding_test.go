@@ -1,4 +1,4 @@
-package mailforwarding
+package forwarding
 
 import (
 	"errors"
@@ -279,7 +279,7 @@ func TestMailReceiver(t *testing.T) {
 		log.Fatal(err)
 	}
 
-	data, err := MailReceiver(conn, 4096, configs)
+	data, err := mailReceiver(conn, 4096, configs)
 
 	waitGroup.Wait()
 
@@ -366,7 +366,7 @@ func TestMailSender(t *testing.T) {
 	waitGroup.Add(1)
 	waitGroup.Wait()
 
-	hasSent := MailSender("example@example.domain", "hello", 4096, configs)
+	hasSent := mailSender("example@example.domain", "hello", 4096, configs)
 
 	if !hasSent {
 		t.Error("The expected response result was not given")
