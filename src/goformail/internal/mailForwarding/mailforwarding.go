@@ -10,55 +10,6 @@ import (
 	"time"
 )
 
-func getCurrentTime() string {
-	t := time.Now()
-	return fmt.Sprintf("[%d-%02d-%02d %02d:%02d:%02d]", t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
-}
-
-func createLMTPSocket(lmtpPort string) net.Listener {
-	tcpSocket, err := net.Listen("tcp", fmt.Sprintf(":%s", lmtpPort))
-	if err != nil {
-		log.Fatal(err)
-	}
-	return tcpSocket
-}
-
-func connectToSMTP(smtpAddress string, smtpPort string) net.Conn {
-	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%s", smtpAddress, smtpPort))
-	if err != nil {
-		log.Fatal(getCurrentTime() + err.Error())
-	}
-
-	return conn
-}
-
-func sendResponse(resp string, conn net.Conn) {
-	if _, err := conn.Write([]byte(resp)); err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(getCurrentTime() + " S: " + resp)
-}
-
-func sendGoodbye(conn net.Conn, mailForwardSuccess bool, remainingAcks string) {
-	if mailForwardSuccess {
-		sendResponse("250 OK (Email was successfully forwarded)\n452 temporarily over quota\n", conn)
-	} else {
-		sendResponse("250 OK (However, email was not forwarded)\n452 temporarily over quota\n", conn)
-	}
-
-	messages := strings.Lines(remainingAcks)
-	for message := range messages {
-		if strings.TrimSpace(message) == "QUIT" {
-			sendResponse("221 closing connection\n", conn)
-			fmt.Println(getCurrentTime() + " S: Email successfully received, listening for more emails...")
-		} else {
-			if err := conn.Close(); err != nil {
-				fmt.Println(getCurrentTime() + " ERROR: Unexpected response, closing connection...")
-			}
-		}
-	}
-}
-
 func LMTPService(configs map[string]string) {
 	fmt.Println(getCurrentTime() + " Starting LMTP Service...")
 	lmtpPort := configs["LMTP_PORT"]
@@ -105,6 +56,55 @@ func LMTPService(configs map[string]string) {
 		}
 		// GOODBYE ACKNOWLEDGEMENT TO RESTART
 		sendGoodbye(conn, mailForwardSuccess, configs["REMAINING_ACK"])
+	}
+}
+
+func getCurrentTime() string {
+	t := time.Now()
+	return fmt.Sprintf("[%d-%02d-%02d %02d:%02d:%02d]", t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
+}
+
+func createLMTPSocket(lmtpPort string) net.Listener {
+	tcpSocket, err := net.Listen("tcp", fmt.Sprintf(":%s", lmtpPort))
+	if err != nil {
+		log.Fatal(err)
+	}
+	return tcpSocket
+}
+
+func connectToSMTP(smtpAddress string, smtpPort string) net.Conn {
+	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%s", smtpAddress, smtpPort))
+	if err != nil {
+		log.Fatal(getCurrentTime() + err.Error())
+	}
+
+	return conn
+}
+
+func sendResponse(resp string, conn net.Conn) {
+	if _, err := conn.Write([]byte(resp)); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(getCurrentTime() + " S: " + resp)
+}
+
+func sendGoodbye(conn net.Conn, mailForwardSuccess bool, remainingAcks string) {
+	if mailForwardSuccess {
+		sendResponse("250 OK (Email was successfully forwarded)\n452 temporarily over quota\n", conn)
+	} else {
+		sendResponse("250 OK (However, email was not forwarded)\n452 temporarily over quota\n", conn)
+	}
+
+	messages := strings.Lines(remainingAcks)
+	for message := range messages {
+		if strings.TrimSpace(message) == "QUIT" {
+			sendResponse("221 closing connection\n", conn)
+			fmt.Println(getCurrentTime() + " S: Email successfully received, listening for more emails...")
+		} else {
+			if err := conn.Close(); err != nil {
+				fmt.Println(getCurrentTime() + " ERROR: Unexpected response, closing connection...")
+			}
+		}
 	}
 }
 
