@@ -279,20 +279,16 @@ func TestMailReceiver(t *testing.T) {
 		log.Fatal(err)
 	}
 
-	data := MailReceiver(conn, 4096, configs)
+	data, err := MailReceiver(conn, 4096, configs)
 
 	waitGroup.Wait()
 
-	expectedKeys := []string{"EMAIL_DATA", "RCPTS", "REMAINING_ACK"}
-	for _, key := range expectedKeys {
-		if value, exists := data[key]; !exists {
-			t.Errorf("%s does not exist within the data collected from MailReceiver", key)
-		} else {
-			if key == "EMAIL_DATA" && value != "hello\n.\nmultiple full stops\n.\n" {
-				t.Errorf("The email data was received incorrectly\nExpected:\n hello\n.\nmultiple full stops\n.\n Received: %s\n", value)
-			}
-		}
+	if err != nil {
+		t.Errorf("Error was thrown: %s", err.Error())
+	} else if data.data != "hello\n.\nmultiple full stops\n.\n" {
+		t.Errorf("The email data was received incorrectly\nExpected:\n hello\n.\nmultiple full stops\n.\n Received: %s\n", data.data)
 	}
+
 }
 
 func TestMailSender(t *testing.T) {

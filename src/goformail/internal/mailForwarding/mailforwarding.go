@@ -10,7 +10,26 @@ import (
 	"time"
 )
 
+type EmailData struct {
+	rcpt          []string
+	from          string
+	data          string
+	remainingAcks []string
+}
+
+type emailCollectionError struct {
+	errorType string
+	Err       error
+}
+
+func (e *emailCollectionError) Error() string {
+	return fmt.Sprintf("%s: %s", e.errorType, e.Err.Error())
+}
+
 func LMTPService(configs map[string]string) {
+	// TODO: Handle permissions to be able to send from mailing lists
+	// need db for this
+	// for now, assume all email addresses are currently valid
 	fmt.Println(getCurrentTime() + " Starting LMTP Service...")
 	lmtpPort := configs["LMTP_PORT"]
 
@@ -23,6 +42,7 @@ func LMTPService(configs map[string]string) {
 
 	var conn net.Conn
 	var mailForwardSuccess bool
+	var data EmailData
 	for {
 		conn, err = tcpSocket.Accept()
 		if err != nil {
@@ -31,29 +51,22 @@ func LMTPService(configs map[string]string) {
 		mailForwardSuccess = false
 
 		// MAIL RECEIVER LOGIC
-		data := MailReceiver(conn, bufferSize, configs)
-		if dataError, containsError := data["READ_ERROR"]; containsError {
-			fmt.Println(getCurrentTime() + "Error reading from LMTP greeting: " + dataError)
+		data, err = MailReceiver(conn, bufferSize, configs)
+		if err != nil {
+			fmt.Printf("%s %s\n", getCurrentTime(), err)
 			if err = conn.Close(); err != nil {
 				log.Fatal(err)
 			}
-			continue // want to go back to loop
+			continue // want to go back to start of loop
 		}
-		if _, containsError := data["RESPONSE_ERROR"]; containsError {
-			fmt.Println(getCurrentTime() + " ERROR: Unexpected response, closing connection...")
-			if err = conn.Close(); err != nil {
-				log.Fatal(err)
-			}
-			continue // want to go back to loop
-		}
-		// SEND MAIL LOGIC
-		if emailData, exists := data["EMAIL_DATA"]; exists {
-			mailingLists := strings.Fields(data["RCPTS"])
 
-			for _, mailingList := range mailingLists {
-				mailForwardSuccess = MailSender(mailingList, emailData, bufferSize, configs)
+		// SEND MAIL LOGIC
+		if data.data != "" {
+			for _, mailingList := range data.rcpt {
+				mailForwardSuccess = MailSender(mailingList, data.data, bufferSize, configs)
 			}
 		}
+
 		// GOODBYE ACKNOWLEDGEMENT TO RESTART
 		sendGoodbye(conn, mailForwardSuccess, configs["REMAINING_ACK"])
 	}
@@ -108,13 +121,11 @@ func sendGoodbye(conn net.Conn, mailForwardSuccess bool, remainingAcks string) {
 	}
 }
 
-func MailReceiver(conn net.Conn, bufferSize int, configs map[string]string) map[string]string {
+func MailReceiver(conn net.Conn, bufferSize int, configs map[string]string) (EmailData, error) {
 	domainName := configs["EMAIL_DOMAIN"]
 	debugMode := configs["DEBUG_MODE"]
 
-	result := make(map[string]string)
-	result["RCPTS"] = ""
-	result["REMAINING_ACK"] = ""
+	data := EmailData{}
 
 	if _, err := conn.Write([]byte("220 LMTP Server Ready\n")); err != nil {
 		log.Fatal(err)
@@ -127,8 +138,7 @@ func MailReceiver(conn net.Conn, bufferSize int, configs map[string]string) map[
 
 		size, err := conn.Read(buffer)
 		if err != nil {
-			result["READ_ERROR"] = err.Error()
-			return result
+			return data, &emailCollectionError{"READ_ERROR", err}
 		}
 
 		messages := strings.Lines(string(buffer[:size]))
@@ -142,27 +152,26 @@ func MailReceiver(conn net.Conn, bufferSize int, configs map[string]string) map[
 			case strings.HasPrefix(message, "LHLO"):
 				sendResponse(fmt.Sprintf("250-%s\n250-PIPELINING\n250 SIZE\n", domainName), conn)
 			case strings.HasPrefix(message, "MAIL FROM"):
-				// TODO: Handle permissions to be able to send from mailing lists
-				// need db for this
-				// for now, assume all email addresses are currently valid
+				email := strings.Fields(message)[1][6:]
+				email = email[:len(email)-1]
+				data.from = email
 				sendResponse("250 OK\n", conn)
 			case strings.HasPrefix(message, "RCPT TO"):
 				email := strings.Fields(message)[1][4:]
 				email = email[:len(email)-1]
-				result["RCPTS"] += fmt.Sprintf(" %s", email)
+				data.rcpt = append(data.rcpt, email)
 				sendResponse("250 OK\n", conn)
 			case strings.TrimSpace(message) == "DATA":
 				sendResponse("354 Start mail input; end with <CRLF>.<CRLF>\n", conn)
 				inData = true
 			case strings.TrimSpace(message) == "QUIT":
-				result["EMAIL_DATA"] = emailMessage
-				result["REMAINING_ACK"] += message
-				return result
+				data.data = emailMessage
+				data.remainingAcks = append(data.remainingAcks, message)
+				return data, nil
 			case inData:
 				emailMessage += message
 			default:
-				result["RESPONSE_ERROR"] = message
-				return result
+				return data, &emailCollectionError{"UNEXPECTED_RESPONSE_ERROR", errors.New(message)}
 			}
 		}
 	}
