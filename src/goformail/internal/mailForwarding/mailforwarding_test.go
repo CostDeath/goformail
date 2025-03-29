@@ -25,6 +25,17 @@ func TestGetCurrentTime(t *testing.T) {
 	}
 }
 
+func TestValidEmail(t *testing.T) {
+	positive := "this-works@example.com"
+	negative := "-this-doesnt@example.com"
+	if matches := validEmail(positive); !matches {
+		t.Errorf("Email is not valid when it should be: %s", positive)
+	}
+	if matches := validEmail(negative); matches {
+		t.Errorf("Email is valid when it should not be: %s", negative)
+	}
+}
+
 func TestConnectToLMTP(t *testing.T) {
 	tcpSocket := createLMTPSocket("8024")
 	if tcpSocket == nil {
