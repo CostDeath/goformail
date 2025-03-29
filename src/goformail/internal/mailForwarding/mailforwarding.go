@@ -3,7 +3,6 @@ package mailforwarding
 import (
 	"errors"
 	"fmt"
-	"github.com/joho/godotenv"
 	"log"
 	"net"
 	"strconv"
@@ -16,15 +15,7 @@ func getCurrentTime() string {
 	return fmt.Sprintf("[%d-%02d-%02d %02d:%02d:%02d]", t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
 }
 
-func loadConfigs() map[string]string {
-	configs, err := godotenv.Read("configs.cf")
-	if err != nil {
-		log.Fatal(err)
-	}
-	return configs
-}
-
-func connectToLMTP(lmtpPort string) net.Listener {
+func createLMTPSocket(lmtpPort string) net.Listener {
 	tcpSocket, err := net.Listen("tcp", fmt.Sprintf(":%s", lmtpPort))
 	if err != nil {
 		log.Fatal(err)
@@ -68,12 +59,11 @@ func sendGoodbye(conn net.Conn, mailForwardSuccess bool, remainingAcks string) {
 	}
 }
 
-func LMTPService() {
+func LMTPService(configs map[string]string) {
 	fmt.Println(getCurrentTime() + " Starting LMTP Service...")
-	configs := loadConfigs()
 	lmtpPort := configs["LMTP_PORT"]
 
-	tcpSocket := connectToLMTP(lmtpPort)
+	tcpSocket := createLMTPSocket(lmtpPort)
 
 	bufferSize, err := strconv.Atoi(configs["BUFFER_SIZE"])
 	if err != nil {
@@ -157,8 +147,6 @@ func MailReceiver(conn net.Conn, bufferSize int, configs map[string]string) map[
 				// for now, assume all email addresses are currently valid
 				sendResponse("250 OK\n", conn)
 			case strings.HasPrefix(message, "RCPT TO"):
-				// TODO: Handle possible cases where local recipient table and db are not fully up to date with each other
-				// E.G. Mailing list email was deleted in db but local recipient table still has it mapped to the LMTP port
 				email := strings.Fields(message)[1][4:]
 				email = email[:len(email)-1]
 				result["RCPTS"] += fmt.Sprintf(" %s", email)
