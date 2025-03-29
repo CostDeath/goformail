@@ -5,9 +5,18 @@ import (
 	"fmt"
 	"log"
 	"net"
+	"regexp"
 	"strings"
 	"time"
 )
+
+func validEmail(email string) bool {
+	matches, err := regexp.Match(`^([a-z0-9\+\._\/&!][-a-z0-9\+\._\/&!]*)@(([a-z0-9][-a-z0-9]*\.)([-a-z0-9]+\.)*[a-z]{2,})$`, []byte(email))
+	if err != nil {
+		log.Fatal(err)
+	}
+	return matches
+}
 
 func mailReceiver(conn net.Conn, bufferSize int, configs map[string]string) (EmailData, error) {
 	domainName := configs["EMAIL_DOMAIN"]
@@ -42,13 +51,24 @@ func mailReceiver(conn net.Conn, bufferSize int, configs map[string]string) (Ema
 			case strings.HasPrefix(message, "MAIL FROM"):
 				email := strings.Fields(message)[1][6:]
 				email = email[:len(email)-1]
-				data.from = email
-				sendResponse("250 OK\n", conn)
+
+				matches := validEmail(email)
+
+				if !matches {
+					sendResponse(fmt.Sprintf("550 5.1.1 <%s> user unknown", email), conn)
+				} else {
+					data.from = email
+					sendResponse("250 OK\n", conn)
+				}
 			case strings.HasPrefix(message, "RCPT TO"):
 				email := strings.Fields(message)[1][4:]
 				email = email[:len(email)-1]
-				data.rcpt = append(data.rcpt, email)
-				sendResponse("250 OK\n", conn)
+				if matches := validEmail(email); !matches {
+					sendResponse(fmt.Sprintf("550 5.1.1 <%s> user unknown", email), conn)
+				} else {
+					data.rcpt = append(data.rcpt, email)
+					sendResponse("250 OK\n", conn)
+				}
 			case strings.TrimSpace(message) == "DATA":
 				sendResponse("354 Start mail input; end with <CRLF>.<CRLF>\n", conn)
 				inData = true
