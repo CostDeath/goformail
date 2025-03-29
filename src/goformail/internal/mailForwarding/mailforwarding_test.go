@@ -43,9 +43,12 @@ func TestConnectToLMTP(t *testing.T) {
 		return
 	}
 
-	if err := tcpSocket.Close(); err != nil {
-		t.Error(err)
-	}
+	defer func(tcpSocket net.Listener) {
+		err := tcpSocket.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}(tcpSocket)
 }
 
 func TestConnectToSMTP(t *testing.T) {
@@ -71,13 +74,16 @@ func TestConnectToSMTP(t *testing.T) {
 	waitGroup.Wait()
 	conn := connectToSMTP("127.0.0.1", "8025")
 
+	defer func(conn net.Conn) {
+		err := conn.Close()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}(conn)
+
 	if conn == nil {
 		t.Error("Could not connect to SMTP port")
 		return
-	}
-
-	if err := conn.Close(); err != nil {
-		t.Error(err)
 	}
 }
 
@@ -111,6 +117,13 @@ func TestSendResponse(t *testing.T) {
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	defer func(conn net.Conn) {
+		err = conn.Close()
+		if err != nil {
+
+		}
+	}(conn)
 
 	buffer := make([]byte, 1024)
 
