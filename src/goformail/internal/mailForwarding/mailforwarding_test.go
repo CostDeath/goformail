@@ -53,6 +53,7 @@ func TestConnectToLMTP(t *testing.T) {
 
 func TestConnectToSMTP(t *testing.T) {
 	waitGroup := new(sync.WaitGroup)
+	waitGroup.Add(1)
 	// MOCK Listener
 	go func() {
 		tcpSocket, err := net.Listen("tcp", "127.0.0.1:8025")
@@ -64,14 +65,18 @@ func TestConnectToSMTP(t *testing.T) {
 			if err != nil {
 				log.Fatal(err)
 			}
+			waitGroup.Done()
 		}(tcpSocket)
 
 		waitGroup.Done()
 		_, err = tcpSocket.Accept()
+		if err != nil {
+			log.Fatal(err)
+		}
 	}()
 
-	waitGroup.Add(1)
 	waitGroup.Wait()
+	waitGroup.Add(1)
 	conn := connectToSMTP("127.0.0.1", "8025")
 
 	defer func(conn net.Conn) {
@@ -79,17 +84,14 @@ func TestConnectToSMTP(t *testing.T) {
 		if err != nil {
 			log.Fatal(err)
 		}
+		waitGroup.Wait()
 	}(conn)
-
-	if conn == nil {
-		t.Error("Could not connect to SMTP port")
-		return
-	}
 }
 
 func TestSendResponse(t *testing.T) {
 	// MOCK LISTENER
 	waitGroup := new(sync.WaitGroup)
+	waitGroup.Add(1)
 	go func() {
 		tcpSocket, err := net.Listen("tcp", "127.0.0.1:8025")
 		if err != nil {
@@ -100,6 +102,7 @@ func TestSendResponse(t *testing.T) {
 			if err != nil {
 				log.Fatal(err)
 			}
+			waitGroup.Done() // ensure go routine finishes first
 		}(tcpSocket)
 
 		waitGroup.Done()
@@ -111,8 +114,8 @@ func TestSendResponse(t *testing.T) {
 		sendResponse("Response test", conn)
 	}()
 
-	waitGroup.Add(1)
 	waitGroup.Wait()
+	waitGroup.Add(1)
 	conn, err := net.Dial("tcp", "127.0.0.1:8025")
 	if err != nil {
 		log.Fatal(err)
@@ -123,6 +126,7 @@ func TestSendResponse(t *testing.T) {
 		if err != nil {
 			log.Fatal(err)
 		}
+		waitGroup.Wait() // Ensure go routine function finishes first
 	}(conn)
 
 	buffer := make([]byte, 1024)
@@ -139,6 +143,7 @@ func TestSendResponse(t *testing.T) {
 
 func TestSendGoodBye(t *testing.T) {
 	waitGroup := new(sync.WaitGroup)
+	waitGroup.Add(1)
 	go func() {
 		tcpSocket, err := net.Listen("tcp", "127.0.0.1:8025")
 		if err != nil {
@@ -150,6 +155,7 @@ func TestSendGoodBye(t *testing.T) {
 			if err != nil {
 				log.Fatal(err)
 			}
+			waitGroup.Done()
 		}(tcpSocket)
 
 		waitGroup.Done()
@@ -164,8 +170,8 @@ func TestSendGoodBye(t *testing.T) {
 		// NEGATIVE CASE
 		sendGoodbye(conn, false, "QUIT")
 	}()
-	waitGroup.Add(1)
 	waitGroup.Wait()
+	waitGroup.Add(1)
 
 	conn, err := net.Dial("tcp", "127.0.0.1:8025")
 	if err != nil {
@@ -177,6 +183,7 @@ func TestSendGoodBye(t *testing.T) {
 		if err != nil {
 			log.Fatal(err)
 		}
+		waitGroup.Wait()
 	}(conn)
 
 	buffer := make([]byte, 4096)
@@ -303,6 +310,7 @@ func TestMailSender(t *testing.T) {
 	configs := config.LoadConfigs()
 	configs["POSTFIX_PORT"] = "8025"
 	waitGroup := new(sync.WaitGroup)
+	waitGroup.Add(1)
 
 	// MOCK SMTP SERVER
 	go func() {
@@ -316,6 +324,7 @@ func TestMailSender(t *testing.T) {
 			if err != nil {
 				log.Fatal(err)
 			}
+			waitGroup.Done()
 		}(tcpSocket)
 
 		waitGroup.Done()
@@ -371,12 +380,13 @@ func TestMailSender(t *testing.T) {
 		}
 
 	}()
-	waitGroup.Add(1)
 	waitGroup.Wait()
+	waitGroup.Add(1)
 
 	hasSent := mailSender("example@example.domain", "hello", 4096, configs)
 
 	if !hasSent {
 		t.Error("The expected response result was not given")
 	}
+	waitGroup.Wait()
 }
