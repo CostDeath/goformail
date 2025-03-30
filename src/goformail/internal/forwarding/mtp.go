@@ -26,8 +26,14 @@ func sendResponse(resp string, conn net.Conn) {
 }
 
 func mailReceiver(conn net.Conn, bufferSize int, configs map[string]string) (EmailData, error) {
-	domainName := configs["EMAIL_DOMAIN"]
-	debugMode := configs["DEBUG_MODE"]
+	domainName, exists := configs["EMAIL_DOMAIN"]
+	if !exists {
+		log.Fatal("Missing EMAIL_DOMAIN config")
+	}
+	debugMode, exists := configs["DEBUG_MODE"]
+	if !exists {
+		log.Fatal("Missing DEBUG_MODE config")
+	}
 
 	data := EmailData{}
 
@@ -94,11 +100,21 @@ func mailReceiver(conn net.Conn, bufferSize int, configs map[string]string) (Ema
 }
 
 func mailSender(mailingList string, emailData string, bufferSize int, configs map[string]string) bool {
-	addr := configs["POSTFIX_ADDRESS"]
-	port := configs["POSTFIX_PORT"]
-	domainName := configs["EMAIL_DOMAIN"]
-	debugMode := configs["DEBUG_MODE"]
-	timeoutDuration, err := time.ParseDuration(configs["TIMEOUT_DURATION"] + "s")
+	addr, exists := configs["POSTFIX_ADDRESS"]
+	if !exists {
+		log.Fatal("Missing POSTFIX_ADDRESS config")
+	}
+	port, exists := configs["POSTFIX_PORT"]
+	if !exists {
+		log.Fatal("Missing POSTFIX_PORT config")
+	}
+	domainName := configs["EMAIL_DOMAIN"] // no need to check for this as this would have been checked earlier in mailReceiver
+	debugMode := configs["DEBUG_MODE"]    // same with this
+	timeoutDurationConfig, exists := configs["TIMEOUT_DURATION"]
+	if !exists {
+		log.Fatal("Missing TIMEOUT_DURATION config")
+	}
+	timeoutDuration, err := time.ParseDuration(timeoutDurationConfig + "s")
 	if err != nil {
 		fmt.Println(getCurrentTime() + " ERROR: Could not parse timeout duration: " + err.Error())
 		return false

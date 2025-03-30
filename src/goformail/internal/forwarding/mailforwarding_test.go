@@ -111,10 +111,10 @@ func TestSendGoodBye(t *testing.T) {
 		}
 
 		// POSITIVE CASE
-		sendGoodbye(conn, true, "QUIT")
+		sendGoodbye(conn, true, []string{"QUIT"})
 
 		// NEGATIVE CASE
-		sendGoodbye(conn, false, "QUIT")
+		sendGoodbye(conn, false, []string{"QUIT"})
 	}()
 	waitGroup.Wait()
 	waitGroup.Add(1)

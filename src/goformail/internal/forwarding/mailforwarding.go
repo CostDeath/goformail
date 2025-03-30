@@ -30,11 +30,18 @@ func LMTPService(configs map[string]string) {
 	// need db for this
 	// for now, assume all email addresses are currently valid
 	fmt.Println(getCurrentTime() + " Starting LMTP Service...")
-	lmtpPort := configs["LMTP_PORT"]
+	lmtpPort, exists := configs["LMTP_PORT"]
+	if !exists {
+		log.Fatal("Missing LMTP_PORT config")
+	}
 
 	tcpSocket := createLMTPSocket(lmtpPort)
 
-	bufferSize, err := strconv.Atoi(configs["BUFFER_SIZE"])
+	bufferSizeConfig, exists := configs["BUFFER_SIZE"]
+	if !exists {
+		log.Fatal("Missing BUFFER_SIZE config")
+	}
+	bufferSize, err := strconv.Atoi(bufferSizeConfig)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -67,7 +74,7 @@ func LMTPService(configs map[string]string) {
 		}
 
 		// GOODBYE ACKNOWLEDGEMENT TO RESTART
-		sendGoodbye(conn, mailForwardSuccess, configs["REMAINING_ACK"])
+		sendGoodbye(conn, mailForwardSuccess, data.remainingAcks)
 	}
 }
 
@@ -93,15 +100,14 @@ func connectToSMTPSocket(smtpAddress string, smtpPort string) net.Conn {
 	return conn
 }
 
-func sendGoodbye(conn net.Conn, mailForwardSuccess bool, remainingAcks string) {
+func sendGoodbye(conn net.Conn, mailForwardSuccess bool, remainingAcks []string) {
 	if mailForwardSuccess {
 		sendResponse("250 OK (Email was successfully forwarded)\n452 temporarily over quota\n", conn)
 	} else {
 		sendResponse("250 OK (However, email was not forwarded)\n452 temporarily over quota\n", conn)
 	}
 
-	messages := strings.Lines(remainingAcks)
-	for message := range messages {
+	for _, message := range remainingAcks {
 		if strings.TrimSpace(message) == "QUIT" {
 			sendResponse("221 closing connection\n", conn)
 			fmt.Println(getCurrentTime() + " S: Email successfully received, listening for more emails...")
