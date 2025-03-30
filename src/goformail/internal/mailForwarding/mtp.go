@@ -97,7 +97,7 @@ func mailSender(mailingList string, emailData string, bufferSize int, configs ma
 		return false
 	}
 
-	conn := connectToSMTP(addr, port)
+	conn := connectToSMTPSocket(addr, port)
 
 	defer func(conn net.Conn) {
 		err = conn.Close()

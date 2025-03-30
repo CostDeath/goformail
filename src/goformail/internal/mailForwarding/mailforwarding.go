@@ -84,7 +84,7 @@ func createLMTPSocket(lmtpPort string) net.Listener {
 	return tcpSocket
 }
 
-func connectToSMTP(smtpAddress string, smtpPort string) net.Conn {
+func connectToSMTPSocket(smtpAddress string, smtpPort string) net.Conn {
 	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%s", smtpAddress, smtpPort))
 	if err != nil {
 		log.Fatal(getCurrentTime() + err.Error())

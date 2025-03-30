@@ -76,7 +76,7 @@ func TestConnectToSMTP(t *testing.T) {
 
 	waitGroup.Wait()
 	waitGroup.Add(1)
-	conn := connectToSMTP("127.0.0.1", "8025")
+	conn := connectToSMTPSocket("127.0.0.1", "8025")
 
 	defer func(conn net.Conn) {
 		err := conn.Close()
