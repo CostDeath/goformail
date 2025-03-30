@@ -93,13 +93,6 @@ func connectToSMTPSocket(smtpAddress string, smtpPort string) net.Conn {
 	return conn
 }
 
-func sendResponse(resp string, conn net.Conn) {
-	if _, err := conn.Write([]byte(resp)); err != nil {
-		log.Fatal(err)
-	}
-	fmt.Println(getCurrentTime() + " S: " + resp)
-}
-
 func sendGoodbye(conn net.Conn, mailForwardSuccess bool, remainingAcks string) {
 	if mailForwardSuccess {
 		sendResponse("250 OK (Email was successfully forwarded)\n452 temporarily over quota\n", conn)

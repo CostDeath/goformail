@@ -18,6 +18,13 @@ func validEmail(email string) bool {
 	return matches
 }
 
+func sendResponse(resp string, conn net.Conn) {
+	if _, err := conn.Write([]byte(resp)); err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println(getCurrentTime() + " S: " + resp)
+}
+
 func mailReceiver(conn net.Conn, bufferSize int, configs map[string]string) (EmailData, error) {
 	domainName := configs["EMAIL_DOMAIN"]
 	debugMode := configs["DEBUG_MODE"]
