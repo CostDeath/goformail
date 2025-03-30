@@ -1,13 +1,13 @@
 package main
 
 import (
-	config "gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal/configs"
+	config "gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal"
 	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal/interfaces"
 	forwarding "gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal/mailForwarding"
 )
 
 func main() {
-	configs := config.LoadConfigs()
+	configs := config.LoadConfigs("configs.cf")
 	go forwarding.LMTPService(configs)
 	interfaces.ServeHttp()
 }

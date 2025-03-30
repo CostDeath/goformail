@@ -5,8 +5,8 @@ import (
 	"log"
 )
 
-func LoadConfigs() map[string]string {
-	configs, err := godotenv.Read("../../configs.cf")
+func LoadConfigs(filePath string) map[string]string {
+	configs, err := godotenv.Read(filePath)
 	if err != nil {
 		log.Fatal(err)
 	}

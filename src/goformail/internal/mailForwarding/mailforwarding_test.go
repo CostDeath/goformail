@@ -2,7 +2,7 @@ package forwarding
 
 import (
 	"errors"
-	config "gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal/configs"
+	config "gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal"
 	"log"
 	"net"
 	"regexp"
@@ -226,7 +226,7 @@ func TestSendGoodBye(t *testing.T) {
 
 func TestMailReceiver(t *testing.T) {
 	tcpSocket := createLMTPSocket("8024")
-	configs := config.LoadConfigs()
+	configs := config.LoadConfigs("../../configs.cf")
 	waitGroup := new(sync.WaitGroup)
 
 	defer func(tcpSocket net.Listener) {
@@ -307,7 +307,7 @@ func TestMailReceiver(t *testing.T) {
 }
 
 func TestMailSender(t *testing.T) {
-	configs := config.LoadConfigs()
+	configs := config.LoadConfigs("../../configs.cf")
 	configs["POSTFIX_PORT"] = "8025"
 	waitGroup := new(sync.WaitGroup)
 	waitGroup.Add(1)
