@@ -23,28 +23,39 @@ func TestGetCurrentTime(t *testing.T) {
 
 func TestValidEmail(t *testing.T) {
 	positive := "this-works@example.com"
-	negative := "-this-doesnt@example.com"
 	if matches := validEmail(positive); !matches {
 		t.Errorf("Email is not valid when it should be: %s", positive)
 	}
+}
+
+func TestInvalidEmail(t *testing.T) {
+	negative := "-this-doesnt@example.com"
 	if matches := validEmail(negative); matches {
 		t.Errorf("Email is valid when it should not be: %s", negative)
 	}
 }
 
-func TestConnectToLMTP(t *testing.T) {
-	tcpSocket := createLMTPSocket("8024")
-	if tcpSocket == nil {
-		t.Errorf("tcpSocket is nil")
+func TestCreateLMTPSocket(t *testing.T) {
+	tcpSocket, err := createLMTPSocket("8024")
+	if err != nil {
+		t.Error("tcpSocket was not created")
 		return
 	}
 
-	defer func(tcpSocket net.Listener) {
-		err := tcpSocket.Close()
-		if err != nil {
-			log.Fatal(err)
+	err = tcpSocket.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func TestFailCreateLMTPSocket(t *testing.T) {
+	tcpSocket, err := createLMTPSocket("not a port")
+	if err == nil {
+		t.Error("TCP socket was able to be created when it shouldn't have")
+		if err = tcpSocket.Close(); err != nil {
+			t.Error("Created tcp socket was not able to be closed")
 		}
-	}(tcpSocket)
+	}
 }
 
 func TestConnectToSMTP(t *testing.T) {
@@ -74,13 +85,69 @@ func TestConnectToSMTP(t *testing.T) {
 
 	waitGroup.Wait()
 	waitGroup.Add(1)
-	conn := connectToSMTPSocket("127.0.0.1", "8025")
-
-	defer func(conn net.Conn) {
-		err := conn.Close()
+	conn, err := connectToSMTPSocket("127.0.0.1", "8025")
+	if err != nil {
+		t.Error("Connection could not be established")
+		conn, err = net.Dial("tcp", "127.0.0.1:8025")
 		if err != nil {
 			log.Fatal(err)
 		}
+		if err = conn.Close(); err != nil {
+			log.Fatal(err)
+		}
 		waitGroup.Wait()
-	}(conn)
+		return
+	}
+
+	err = conn.Close()
+	if err != nil {
+		log.Fatal(err)
+	}
+	waitGroup.Wait()
+}
+
+func TestFailConnectToSMTP(t *testing.T) {
+	waitGroup := new(sync.WaitGroup)
+	waitGroup.Add(1)
+	// MOCK Listener
+	go func() {
+		tcpSocket, err := net.Listen("tcp", "127.0.0.1:8025")
+		if err != nil {
+			log.Fatal(err)
+		}
+		defer func(tcpSocket net.Listener) {
+			err = tcpSocket.Close()
+			if err != nil {
+				log.Fatal(err)
+			}
+			t.Log("Goroutine within TestFailConnectToSMTP function finished")
+			waitGroup.Done()
+		}(tcpSocket)
+
+		waitGroup.Done()
+		_, err = tcpSocket.Accept()
+		if err != nil {
+			log.Fatal(err)
+		}
+	}()
+
+	waitGroup.Wait()
+	waitGroup.Add(1)
+	conn, err := connectToSMTPSocket("127.0.0.1", "81111")
+	if err == nil {
+		t.Error("Connection has been established when it shouldn't have been")
+		waitGroup.Wait()
+		return
+	}
+
+	// let server accept a client so it can move on
+	conn, err = net.Dial("tcp", "127.0.0.1:8025")
+	if err != nil {
+		log.Fatal(err)
+	}
+	if err = conn.Close(); err != nil {
+		log.Fatal(err)
+	}
+	waitGroup.Wait()
+	return
 }

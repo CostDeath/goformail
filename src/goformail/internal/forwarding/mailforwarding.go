@@ -34,7 +34,10 @@ func LMTPService(configs map[string]string) {
 		log.Fatal("Missing LMTP_PORT config")
 	}
 
-	tcpSocket := createLMTPSocket(lmtpPort)
+	tcpSocket, err := createLMTPSocket(lmtpPort)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	bufferSizeConfig, exists := configs["BUFFER_SIZE"]
 	if !exists {
@@ -82,19 +85,19 @@ func getCurrentTime() string {
 	return fmt.Sprintf("[%d-%02d-%02d %02d:%02d:%02d]", t.Year(), t.Month(), t.Day(), t.Hour(), t.Minute(), t.Second())
 }
 
-func createLMTPSocket(lmtpPort string) net.Listener {
+func createLMTPSocket(lmtpPort string) (net.Listener, error) {
 	tcpSocket, err := net.Listen("tcp", fmt.Sprintf(":%s", lmtpPort))
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
-	return tcpSocket
+	return tcpSocket, nil
 }
 
-func connectToSMTPSocket(smtpAddress string, smtpPort string) net.Conn {
+func connectToSMTPSocket(smtpAddress string, smtpPort string) (net.Conn, error) {
 	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%s", smtpAddress, smtpPort))
 	if err != nil {
-		log.Fatal(getCurrentTime() + err.Error())
+		return nil, err
 	}
 
-	return conn
+	return conn, nil
 }

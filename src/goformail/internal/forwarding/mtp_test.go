@@ -167,7 +167,10 @@ func TestSendGoodBye(t *testing.T) {
 }
 
 func TestMailReceiver(t *testing.T) {
-	tcpSocket := createLMTPSocket("8024")
+	tcpSocket, err := createLMTPSocket("8024")
+	if err != nil {
+		log.Fatal(err)
+	}
 	configs := config.LoadConfigs("../../configs.cf")
 	waitGroup := new(sync.WaitGroup)
 
