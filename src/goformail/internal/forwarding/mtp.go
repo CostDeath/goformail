@@ -166,7 +166,7 @@ func mailSender(mailingList string, emailData string, bufferSize int, configs ma
 		var size int
 		buffer := make([]byte, bufferSize)
 
-		err = conn.SetDeadline(time.Now().Add(timeoutDuration * time.Second)) // Time out after 5 seconds
+		err = conn.SetDeadline(time.Now().Add(timeoutDuration)) // Time out after 5 seconds
 
 		size, err = conn.Read(buffer)
 
