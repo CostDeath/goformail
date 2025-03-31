@@ -14,6 +14,14 @@ lint_node:
     - npm install
     - npm run lint
 
+vulncheck_node:
+  image: node:23-alpine
+  stage: check
+  script:
+    - cd src/web
+    - npm install
+    - npm audit
+
 lint_go:
   image: golang:1.24-alpine
   stage: check
