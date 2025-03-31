@@ -61,6 +61,8 @@ func mailReceiver(conn net.Conn, bufferSize int, configs map[string]string) (Ema
 	}
 	fmt.Println(getCurrentTime() + "Initialising LMTP greeting")
 	inData := false
+	fullStopFound := false
+	var emailMessage string
 	for {
 		var size int
 		buffer := make([]byte, bufferSize)
@@ -72,12 +74,23 @@ func mailReceiver(conn net.Conn, bufferSize int, configs map[string]string) (Ema
 
 		messages := strings.Lines(string(buffer[:size]))
 
-		var emailMessage string
 		for message := range messages {
 			if debugMode == "true" {
 				fmt.Print("POSTFIX: " + message)
 			}
 			switch {
+			case inData:
+				if strings.TrimSpace(message) == "." {
+					fullStopFound = true
+					emailMessage += message
+				} else if strings.TrimSpace(message) == "QUIT" && fullStopFound {
+					data.data = emailMessage
+					data.remainingAcks = append(data.remainingAcks, message)
+					return data, nil
+				} else {
+					emailMessage += message
+					fullStopFound = false // need to reset to false if fullstop was found earlier but QUIT message was not followed up next
+				}
 			case strings.HasPrefix(message, "LHLO"):
 				sendResponse(fmt.Sprintf("250-%s\n250-PIPELINING\n250 SIZE\n", domainName), conn)
 			case strings.HasPrefix(message, "MAIL FROM"):
@@ -104,12 +117,7 @@ func mailReceiver(conn net.Conn, bufferSize int, configs map[string]string) (Ema
 			case strings.TrimSpace(message) == "DATA":
 				sendResponse("354 Start mail input; end with <CRLF>.<CRLF>\n", conn)
 				inData = true
-			case strings.TrimSpace(message) == "QUIT":
-				data.data = emailMessage
-				data.remainingAcks = append(data.remainingAcks, message)
-				return data, nil
-			case inData:
-				emailMessage += message
+
 			default:
 				return data, &emailCollectionError{"UNEXPECTED_RESPONSE_ERROR", errors.New(message)}
 			}

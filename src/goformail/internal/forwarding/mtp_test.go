@@ -175,7 +175,7 @@ func TestMailReceiver(t *testing.T) {
 	waitGroup := new(sync.WaitGroup)
 
 	defer func(tcpSocket net.Listener) {
-		err := tcpSocket.Close()
+		err = tcpSocket.Close()
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -183,7 +183,8 @@ func TestMailReceiver(t *testing.T) {
 
 	// MOCK MTA
 	go func() {
-		conn, err := net.Dial("tcp", "127.0.0.1:8024")
+		var conn net.Conn
+		conn, err = net.Dial("tcp", "127.0.0.1:8024")
 		if err != nil {
 			log.Fatal(err)
 		}
@@ -331,7 +332,7 @@ func TestMailSender(t *testing.T) {
 	waitGroup.Wait()
 	waitGroup.Add(1)
 
-	hasSent := mailSender("example@example.domain", "hello\n", 4096, configs)
+	hasSent := mailSender("example@example.domain", "hello\n.\nQUIT\n", 4096, configs)
 
 	if !hasSent {
 		t.Error("The expected response result was not given")
