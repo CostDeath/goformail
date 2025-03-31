@@ -119,6 +119,7 @@ func mailReceiver(conn net.Conn, bufferSize int, configs map[string]string) (Ema
 				inData = true
 
 			default:
+				sendResponse("500 Error: command not recognised\n", conn)
 				return data, &emailCollectionError{"UNEXPECTED_RESPONSE_ERROR", errors.New(message)}
 			}
 		}
