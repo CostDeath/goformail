@@ -64,6 +64,7 @@ func TestConnectToSMTP(t *testing.T) {
 			if err != nil {
 				log.Fatal(err)
 			}
+			t.Log("Goroutine within testConnectToSMTP function finished")
 			waitGroup.Done()
 		}(tcpSocket)
 
@@ -101,6 +102,7 @@ func TestSendGoodBye(t *testing.T) {
 			if err != nil {
 				log.Fatal(err)
 			}
+			t.Log("Goroutine within testSendGoodbye function finished")
 			waitGroup.Done()
 		}(tcpSocket)
 
@@ -115,6 +117,13 @@ func TestSendGoodBye(t *testing.T) {
 
 		// NEGATIVE CASE
 		sendGoodbye(conn, false, []string{"QUIT"})
+
+		// Need client to send back acknowledgement before moving to defer function
+		buffer := make([]byte, 200)
+		if _, err = conn.Read(buffer); err != nil {
+			log.Fatal("Failure to read buffer")
+		}
+
 	}()
 	waitGroup.Wait()
 	waitGroup.Add(1)
@@ -125,6 +134,9 @@ func TestSendGoodBye(t *testing.T) {
 	}
 
 	defer func(conn net.Conn) {
+		if _, err = conn.Write([]byte("Exit")); err != nil {
+			log.Fatal("Could not write to connection")
+		}
 		err = conn.Close()
 		if err != nil {
 			log.Fatal(err)
@@ -136,16 +148,15 @@ func TestSendGoodBye(t *testing.T) {
 	var size int
 	var collected string
 
-	for i := 0; i < 4; i++ {
-		if err = conn.SetReadDeadline(time.Now().Add(5 * time.Second)); err != nil {
+	for {
+		if err = conn.SetReadDeadline(time.Now().Add(2 * time.Second)); err != nil {
 			log.Fatal(err)
 		}
 
 		size, err = conn.Read(buffer)
 		var netErr net.Error
 		if errors.As(err, &netErr) && netErr.Timeout() {
-			t.Error("Connection timed out, messages were not sent through connection")
-			return
+			break
 		}
 
 		collected += string(buffer[:size])

@@ -25,6 +25,7 @@ func TestSendResponse(t *testing.T) {
 			if err != nil {
 				log.Fatal(err)
 			}
+			t.Log("Goroutine finished within testSendResponse")
 			waitGroup.Done() // ensure go routine finishes first
 		}(tcpSocket)
 
@@ -35,6 +36,10 @@ func TestSendResponse(t *testing.T) {
 		}
 
 		sendResponse("Response test", conn)
+		buffer := make([]byte, 200)
+		if _, err = conn.Read(buffer); err != nil {
+			log.Fatal(err)
+		}
 	}()
 
 	waitGroup.Wait()
@@ -57,6 +62,10 @@ func TestSendResponse(t *testing.T) {
 	size, err := conn.Read(buffer)
 	if err != nil {
 		t.Error(err)
+	}
+
+	if _, err = conn.Write([]byte("Exit")); err != nil {
+		log.Fatal("Could not write to connection")
 	}
 
 	if string(buffer[:size]) != "Response test" {
@@ -88,6 +97,7 @@ func TestMailReceiver(t *testing.T) {
 			if err != nil {
 				log.Fatal(err)
 			}
+			t.Log("Goroutine finished within TestMailReceiver")
 			waitGroup.Done()
 		}(conn)
 
@@ -164,6 +174,7 @@ func TestMailSender(t *testing.T) {
 			if err != nil {
 				log.Fatal(err)
 			}
+			t.Log("Goroutine finished within TestMailSender")
 			waitGroup.Done()
 		}(tcpSocket)
 
@@ -195,6 +206,7 @@ func TestMailSender(t *testing.T) {
 
 			messages := strings.Lines(string(buffer[:size]))
 			for message := range messages {
+				t.Log(message)
 				switch {
 				case strings.HasPrefix(message, "EHLO"):
 					if _, err = conn.Write([]byte("250-example.domain\n250-PIPELINING\n250 CHUNKING\n")); err != nil {
@@ -223,7 +235,7 @@ func TestMailSender(t *testing.T) {
 	waitGroup.Wait()
 	waitGroup.Add(1)
 
-	hasSent := mailSender("example@example.domain", "hello", 4096, configs)
+	hasSent := mailSender("example@example.domain", "hello\n", 4096, configs)
 
 	if !hasSent {
 		t.Error("The expected response result was not given")
