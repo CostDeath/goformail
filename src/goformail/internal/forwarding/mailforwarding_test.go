@@ -137,7 +137,9 @@ func TestFailConnectToSMTP(t *testing.T) {
 	if err == nil {
 		t.Error("Connection has been established when it shouldn't have been")
 		waitGroup.Wait()
-		return
+		if err = conn.Close(); err != nil {
+			t.Error("There was an error when attempting to close the connection " + err.Error())
+		}
 	}
 
 	// let server accept a client so it can move on
@@ -149,5 +151,4 @@ func TestFailConnectToSMTP(t *testing.T) {
 		log.Fatal(err)
 	}
 	waitGroup.Wait()
-	return
 }
