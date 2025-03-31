@@ -10,6 +10,25 @@ import (
 	"time"
 )
 
+func sendGoodbye(conn net.Conn, mailForwardSuccess bool, remainingAcks []string) {
+	if mailForwardSuccess {
+		sendResponse("250 OK (Email was successfully forwarded)\n452 temporarily over quota\n", conn)
+	} else {
+		sendResponse("250 OK (However, email was not forwarded)\n452 temporarily over quota\n", conn)
+	}
+
+	for _, message := range remainingAcks {
+		if strings.TrimSpace(message) == "QUIT" {
+			sendResponse("221 closing connection\n", conn)
+			fmt.Println(getCurrentTime() + " S: Email successfully received, listening for more emails...")
+		} else {
+			if err := conn.Close(); err != nil {
+				fmt.Println(getCurrentTime() + " ERROR: Unexpected response, closing connection...")
+			}
+		}
+	}
+}
+
 func validEmail(email string) bool {
 	matches, err := regexp.Match(`^([A-z0-9\+\._\/&!][-A-z0-9\+\._\/&!]*)@(([a-z0-9][-a-z0-9]*\.)([-a-z0-9]+\.)*[a-z]{2,})$`, []byte(email))
 	if err != nil {

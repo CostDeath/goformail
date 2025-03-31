@@ -5,7 +5,6 @@ import (
 	"log"
 	"net"
 	"strconv"
-	"strings"
 	"time"
 )
 
@@ -98,23 +97,4 @@ func connectToSMTPSocket(smtpAddress string, smtpPort string) net.Conn {
 	}
 
 	return conn
-}
-
-func sendGoodbye(conn net.Conn, mailForwardSuccess bool, remainingAcks []string) {
-	if mailForwardSuccess {
-		sendResponse("250 OK (Email was successfully forwarded)\n452 temporarily over quota\n", conn)
-	} else {
-		sendResponse("250 OK (However, email was not forwarded)\n452 temporarily over quota\n", conn)
-	}
-
-	for _, message := range remainingAcks {
-		if strings.TrimSpace(message) == "QUIT" {
-			sendResponse("221 closing connection\n", conn)
-			fmt.Println(getCurrentTime() + " S: Email successfully received, listening for more emails...")
-		} else {
-			if err := conn.Close(); err != nil {
-				fmt.Println(getCurrentTime() + " ERROR: Unexpected response, closing connection...")
-			}
-		}
-	}
 }
