@@ -30,7 +30,7 @@ func sendGoodbye(conn net.Conn, mailForwardSuccess bool, remainingAcks []string)
 }
 
 func validEmail(email string) bool {
-	matches, err := regexp.Match(`^([A-z0-9\+\._\/&!][-A-z0-9\+\._\/&!]*)@(([a-z0-9][-a-z0-9]*\.)([-a-z0-9]+\.)*[a-z]{2,})$`, []byte(email))
+	matches, err := regexp.Match(`^([A-z0-9+._/&!][-A-z0-9+._/&!]*)@(([a-z0-9][-a-z0-9]*\.)([-a-z0-9]+\.)*[a-z]{2,})$`, []byte(email))
 	if err != nil {
 		log.Fatal(err)
 	}
