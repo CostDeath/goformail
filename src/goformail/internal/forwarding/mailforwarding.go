@@ -25,9 +25,6 @@ func (e *emailCollectionError) Error() string {
 }
 
 func LMTPService(configs map[string]string) {
-	// TODO: Handle permissions to be able to send from mailing lists
-	// need db for this
-	// for now, assume all email addresses are currently valid
 	fmt.Println(getCurrentTime() + " Starting LMTP Service...")
 	lmtpPort, exists := configs["LMTP_PORT"]
 	if !exists {
