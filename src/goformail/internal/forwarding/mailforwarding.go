@@ -8,18 +8,6 @@ import (
 	"time"
 )
 
-type EmailData struct {
-	rcpt          []string
-	from          string
-	data          string
-	remainingAcks []string
-}
-
-type emailCollectionError struct {
-	errorType string
-	Err       error
-}
-
 func (e *emailCollectionError) Error() string {
 	return fmt.Sprintf("%s: %s", e.errorType, e.Err.Error())
 }
@@ -29,6 +17,12 @@ func LMTPService(configs map[string]string) {
 	lmtpPort, exists := configs["LMTP_PORT"]
 	if !exists {
 		log.Fatal("Missing LMTP_PORT config")
+	}
+
+	originalSender, exists := configs["ORIGINAL_SENDER"]
+	if !exists {
+		originalSender = "true"
+		fmt.Println(getCurrentTime() + " S: ORIGINAL_SENDER config not found, setting it to true")
 	}
 
 	tcpSocket, err := createLMTPSocket(lmtpPort)
@@ -68,7 +62,11 @@ func LMTPService(configs map[string]string) {
 		// SEND MAIL LOGIC
 		if data.data != "" {
 			for _, mailingList := range data.rcpt {
-				mailForwardSuccess = mailSender(mailingList, data.data, bufferSize, configs)
+				if originalSender == "true" {
+					mailForwardSuccess = mailSender(data.from, data.data, bufferSize, configs)
+				} else {
+					mailForwardSuccess = mailSender(mailingList, data.data, bufferSize, configs)
+				}
 			}
 		}
 

@@ -10,6 +10,18 @@ import (
 	"time"
 )
 
+type EmailData struct {
+	rcpt          []string
+	from          string
+	data          string
+	remainingAcks []string
+}
+
+type emailCollectionError struct {
+	errorType string
+	Err       error
+}
+
 func sendGoodbye(conn net.Conn, mailForwardSuccess bool, remainingAcks []string) {
 	if mailForwardSuccess {
 		sendResponse("250 OK (Email was successfully forwarded)\n452 temporarily over quota\n", conn)
@@ -127,7 +139,7 @@ func mailReceiver(conn net.Conn, bufferSize int, configs map[string]string) (Ema
 
 }
 
-func mailSender(mailingList string, emailData string, bufferSize int, configs map[string]string) bool {
+func mailSender(sender string, emailData string, bufferSize int, configs map[string]string) bool {
 	addr, exists := configs["POSTFIX_ADDRESS"]
 	if !exists {
 		log.Fatal("Missing POSTFIX_ADDRESS config")
@@ -202,7 +214,7 @@ func mailSender(mailingList string, emailData string, bufferSize int, configs ma
 					}
 				}
 
-				sendResponse(fmt.Sprintf("MAIL FROM: %s@%s\n", mailingList, domainName), conn)
+				sendResponse(fmt.Sprintf("MAIL FROM: %s\n", sender), conn)
 
 				initial = false
 			case strings.HasPrefix(message, "250 2.1.0"):
