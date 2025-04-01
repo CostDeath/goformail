@@ -1,7 +1,6 @@
 package forwarding
 
 import (
-	config "gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal"
 	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/test"
 	"log"
 	"net"
@@ -142,7 +141,7 @@ func TestSuccessfulMailReceiver(t *testing.T) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	configs := config.LoadConfigs("../../configs.cf")
+	configs := test.Configs
 	waitGroup := new(sync.WaitGroup)
 
 	defer func(tcpSocket net.Listener) {
@@ -185,7 +184,7 @@ func TestFailedMailReceiver(t *testing.T) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	configs := config.LoadConfigs("../../configs.cf")
+	configs := test.Configs
 	waitGroup := new(sync.WaitGroup)
 
 	defer func(tcpSocket net.Listener) {
@@ -222,7 +221,7 @@ func TestFailedMailReceiver(t *testing.T) {
 }
 
 func TestMailSenderSuccess(t *testing.T) {
-	configs := config.LoadConfigs("../../configs.cf")
+	configs := test.Configs
 	configs["POSTFIX_PORT"] = "8025"
 	waitGroup := new(sync.WaitGroup)
 	waitGroup.Add(1)
@@ -247,8 +246,7 @@ func TestMailSenderSuccess(t *testing.T) {
 }
 
 func TestMailSenderFailure(t *testing.T) {
-	configs := config.LoadConfigs("../../configs.cf")
-	configs["POSTFIX_PORT"] = "8025"
+	configs := test.Configs
 	waitGroup := new(sync.WaitGroup)
 	waitGroup.Add(1)
 
