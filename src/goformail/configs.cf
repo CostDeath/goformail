@@ -1,0 +1,10 @@
+# CONFIGS
+EMAIL_DOMAIN=example.domain
+DEBUG_MODE=false  # Set this to true to see what postfix is sending
+POSTFIX_ADDRESS=127.0.0.1  # The address postfix is listening
+POSTFIX_PORT=25   # The port postfix is listening
+LMTP_PORT=24    # The port for lmtp
+TIMEOUT_DURATION=5  # The wait duration before sending email gets timed out
+BUFFER_SIZE=4096   # The max data size that can be sent to the service
+# Setting the option below to false makes it so that it's the mailing list who ends up being the original sender
+ORIGINAL_SENDER=true
