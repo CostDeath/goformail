@@ -82,11 +82,11 @@ deploy:
   services:
     - docker:dind
   variables:
-    IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+    IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_SHORT_SHA
     LATEST_TAG: $CI_REGISTRY_IMAGE:latest
   script:
     - echo "$CI_REGISTRY_PASSWORD" | docker login -u $CI_REGISTRY_USER --password-stdin
-    - docker build -t $IMAGE_TAG -t $LATEST_TAG .
-    - docker push $IMAGE_TAG
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
+    - docker context create gfm
+    - docker buildx create --use gfm
+    - docker buildx build --push --tag $IMAGE_TAG --tag $LATEST_TAG .
+
