@@ -1,6 +1,7 @@
 package forwarding
 
 import (
+	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/test"
 	"log"
 	"net"
 	"regexp"
@@ -63,24 +64,8 @@ func TestConnectToSMTP(t *testing.T) {
 	waitGroup.Add(1)
 	// MOCK Listener
 	go func() {
-		tcpSocket, err := net.Listen("tcp", "127.0.0.1:8025")
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer func(tcpSocket net.Listener) {
-			err = tcpSocket.Close()
-			if err != nil {
-				log.Fatal(err)
-			}
-			t.Log("Goroutine within testConnectToSMTP function finished")
-			waitGroup.Done()
-		}(tcpSocket)
-
-		waitGroup.Done()
-		_, err = tcpSocket.Accept()
-		if err != nil {
-			log.Fatal(err)
-		}
+		test.ConnectSMTPSocketMock(waitGroup)
+		t.Log("Goroutine function has finished")
 	}()
 
 	waitGroup.Wait()
@@ -111,24 +96,8 @@ func TestFailConnectToSMTP(t *testing.T) {
 	waitGroup.Add(1)
 	// MOCK Listener
 	go func() {
-		tcpSocket, err := net.Listen("tcp", "127.0.0.1:8025")
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer func(tcpSocket net.Listener) {
-			err = tcpSocket.Close()
-			if err != nil {
-				log.Fatal(err)
-			}
-			t.Log("Goroutine within TestFailConnectToSMTP function finished")
-			waitGroup.Done()
-		}(tcpSocket)
-
-		waitGroup.Done()
-		_, err = tcpSocket.Accept()
-		if err != nil {
-			log.Fatal(err)
-		}
+		test.ConnectFailSMTPSocketMock(waitGroup)
+		t.Log("Goroutine within TestFailConnectToSMTP function finished")
 	}()
 
 	waitGroup.Wait()

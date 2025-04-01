@@ -3,6 +3,7 @@ package forwarding
 import (
 	"errors"
 	config "gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal"
+	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/test"
 	"log"
 	"net"
 	"strings"
@@ -16,30 +17,13 @@ func TestSendResponse(t *testing.T) {
 	waitGroup := new(sync.WaitGroup)
 	waitGroup.Add(1)
 	go func() {
-		tcpSocket, err := net.Listen("tcp", "127.0.0.1:8025")
-		if err != nil {
-			log.Fatal(err)
-		}
-		defer func(tcpSocket net.Listener) {
-			err = tcpSocket.Close()
-			if err != nil {
-				log.Fatal(err)
-			}
-			t.Log("Goroutine finished within testSendResponse")
-			waitGroup.Done() // ensure go routine finishes first
-		}(tcpSocket)
 
-		waitGroup.Done()
-		conn, err := tcpSocket.Accept()
-		if err != nil {
-			log.Fatal(err)
+		isSuccessful := test.SendResponseMock(waitGroup)
+		if !isSuccessful {
+			t.Error("Response was not able to be received")
 		}
 
-		sendResponse("Response test", conn)
-		buffer := make([]byte, 200)
-		if _, err = conn.Read(buffer); err != nil {
-			log.Fatal(err)
-		}
+		t.Log("Goroutine finished within testSendResponse")
 	}()
 
 	waitGroup.Wait()
@@ -57,20 +41,8 @@ func TestSendResponse(t *testing.T) {
 		waitGroup.Wait() // Ensure go routine function finishes first
 	}(conn)
 
-	buffer := make([]byte, 1024)
+	sendResponse("Response test", conn)
 
-	size, err := conn.Read(buffer)
-	if err != nil {
-		t.Error(err)
-	}
-
-	if _, err = conn.Write([]byte("Exit")); err != nil {
-		log.Fatal("Could not write to connection")
-	}
-
-	if string(buffer[:size]) != "Response test" {
-		t.Error("There were no responses/response was wrong")
-	}
 }
 
 func TestSendSuccessfulGoodBye(t *testing.T) {
@@ -272,56 +244,13 @@ func TestSuccessfulMailReceiver(t *testing.T) {
 
 	// MOCK MTA
 	go func() {
-		var conn net.Conn
-		conn, err = net.Dial("tcp", "127.0.0.1:8024")
-		if err != nil {
-			log.Fatal(err)
+
+		result := test.MailReceiverMock("LHLO example.domain", waitGroup)
+		if result != "successfully received the email" {
+			t.Error(result)
 		}
 
-		defer func(conn net.Conn) {
-			err = conn.Close()
-			if err != nil {
-				log.Fatal(err)
-			}
-			t.Log("Goroutine finished within TestMailReceiver")
-			waitGroup.Done()
-		}(conn)
-
-		for {
-			buffer := make([]byte, 4096)
-			var size int
-
-			if err = conn.SetReadDeadline(time.Now().Add(5 * time.Second)); err != nil {
-				log.Fatal(err)
-			}
-
-			size, err = conn.Read(buffer)
-			var netErr net.Error
-			if errors.As(err, &netErr) && netErr.Timeout() {
-				t.Error("Connection timed out, MailReceiver cannot seem to send messages through the connection")
-				return
-			}
-
-			messages := strings.Lines(string(buffer[:size]))
-			for message := range messages {
-				switch {
-				case strings.TrimSpace(message) == "220 LMTP Server Ready":
-					if _, err = conn.Write([]byte("LHLO example.domain")); err != nil {
-						log.Fatal(err)
-					}
-				case strings.TrimSpace(message) == "250 SIZE":
-					if _, err = conn.Write([]byte("MAIL FROM:<testing@example.domain>\nRCPT TO:<recipient@example.domain>\nDATA\n")); err != nil {
-						log.Fatal(err)
-					}
-				case strings.TrimSpace(message) == "354 Start mail input; end with <CRLF>.<CRLF>":
-					if _, err = conn.Write([]byte("hello\n.\nmultiple full stops\n.\nQUIT\n")); err != nil {
-						log.Fatal(err)
-					}
-					return
-				}
-			}
-
-		}
+		t.Log("Goroutine finished within TestMailReceiver")
 	}()
 	waitGroup.Add(1)
 
@@ -359,60 +288,12 @@ func TestFailedMailReceiver(t *testing.T) {
 
 	// MOCK MTA
 	go func() {
-		var conn net.Conn
-		conn, err = net.Dial("tcp", "127.0.0.1:8024")
-		if err != nil {
-			log.Fatal(err)
+		result := test.MailReceiverMock("Invalid response", waitGroup)
+		if result != "receiving the email was unsuccessful" {
+			t.Error(result)
 		}
 
-		defer func(conn net.Conn) {
-			err = conn.Close()
-			if err != nil {
-				log.Fatal(err)
-			}
-			t.Log("Goroutine finished within TestMailReceiver")
-			waitGroup.Done()
-		}(conn)
-
-		for {
-			buffer := make([]byte, 4096)
-			var size int
-
-			if err = conn.SetReadDeadline(time.Now().Add(5 * time.Second)); err != nil {
-				log.Fatal(err)
-			}
-
-			size, err = conn.Read(buffer)
-			var netErr net.Error
-			if errors.As(err, &netErr) && netErr.Timeout() {
-				t.Error("Connection timed out, MailReceiver cannot seem to send messages through the " +
-					"connection or the expected responses do not match up")
-				return
-			}
-
-			messages := strings.Lines(string(buffer[:size]))
-			for message := range messages {
-				t.Log(message)
-				switch {
-				case strings.TrimSpace(message) == "220 LMTP Server Ready":
-					if _, err = conn.Write([]byte("Invalid response")); err != nil {
-						log.Fatal(err)
-					}
-				case strings.TrimSpace(message) == "500 Error: command not recognised":
-					return // MailReceiver should return with an error
-				case strings.TrimSpace(message) == "250 SIZE":
-					if _, err = conn.Write([]byte("MAIL FROM:<testing@example.domain>\nRCPT TO:<recipient@example.domain>\nDATA\n")); err != nil {
-						log.Fatal(err)
-					}
-				case strings.TrimSpace(message) == "354 Start mail input; end with <CRLF>.<CRLF>":
-					if _, err = conn.Write([]byte("hello\n.\nmultiple full stops\n.\nQUIT\n")); err != nil {
-						log.Fatal(err)
-					}
-					return
-				}
-			}
-
-		}
+		t.Log("Goroutine finished within TestMailReceiver")
 	}()
 	waitGroup.Add(1)
 
@@ -430,7 +311,7 @@ func TestFailedMailReceiver(t *testing.T) {
 	}
 }
 
-func TestMailSender(t *testing.T) {
+func TestMailSenderSuccess(t *testing.T) {
 	configs := config.LoadConfigs("../../configs.cf")
 	configs["POSTFIX_PORT"] = "8025"
 	waitGroup := new(sync.WaitGroup)
@@ -438,73 +319,11 @@ func TestMailSender(t *testing.T) {
 
 	// MOCK SMTP SERVER
 	go func() {
-		tcpSocket, err := net.Listen("tcp", "127.0.0.1:8025")
-		if err != nil {
-			log.Fatal(err)
+		result := test.MailSenderMock("250-example.domain\n250-PIPELINING\n250 CHUNKING\n", waitGroup)
+		if result != "Exited the connection" {
+			t.Error(result)
 		}
-
-		defer func(tcpSocket net.Listener) {
-			err = tcpSocket.Close()
-			if err != nil {
-				log.Fatal(err)
-			}
-			t.Log("Goroutine finished within TestMailSender")
-			waitGroup.Done()
-		}(tcpSocket)
-
-		waitGroup.Done()
-		conn, err := tcpSocket.Accept()
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		// Initial greeting
-		if _, err = conn.Write([]byte("Example SMTP Server Greeting\n")); err != nil {
-			log.Fatal(err)
-		}
-
-		for {
-			buffer := make([]byte, 4096)
-			var size int
-
-			if err = conn.SetReadDeadline(time.Now().Add(5 * time.Second)); err != nil {
-				log.Fatal(err)
-			}
-
-			size, err = conn.Read(buffer)
-			var netErr net.Error
-			if errors.As(err, &netErr) && netErr.Timeout() {
-				t.Error("Connection timed out, MailSender cannot seem to send responses through the connection")
-				return
-			}
-
-			messages := strings.Lines(string(buffer[:size]))
-			for message := range messages {
-				t.Log(message)
-				switch {
-				case strings.HasPrefix(message, "EHLO"):
-					if _, err = conn.Write([]byte("250-example.domain\n250-PIPELINING\n250 CHUNKING\n")); err != nil {
-						log.Fatal(err)
-					}
-				case strings.HasPrefix(message, "MAIL FROM"):
-					if _, err = conn.Write([]byte("250 2.1.0 OK\n")); err != nil {
-						log.Fatal(err)
-					}
-				case strings.HasPrefix(message, "RCPT TO"):
-					// assume all email addresses are valid
-					if _, err = conn.Write([]byte("250 2.1.5 OK\n")); err != nil {
-						log.Fatal(err)
-					}
-				case strings.TrimSpace(message) == "DATA":
-					if _, err = conn.Write([]byte("354 Start mail input; end with <CRLF>.<CRLF>\n")); err != nil {
-						log.Fatal(err)
-					}
-				case strings.TrimSpace(message) == "QUIT":
-					return
-				}
-			}
-		}
-
+		t.Log("Goroutine finished within TestMailSender")
 	}()
 	waitGroup.Wait()
 	waitGroup.Add(1)
