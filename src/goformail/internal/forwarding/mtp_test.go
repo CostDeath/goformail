@@ -51,23 +51,25 @@ func TestSendSuccessfulGoodBye(t *testing.T) {
 
 		t.Log("Goroutine has finished in TestSendSuccessfulGoodbye")
 
-		passedTests := 0
+		linesReceived := 0
 		for message := range returnedMessages {
 			switch {
 			case strings.TrimSpace(message) == "452 temporarily over quota":
-				passedTests += 1
+				linesReceived += 1
 				t.Log("452 temporarily over quota - Response passed")
 			case strings.TrimSpace(message) == "250 OK (Email was successfully forwarded)":
-				passedTests += 1
+				linesReceived += 1
 				t.Log("250 OK (Email was successfully forwarded)")
 			case strings.TrimSpace(message) == "221 closing connection":
-				passedTests += 1
+				linesReceived += 1
 				t.Log("221 closing connection - Response passed")
+			default:
+				t.Error("Unexpected response was received")
 			}
 		}
 
-		if passedTests != 3 {
-			t.Errorf("Not all responses were received, only %d cases passed", passedTests)
+		if linesReceived != 3 {
+			t.Errorf("Not all responses were received, only %d cases passed", linesReceived)
 		}
 		waitGroup.Done()
 	}()
