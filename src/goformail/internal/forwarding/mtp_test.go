@@ -1,7 +1,6 @@
 package forwarding
 
 import (
-	"errors"
 	config "gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal"
 	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/test"
 	"log"
@@ -9,7 +8,6 @@ import (
 	"strings"
 	"sync"
 	"testing"
-	"time"
 )
 
 func TestSendResponse(t *testing.T) {
@@ -48,183 +46,95 @@ func TestSendResponse(t *testing.T) {
 func TestSendSuccessfulGoodBye(t *testing.T) {
 	waitGroup := new(sync.WaitGroup)
 	waitGroup.Add(1)
+
 	go func() {
-		tcpSocket, err := net.Listen("tcp", "127.0.0.1:8025")
-		if err != nil {
-			log.Fatal(err)
-		}
+		returnedMessages := strings.Lines(test.SendGoodbyeMock(waitGroup))
 
-		defer func(tcpSocket net.Listener) {
-			err = tcpSocket.Close()
-			if err != nil {
-				log.Fatal(err)
+		t.Log("Goroutine has finished in TestSendSuccessfulGoodbye")
+
+		passedTests := 0
+		for message := range returnedMessages {
+			switch {
+			case strings.TrimSpace(message) == "452 temporarily over quota":
+				passedTests += 1
+				t.Log("452 temporarily over quota - Response passed")
+			case strings.TrimSpace(message) == "250 OK (Email was successfully forwarded)":
+				passedTests += 1
+				t.Log("250 OK (Email was successfully forwarded)")
+			case strings.TrimSpace(message) == "221 closing connection":
+				passedTests += 1
+				t.Log("221 closing connection - Response passed")
 			}
-			t.Log("Goroutine within testSendGoodbye function finished")
-			waitGroup.Done()
-		}(tcpSocket)
+		}
 
+		if passedTests != 3 {
+			t.Errorf("Not all responses were received, only %d cases passed", passedTests)
+		}
 		waitGroup.Done()
-		conn, err := tcpSocket.Accept()
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		// POSITIVE CASE
-		sendGoodbye(conn, true, []string{"QUIT"})
-
-		// Need client to send back acknowledgement before moving to defer function
-		buffer := make([]byte, 200)
-		if _, err = conn.Read(buffer); err != nil {
-			log.Fatal("Failure to read buffer")
-		}
-
 	}()
+
 	waitGroup.Wait()
 	waitGroup.Add(1)
-
 	conn, err := net.Dial("tcp", "127.0.0.1:8025")
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	defer func(conn net.Conn) {
-		if _, err = conn.Write([]byte("Exit")); err != nil {
-			log.Fatal("Could not write to connection")
-		}
-		err = conn.Close()
-		if err != nil {
+		waitGroup.Wait()
+		if err = conn.Close(); err != nil {
 			log.Fatal(err)
 		}
-		waitGroup.Wait()
 	}(conn)
 
-	buffer := make([]byte, 4096)
-	var size int
-	var collected string
-
-	for {
-		if err = conn.SetReadDeadline(time.Now().Add(2 * time.Second)); err != nil {
-			log.Fatal(err)
-		}
-
-		size, err = conn.Read(buffer)
-		var netErr net.Error
-		if errors.As(err, &netErr) && netErr.Timeout() {
-			break
-		}
-
-		collected += string(buffer[:size])
-	}
-
-	messages := strings.Lines(collected)
-	passedTests := 0
-	for message := range messages {
-		switch {
-		case strings.TrimSpace(message) == "250 OK (Email was successfully forwarded)":
-			passedTests += 1
-			t.Log("250 OK (Email was successfully forwarded) - Response passed")
-		case strings.TrimSpace(message) == "452 temporarily over quota":
-			passedTests += 1
-			t.Log("452 temporarily over quota - Response passed")
-		case strings.TrimSpace(message) == "221 closing connection":
-			passedTests += 1
-			t.Log("221 closing connection - Response passed")
-		}
-	}
-	if passedTests != 3 {
-		t.Errorf("Not all cases were resolved for sending goodbye acknowledgements (only %d passed)", passedTests)
-	}
+	sendGoodbye(conn, true, []string{"QUIT"})
 }
 
 func TestSendFailGoodBye(t *testing.T) {
 	waitGroup := new(sync.WaitGroup)
 	waitGroup.Add(1)
+
 	go func() {
-		tcpSocket, err := net.Listen("tcp", "127.0.0.1:8025")
-		if err != nil {
-			log.Fatal(err)
-		}
+		returnedMessages := strings.Lines(test.SendGoodbyeMock(waitGroup))
 
-		defer func(tcpSocket net.Listener) {
-			err = tcpSocket.Close()
-			if err != nil {
-				log.Fatal(err)
+		t.Log("Goroutine has finished in TestSendSuccessfulGoodbye")
+
+		passedTests := 0
+		for message := range returnedMessages {
+			switch {
+			case strings.TrimSpace(message) == "452 temporarily over quota":
+				passedTests += 1
+				t.Log("452 temporarily over quota - Response passed")
+			case strings.TrimSpace(message) == "250 OK (Email was successfully forwarded)":
+				passedTests += 1
+				t.Log("250 OK (However, email was not forwarded)")
+			case strings.TrimSpace(message) == "221 closing connection":
+				passedTests += 1
+				t.Log("221 closing connection - Response passed")
 			}
-			t.Log("Goroutine within testSendGoodbye function finished")
-			waitGroup.Done()
-		}(tcpSocket)
+		}
 
+		if passedTests != 3 {
+			t.Errorf("Not all responses were received, only %d cases passed", passedTests)
+		}
 		waitGroup.Done()
-		conn, err := tcpSocket.Accept()
-		if err != nil {
-			log.Fatal(err)
-		}
-
-		// NEGATIVE CASE
-		sendGoodbye(conn, false, []string{"QUIT"})
-
-		// Need client to send back acknowledgement before moving to defer function
-		buffer := make([]byte, 200)
-		if _, err = conn.Read(buffer); err != nil {
-			log.Fatal("Failure to read buffer")
-		}
-
 	}()
+
 	waitGroup.Wait()
 	waitGroup.Add(1)
-
 	conn, err := net.Dial("tcp", "127.0.0.1:8025")
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	defer func(conn net.Conn) {
-		if _, err = conn.Write([]byte("Exit")); err != nil {
-			log.Fatal("Could not write to connection")
-		}
-		err = conn.Close()
-		if err != nil {
+		waitGroup.Wait()
+		if err = conn.Close(); err != nil {
 			log.Fatal(err)
 		}
-		waitGroup.Wait()
 	}(conn)
 
-	buffer := make([]byte, 4096)
-	var size int
-	var collected string
-
-	for {
-		if err = conn.SetReadDeadline(time.Now().Add(2 * time.Second)); err != nil {
-			log.Fatal(err)
-		}
-
-		size, err = conn.Read(buffer)
-		var netErr net.Error
-		if errors.As(err, &netErr) && netErr.Timeout() {
-			break
-		}
-
-		collected += string(buffer[:size])
-	}
-
-	messages := strings.Lines(collected)
-	passedTests := 0
-	for message := range messages {
-		switch {
-		case strings.TrimSpace(message) == "452 temporarily over quota":
-			passedTests += 1
-			t.Log("452 temporarily over quota - Response passed")
-		case strings.TrimSpace(message) == "250 OK (However, email was not forwarded)":
-			passedTests += 1
-			t.Log("452 temporarily over quota - Response passed")
-		case strings.TrimSpace(message) == "221 closing connection":
-			passedTests += 1
-			t.Log("221 closing connection - Response passed")
-		}
-	}
-	if passedTests != 3 {
-		t.Errorf("Not all cases were resolved for sending goodbye acknowledgements (only %d passed)", passedTests)
-	}
+	sendGoodbye(conn, true, []string{"QUIT"})
 }
 
 func TestSuccessfulMailReceiver(t *testing.T) {

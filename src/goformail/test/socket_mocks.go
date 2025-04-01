@@ -82,6 +82,42 @@ func SendResponseMock(waitGroup *sync.WaitGroup) bool {
 	return true
 }
 
+func SendGoodbyeMock(waitGroup *sync.WaitGroup) string {
+	tcpSocket, err := net.Listen("tcp", "127.0.0.1:8025")
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	defer func(tcpSocket net.Listener) {
+		if err = tcpSocket.Close(); err != nil {
+			log.Fatal(err)
+		}
+	}(tcpSocket)
+
+	waitGroup.Done()
+	conn, err := tcpSocket.Accept()
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	buffer := make([]byte, 4096)
+	var size int
+	var messages string
+	var netErr net.Error
+	for {
+		if err = conn.SetReadDeadline(time.Now().Add(2 * time.Second)); err != nil {
+			log.Fatal(err)
+		}
+		size, err = conn.Read(buffer)
+		if errors.As(err, &netErr) && netErr.Timeout() {
+			break
+		}
+
+		messages += string(buffer[:size])
+	}
+	return messages
+}
+
 func MailReceiverMock(greeting string, waitGroup *sync.WaitGroup) string {
 	var conn net.Conn
 	var err error
