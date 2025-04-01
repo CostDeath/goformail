@@ -82,10 +82,10 @@ deploy:
   services:
     - docker:20.10.16-dind
   variables:
-    IMAGE_TAG: $CI_REGISTRY_IMAGE
+    IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_COMMIT_REF_SLUG
+    LATEST_TAG: $CI_REGISTRY_IMAGE:latest
   script:
     - echo "$CI_REGISTRY_PASSWORD" | docker login -u $CI_REGISTRY_USER --password-stdin
-    - docker build -t $IMAGE_TAG .
+    - docker build -t $IMAGE_TAG $LATEST_TAG .
     - docker push $IMAGE_TAG
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
+
