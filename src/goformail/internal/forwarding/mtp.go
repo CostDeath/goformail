@@ -218,7 +218,6 @@ func mailSender(sender string, emailData string, bufferSize int, configs map[str
 
 				initial = false
 			case strings.HasPrefix(message, "250 2.1.0"):
-				// TODO: Grab emails from db
 				recipients := []string{"sdk194", "dags", "nonExistent"}
 				for _, recipient := range recipients {
 					sendResponse(fmt.Sprintf("RCPT TO: %s@%s\n", recipient, domainName), conn)
