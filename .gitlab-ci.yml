@@ -86,6 +86,6 @@ deploy:
     LATEST_TAG: $CI_REGISTRY_IMAGE:latest
   script:
     - echo "$CI_REGISTRY_PASSWORD" | docker login -u $CI_REGISTRY_USER --password-stdin
-    - docker build -t $IMAGE_TAG $LATEST_TAG .
+    - docker build -t $IMAGE_TAG -t $LATEST_TAG .
     - docker push $IMAGE_TAG
 
