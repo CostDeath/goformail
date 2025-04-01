@@ -192,6 +192,16 @@ func mailSender(mailingList string, emailData string, bufferSize int, configs ma
 				if err != nil {
 					log.Fatal(err)
 				}
+
+				messages = strings.Lines(string(buffer[:size]))
+				for message = range messages {
+					if !strings.HasPrefix(message, "250") {
+						fmt.Println(getCurrentTime() + " S: Unsupported commands, not sending email...")
+						sendResponse("QUIT", conn)
+						return false
+					}
+				}
+
 				sendResponse(fmt.Sprintf("MAIL FROM: %s@%s\n", mailingList, domainName), conn)
 
 				initial = false

@@ -335,3 +335,28 @@ func TestMailSenderSuccess(t *testing.T) {
 	}
 	waitGroup.Wait()
 }
+
+func TestMailSenderFailure(t *testing.T) {
+	configs := config.LoadConfigs("../../configs.cf")
+	configs["POSTFIX_PORT"] = "8025"
+	waitGroup := new(sync.WaitGroup)
+	waitGroup.Add(1)
+
+	// MOCK SMTP SERVER
+	go func() {
+		result := test.MailSenderMock("Invalid reply", waitGroup)
+		if result != "Exited the connection" {
+			t.Error(result)
+		}
+		t.Log("Goroutine finished within TestMailSender")
+	}()
+	waitGroup.Wait()
+	waitGroup.Add(1)
+
+	hasSent := mailSender("example@example.domain", "hello\n.\nQUIT\n", 4096, configs)
+
+	if hasSent {
+		t.Error("Function believes the email should have went through")
+	}
+	waitGroup.Wait()
+}
