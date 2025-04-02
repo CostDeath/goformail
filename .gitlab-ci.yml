@@ -76,8 +76,8 @@ test_go:
 
 # Deploy stage
 
-deploy:
-  image: docker:20.10.16
+push_image:
+  image: docker:latest
   stage: deploy
   services:
     - docker:dind
@@ -89,5 +89,15 @@ deploy:
     - docker context create gfm
     - docker buildx create --use gfm
     - docker buildx build --push --tag $IMAGE_TAG --tag $LATEST_TAG .
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+
+deploy:
+  image: alpine:latest
+  stage: deploy
+  script:
+    - curl -u $WEBHOOK_USER:$WEBHOOK_PASSWORD https://costwynn.xyz/cgi-bin/gfm-update.sh
+  needs:
+    - push_image
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
