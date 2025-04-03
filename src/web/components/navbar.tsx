@@ -12,8 +12,8 @@ export default function Navbar() {
     const currentPageName = usePathname()
 
     const links = [
-        {name: PageName.MAILINGLISTS, href: "mailingLists"},
-        {name: PageName.APPROVALREQUESTS, href: "approvals"},
+        {name: PageName.MAILINGLISTS, href: LinkTo.MAILINGLISTS},
+        {name: PageName.APPROVALREQUESTS, href: LinkTo.APPROVALREQUESTS},
     ];
 
     return (
