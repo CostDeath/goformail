@@ -1,9 +1,11 @@
 "use client"
 
-import Link from "next/link";
+import { redirect } from "next/navigation";
+import {LinkTo} from "@/states/linkStateHandler";
 
 const placeholder = () => {
     console.log("login placeholder");
+    redirect(LinkTo.MAILINGLISTS)
 }
 
 export default function LoginForm() {
@@ -54,7 +56,7 @@ export default function LoginForm() {
                 </div>
             </div>
             <button className="bg-blue-500 hover:bg-blue-600 text-white rounded-xl py-2 px-6">
-                <Link href="/mailingLists">Log in</Link>
+                Log in
             </button>
         </form>
     )
