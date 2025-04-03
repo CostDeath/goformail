@@ -1,7 +1,7 @@
 import {render, screen} from "@testing-library/react";
 import {expect, test} from "vitest";
 import Navbar from "@/components/navbar";
-import {PageName} from "@/states/linkStateHandler";
+import {PageName} from "@/components/pageEnums";
 
 test("navbar is rendered", () => {
     render(<Navbar />);

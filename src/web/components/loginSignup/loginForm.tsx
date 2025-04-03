@@ -1,7 +1,7 @@
 "use client"
 
 import { redirect } from "next/navigation";
-import {LinkTo} from "@/states/linkStateHandler";
+import {LinkTo} from "@/components/pageEnums";
 
 const placeholder = () => {
     console.log("login placeholder");

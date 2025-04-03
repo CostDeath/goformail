@@ -1,7 +1,7 @@
 import Card from "@/components/card";
 import LoginForm from "@/components/loginSignup/loginForm";
 import Link from "next/link";
-import {LinkTo} from "@/states/linkStateHandler";
+import {LinkTo} from "@/components/pageEnums";
 
 export default function Page() {
     return (

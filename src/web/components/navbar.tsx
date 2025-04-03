@@ -1,7 +1,7 @@
 "use client"
 
 import clsx from "clsx";
-import {LinkTo, PageName} from "@/states/linkStateHandler";
+import {LinkTo, PageName} from "@/components/pageEnums";
 import {togglePagination} from "@/states/paginationStateHandler";
 import Link from "next/link";
 import {usePathname} from "next/navigation";
