@@ -239,7 +239,13 @@ func TestMailSenderSuccess(t *testing.T) {
 	waitGroup.Wait()
 	waitGroup.Add(1)
 
-	hasSent := mailSender("example@example.domain", "hello\n.\nQUIT\n", 4096, configs)
+	emailData := EmailData{
+		rcpt: []string{"rcpt@example.domain"},
+		from: "example@example.domain",
+		data: "hello\n.\nQUIT\n",
+	}
+
+	hasSent := mailSender("example@example.domain", emailData, 4096, configs)
 
 	if !hasSent {
 		t.Error("The expected response result was not given")
@@ -263,7 +269,13 @@ func TestMailSenderFailure(t *testing.T) {
 	waitGroup.Wait()
 	waitGroup.Add(1)
 
-	hasSent := mailSender("example@example.domain", "hello\n.\nQUIT\n", 4096, configs)
+	emailData := EmailData{
+		rcpt: []string{"rcpt@example.domain"},
+		from: "example@example.domain",
+		data: "hello\n.\nQUIT\n",
+	}
+
+	hasSent := mailSender("example@example.domain", emailData, 4096, configs)
 
 	if hasSent {
 		t.Error("Function believes the email should have went through")
