@@ -7,7 +7,7 @@ test("navbar is rendered", () => {
     render(<Navbar />);
     const mailingLists = screen.getByTestId(PageName.MAILINGLISTS)
     const emailApprovals = screen.getByTestId(PageName.APPROVALREQUESTS)
-    const signOut = screen.getByTestId(PageName.LOGINSIGNUP)
+    const signOut = screen.getByTestId(PageName.LOGIN)
 
     expect(mailingLists).toBeDefined();
     expect(emailApprovals).toBeDefined();

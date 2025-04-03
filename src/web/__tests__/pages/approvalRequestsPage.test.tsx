@@ -1,6 +1,6 @@
 import {expect, test, vitest} from "vitest";
 import {fireEvent, render, screen} from "@testing-library/react";
-import Page from "@/app/pages/approvalRequestsPage";
+import Page from "@/app/(dashboards)/approvals/page";
 
 
 vitest.mock("next/navigation", () => {
