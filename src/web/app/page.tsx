@@ -1,6 +1,7 @@
 import Card from "@/components/card";
 import LoginForm from "@/components/loginSignup/loginForm";
 import Link from "next/link";
+import {LinkTo} from "@/states/linkStateHandler";
 
 export default function Page() {
     return (
@@ -10,7 +11,7 @@ export default function Page() {
                 <div className="grid grid-cols-2 py-5 px-5">
                     <p>Don&apos;t have an account?</p>
                     <button className="text-blue-500 underline font-bold">
-                        <Link href="/signup">Sign up!</Link>
+                        <Link href={LinkTo.SIGNUP}>Sign up!</Link>
                     </button>
                 </div>
             </div>

@@ -29,8 +29,8 @@ export default function Navbar() {
             ))}
 
             <Link
-                href={LinkTo.LOGINSIGNUP}
-                data-testid={PageName.LOGINSIGNUP}
+                href={LinkTo.LOGIN}
+                data-testid={PageName.LOGIN}
                  className="flex h-[48px] border-b-4 grow items-center justify-center gap-2 rounded-md p-3 text-sm font-medium hover:bg-gray-200 hover:text-gray-700 hover:cursor-pointer md:flex-none md:justify-start w-full">
                 {/* For now we'll use Link to sign out as there is no logic for users yet */}
                 Sign Out
