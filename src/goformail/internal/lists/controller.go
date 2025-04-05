@@ -44,9 +44,8 @@ func postList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	err := createList()
-	if err != nil {
-		return
+	if err := createList(list.Name, configs); err != nil {
+		handleError(w, r, InvalidPayload)
 	}
 
 	msg, err := json.Marshal(list)
@@ -55,7 +54,8 @@ func postList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	setResponse(msg, http.StatusCreated, w, r)
+	w.WriteHeader(http.StatusCreated)
+	setResponse(msg, w, r)
 }
 
 func patchList(w http.ResponseWriter, r *http.Request) {
@@ -67,7 +67,6 @@ func deleteList(w http.ResponseWriter, r *http.Request) {
 
 func handleError(w http.ResponseWriter, r *http.Request, e ErrorReason) {
 	var msg string
-	var code int
 	switch e {
 	case InvalidMethod:
 		w.WriteHeader(http.StatusNotFound)
@@ -80,12 +79,11 @@ func handleError(w http.ResponseWriter, r *http.Request, e ErrorReason) {
 		msg = "An unknown error occurred"
 	}
 
-	setResponse([]byte(fmt.Sprintf("{\"message\": \"%s\"}", msg)), code, w, r)
+	setResponse([]byte(fmt.Sprintf("{\"message\": \"%s\"}", msg)), w, r)
 }
 
-func setResponse(msg []byte, code int, w http.ResponseWriter, r *http.Request) {
+func setResponse(msg []byte, w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(code)
 
 	_, err := w.Write(msg)
 	if err != nil {

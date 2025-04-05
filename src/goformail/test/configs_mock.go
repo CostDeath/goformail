@@ -11,4 +11,5 @@ var Configs = map[string]string{
 	"ORIGINAL_SENDER":  "true",
 	"OWN_ADDRESS":      "127.0.0.1",
 	"HTTP_PORT":        "8000",
+	"MAP_LOCATION":     "maps/goformail_lmtp",
 }
