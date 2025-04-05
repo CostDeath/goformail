@@ -3,27 +3,26 @@ package interfaces
 import (
 	"embed"
 	"fmt"
+	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal/lists"
 	"io/fs"
 	"log"
 	"net/http"
+	"strconv"
 )
 
 //go:embed out/*
 var embedFS embed.FS
 
-func ServeHttp() {
-	err := addWebUiHandler()
-
-	if err != nil {
+func ServeWeb(configs map[string]string) {
+	lists.AddListHandlers(http.DefaultServeMux, configs)
+	if err := addWebUiHandler(); err != nil {
 		log.Fatalf("Error adding UI handler server: %s\n", err)
-	} else {
-		// Start the server on port 8080
-		port := 8080
-		fmt.Printf("Starting server at http://localhost:%d\n", port)
-		err = http.ListenAndServe(fmt.Sprintf(":%d", port), nil)
 	}
 
-	if err != nil {
+	// Start the server on port 8080
+	port, _ := strconv.Atoi(configs["HTTP_PORT"])
+	fmt.Printf("Starting server at http://localhost:%d\n", port)
+	if err := http.ListenAndServe(fmt.Sprintf(":%d", port), nil); err != nil {
 		log.Fatalf("Error starting http server: %s\n", err)
 	}
 }

@@ -15,7 +15,7 @@ src/web/coverage
 
 # next.js
 src/web/.next/
-src/web/out/
+src/goformail/internal/interfaces/out/
 
 # production
 src/web/build
