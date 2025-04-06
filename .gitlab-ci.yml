@@ -104,6 +104,7 @@ deploy:
   image: alpine:latest
   stage: deploy
   script:
+    - apk add curl
     - curl -u $WEBHOOK_USER:$WEBHOOK_PASSWORD https://costwynn.xyz/cgi-bin/gfm-update.sh
   needs:
     - push_image

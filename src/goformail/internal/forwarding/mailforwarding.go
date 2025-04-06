@@ -63,9 +63,9 @@ func LMTPService(configs map[string]string) {
 		if data.data != "" {
 			for _, mailingList := range data.rcpt {
 				if originalSender == "true" {
-					mailForwardSuccess = mailSender(data.from, data.data, bufferSize, configs)
+					mailForwardSuccess = mailSender(data.from, data, bufferSize, configs)
 				} else {
-					mailForwardSuccess = mailSender(mailingList, data.data, bufferSize, configs)
+					mailForwardSuccess = mailSender(mailingList, data, bufferSize, configs)
 				}
 			}
 		}
