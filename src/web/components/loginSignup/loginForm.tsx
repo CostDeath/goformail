@@ -1,15 +1,15 @@
 "use client"
 
-import {PageName, switchPage} from "@/states/linkStateHandler";
-import MailingListsPage from "@/app/pages/mailingListsPage";
+import { redirect } from "next/navigation";
+import {LinkTo} from "@/components/pageEnums";
 
 const placeholder = () => {
     console.log("login placeholder");
+    redirect(LinkTo.MAILINGLISTS)
 }
 
 export default function LoginForm() {
     // TODO: need to add logic where it validates email and password before changing page to mailing list page
-    const changePage = switchPage((state) => state.changePage)
     return (
         <form className="space-y-3" action={placeholder}>
             <h1 className="text-xl">
@@ -55,7 +55,9 @@ export default function LoginForm() {
                     </div>
                 </div>
             </div>
-            <button className="bg-blue-500 hover:bg-blue-600 text-white rounded-xl py-2 px-6" onClick={() => changePage(<MailingListsPage />, PageName.MAILINGLISTS)}>Log in</button>
+            <button className="bg-blue-500 hover:bg-blue-600 text-white rounded-xl py-2 px-6">
+                Log in
+            </button>
         </form>
     )
 }

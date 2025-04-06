@@ -1,6 +1,6 @@
 import {expect, test, vitest} from "vitest";
 import {render, screen} from "@testing-library/react";
-import MailingListsPage from "@/app/pages/mailingListsPage";
+import MailingListsPage from "@/app/(dashboards)/mailingLists/page";
 
 
 vitest.mock("next/navigation", () => {
