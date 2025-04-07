@@ -139,7 +139,7 @@ func mailReceiver(conn net.Conn, bufferSize int, configs map[string]string) (Ema
 
 }
 
-func mailSender(sender string, emailData EmailData, bufferSize int, configs map[string]string) bool {
+func mailSender(sender string, rcpt []string, emailData EmailData, bufferSize int, configs map[string]string) bool {
 	addr, exists := configs["POSTFIX_ADDRESS"]
 	if !exists {
 		log.Fatal("Missing POSTFIX_ADDRESS config")
@@ -218,7 +218,7 @@ func mailSender(sender string, emailData EmailData, bufferSize int, configs map[
 
 				initial = false
 			case strings.HasPrefix(message, "250 2.1.0"):
-				recipients := []string{emailData.from}
+				recipients := rcpt
 				for _, recipient := range recipients {
 					sendResponse(fmt.Sprintf("RCPT TO: %s\n", recipient), conn)
 					size, err = conn.Read(buffer)

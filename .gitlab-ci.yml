@@ -56,8 +56,8 @@ build_go:
   stage: build
   script:
     - cd src/goformail
-    - rm -r ./internal/interfaces/out
-    - cp -r ../web/out ./internal/interfaces/out
+    - rm -r ./internal/rest/out
+    - cp -r ../web/out ./internal/rest/out
     - go build ./cmd/goformail
   needs:
     - build_node
