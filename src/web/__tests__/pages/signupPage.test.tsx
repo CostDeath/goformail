@@ -9,4 +9,5 @@ test("Whole page is rendered", () => {
     expect(screen.getByRole("textbox", {name: "Email"})).toBeDefined();
     expect(screen.getByRole("textbox", {name: "Student ID"})).toBeDefined();
     expect(screen.getByLabelText("Password")).toBeDefined();
+    expect(screen.getByTestId("to-login")).toBeDefined();
 })
