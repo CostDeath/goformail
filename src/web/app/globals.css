@@ -3,8 +3,8 @@
 @tailwind utilities;
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #494949;
+  --foreground: #c7c7c7;
 }
 
 /*    TODO: figure out what colours for darkmode later / do we want a darkmode ui?
