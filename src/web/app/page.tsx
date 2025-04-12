@@ -10,9 +10,9 @@ export default function Page() {
                 <Card><LoginForm/></Card>
                 <div className="grid grid-cols-2 py-5 px-5">
                     <p>Don&apos;t have an account?</p>
-                    <button className="text-blue-500 underline font-bold">
-                        <Link href={LinkTo.SIGNUP}>Sign up!</Link>
-                    </button>
+                    <Link href={LinkTo.SIGNUP} className="text-blue-400 font-bold px-7">
+                        Sign up!
+                    </Link>
                 </div>
             </div>
         </div>
