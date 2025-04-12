@@ -13,14 +13,25 @@ export default function SignUpForm() {
             <div className="w-full">
                 <div>
                     <label
-                        className="mb-3 mt-5 block text-xs font-medium text-gray-900"
+                        className="mb-3 mt-5 block font-bold"
                         htmlFor="email"
                     >
                         Email
                     </label>
                     <div className="relative">
                         <input
-                            className="peer block w-full rounded-md border border-gray-200 py-[9px] pl-10 text-sm outline-2 placeholder:text-gray-500"
+                            className="
+                            bg-neutral-700
+                            peer
+                            block
+                            w-full
+                            h-10
+                            px-3
+                            border
+                            border-neutral-500
+                            rounded-md
+                            outline-2
+                            placeholder:text-neutral-500"
                             id="email"
                             type="email"
                             name="email"
@@ -33,14 +44,24 @@ export default function SignUpForm() {
 
                 <div className="mt-4">
                     <label
-                        className="mb-3 mt-5 block text-xs font-medium text-gray-900"
+                        className="mb-3 mt-5 block font-bold"
                         htmlFor="studentID"
                     >
-                       Student ID
+                        Student ID
                     </label>
                     <div className="relative">
                         <input
-                            className="peer block w-full rounded-md border border-gray-200 py-[9px] pl-10 text-sm outline-2 placeholder:text-gray-500"
+                            className="bg-neutral-700
+                            peer
+                            block
+                            w-full
+                            h-10
+                            px-3
+                            border
+                            border-neutral-500
+                            rounded-md
+                            outline-2
+                            placeholder:text-neutral-500"
                             id="studentID"
                             name="studentID"
                             placeholder="Enter your student ID"
@@ -52,14 +73,25 @@ export default function SignUpForm() {
 
                 <div className="mt-4">
                     <label
-                        className="mb-3 mt-5 block text-xs font-medium text-gray-900"
+                        className="mb-3 mt-5 block font-bold"
                         htmlFor="password"
                     >
                         Password
                     </label>
                     <div className="relative">
                         <input
-                            className="peer block w-full rounded-mb border border-gray-200 py-[9px] pl-10 text-smm outline-2 placeholder:text-gray-500"
+                            className="
+                            bg-neutral-700
+                            peer
+                            block
+                            w-full
+                            h-10
+                            px-3
+                            border
+                            border-neutral-500
+                            rounded-md
+                            outline-2
+                            placeholder:text-neutral-500"
                             id="password"
                             type="password"
                             name="password"
@@ -70,7 +102,9 @@ export default function SignUpForm() {
                     </div>
                 </div>
             </div>
-            <button className="bg-blue-500 hover:bg-blue-600 text-white rounded-xl py-2 px-6">Log in</button>
+            <div className="py-3">
+                <button className="bg-cyan-600 hover:bg-cyan-700 text-gray-100 rounded-xl py-2 px-6">Sign up</button>
+            </div>
         </form>
     )
 }
