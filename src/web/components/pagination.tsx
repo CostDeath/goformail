@@ -17,10 +17,10 @@ export default function Pagination({totalPages}: { totalPages: number }) {
             {allPages.map(key => (
                 <div key={key} onClick={() => pageToggler(key)} className="hover:cursor-pointer">
                     <div className={clsx(
-                        "flex h-10 w-10 items-center justify-center text-sm border rounded-l-md",
+                        "flex h-10 w-10 items-center justify-center text-sm border border-neutral-700/25 rounded-md",
                         {
-                            "z-10 bg-blue-600 border-blue-600 text-white": currentPage === key,
-                            "hover: bg-gray-300": currentPage !== key
+                            "z-10 bg-cyan-600 border-cyan-600 text-white": currentPage === key,
+                            "hover: bg-neutral-700 hover:bg-neutral-600": currentPage !== key
                         }
                     )}>{key}
                     </div>
