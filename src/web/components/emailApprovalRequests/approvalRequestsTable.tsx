@@ -6,7 +6,6 @@ export default function ApprovalRequestsTable({currentPage, api}: {
     currentPage?: number;
     api: string;
 }) {
-    // having api be nullable for now, TODO: make it not nullable once api is ready
     // let data = await fetch(api);
     // let retriedData = data.json();
     console.log(api)
