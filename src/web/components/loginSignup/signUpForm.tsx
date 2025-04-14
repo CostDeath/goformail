@@ -1,5 +1,7 @@
 "use client"
 
+import StyledInput from "@/components/styledInput";
+
 const placeholder = () => {
     console.log("sign up placeholder");
 }
@@ -19,26 +21,13 @@ export default function SignUpForm() {
                         Email
                     </label>
                     <div className="relative">
-                        <input
-                            className="
-                            bg-neutral-700
-                            peer
-                            block
-                            w-full
-                            h-10
-                            px-3
-                            border
-                            border-neutral-500
-                            rounded-md
-                            outline-2
-                            placeholder:text-neutral-500"
+                        <StyledInput
                             id="email"
                             type="email"
                             name="email"
                             placeholder="Enter your email"
                             required
                         />
-                        {/*Icon here potentially? */}
                     </div>
                 </div>
 
@@ -50,18 +39,7 @@ export default function SignUpForm() {
                         Student ID
                     </label>
                     <div className="relative">
-                        <input
-                            className="bg-neutral-700
-                            peer
-                            block
-                            w-full
-                            h-10
-                            px-3
-                            border
-                            border-neutral-500
-                            rounded-md
-                            outline-2
-                            placeholder:text-neutral-500"
+                        <StyledInput
                             id="studentID"
                             name="studentID"
                             placeholder="Enter your student ID"
@@ -79,19 +57,7 @@ export default function SignUpForm() {
                         Password
                     </label>
                     <div className="relative">
-                        <input
-                            className="
-                            bg-neutral-700
-                            peer
-                            block
-                            w-full
-                            h-10
-                            px-3
-                            border
-                            border-neutral-500
-                            rounded-md
-                            outline-2
-                            placeholder:text-neutral-500"
+                        <StyledInput
                             id="password"
                             type="password"
                             name="password"

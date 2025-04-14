@@ -2,6 +2,7 @@
 
 import { redirect } from "next/navigation";
 import {LinkTo} from "@/components/pageEnums";
+import StyledInput from "@/components/styledInput";
 
 const placeholder = () => {
     console.log("login placeholder");
@@ -24,26 +25,13 @@ export default function LoginForm() {
                         Email
                     </label>
                     <div className="relative">
-                        <input
-                            className="
-                            bg-neutral-700
-                            peer
-                            block
-                            w-full
-                            h-10
-                            px-3
-                            border
-                            border-neutral-500
-                            rounded-md
-                            outline-2
-                            placeholder:text-neutral-500"
+                        <StyledInput
                             id="email"
                             type="email"
                             name="email"
                             placeholder="Enter your email"
                             required
                             />
-                        {/*Icon here potentially? */}
                     </div>
                 </div>
                 <div className="mt-4">
@@ -54,26 +42,13 @@ export default function LoginForm() {
                         Password
                     </label>
                     <div className="relative">
-                        <input
-                            className="
-                            bg-neutral-700
-                            peer
-                            block
-                            w-full
-                            h-10
-                            px-3
-                            border
-                            border-neutral-500
-                            rounded-md
-                            outline-2
-                            placeholder:text-neutral-500"
+                        <StyledInput
                             id="password"
                             type="password"
                             name="password"
                             placeholder="Enter your password"
                             required
                             />
-                        {/*Icon here potentially? */}
                     </div>
                 </div>
             </div>
