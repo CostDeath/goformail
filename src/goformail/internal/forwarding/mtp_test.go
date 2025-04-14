@@ -1,7 +1,7 @@
 package forwarding
 
 import (
-	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/test"
+	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/test/mock"
 	"log"
 	"net"
 	"strings"
@@ -15,7 +15,7 @@ func TestSendResponse(t *testing.T) {
 	waitGroup.Add(1)
 	go func() {
 
-		isSuccessful := test.SendResponseMock(waitGroup)
+		isSuccessful := mock.SendResponseMock(waitGroup)
 		if !isSuccessful {
 			t.Error("Response was not able to be received")
 		}
@@ -47,7 +47,7 @@ func TestSendSuccessfulGoodBye(t *testing.T) {
 	waitGroup.Add(1)
 
 	go func() {
-		returnedMessages := strings.Lines(test.SendGoodbyeMock(waitGroup))
+		returnedMessages := strings.Lines(mock.SendGoodbyeMock(waitGroup))
 
 		t.Log("Goroutine has finished in TestSendSuccessfulGoodbye")
 
@@ -96,7 +96,7 @@ func TestSendFailGoodBye(t *testing.T) {
 	waitGroup.Add(1)
 
 	go func() {
-		returnedMessages := strings.Lines(test.SendGoodbyeMock(waitGroup))
+		returnedMessages := strings.Lines(mock.SendGoodbyeMock(waitGroup))
 
 		t.Log("Goroutine has finished in TestSendSuccessfulGoodbye")
 
@@ -143,7 +143,7 @@ func TestSuccessfulMailReceiver(t *testing.T) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	configs := test.Configs
+	configs := mock.Configs
 	waitGroup := new(sync.WaitGroup)
 
 	defer func(tcpSocket net.Listener) {
@@ -156,7 +156,7 @@ func TestSuccessfulMailReceiver(t *testing.T) {
 	// MOCK MTA
 	go func() {
 
-		result := test.MailReceiverMock("LHLO example.domain", waitGroup)
+		result := mock.MailReceiverMock("LHLO example.domain", waitGroup)
 		if result != "successfully received the email" {
 			t.Error(result)
 		}
@@ -177,7 +177,8 @@ func TestSuccessfulMailReceiver(t *testing.T) {
 	if err != nil {
 		t.Errorf("Error was thrown: %s", err.Error())
 	} else if data.data != "hello\n.\nmultiple full stops\n.\n" {
-		t.Errorf("The email data was received incorrectly\nExpected:\n hello\n.\nmultiple full stops\n.\n Received: %s\n", data.data)
+		msg := "The email data was received incorrectly\nExpected:\n hello\n.\nmultiple full stops\n.\n Received: %s\n"
+		t.Errorf(msg, data.data)
 	}
 }
 
@@ -186,7 +187,7 @@ func TestFailedMailReceiver(t *testing.T) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	configs := test.Configs
+	configs := mock.Configs
 	waitGroup := new(sync.WaitGroup)
 
 	defer func(tcpSocket net.Listener) {
@@ -199,7 +200,7 @@ func TestFailedMailReceiver(t *testing.T) {
 
 	// MOCK MTA
 	go func() {
-		result := test.MailReceiverMock("Invalid response", waitGroup)
+		result := mock.MailReceiverMock("Invalid response", waitGroup)
 		if result != "receiving the email was unsuccessful" {
 			t.Error(result)
 		}
@@ -223,14 +224,14 @@ func TestFailedMailReceiver(t *testing.T) {
 }
 
 func TestMailSenderSuccess(t *testing.T) {
-	configs := test.Configs
+	configs := mock.Configs
 	configs["POSTFIX_PORT"] = "8025"
 	waitGroup := new(sync.WaitGroup)
 	waitGroup.Add(1)
 
 	// MOCK SMTP SERVER
 	go func() {
-		result := test.MailSenderMock("250-example.domain\n250-PIPELINING\n250 CHUNKING\n", waitGroup)
+		result := mock.MailSenderMock("250-example.domain\n250-PIPELINING\n250 CHUNKING\n", waitGroup)
 		if result != "Exited the connection" {
 			t.Error(result)
 		}
@@ -245,7 +246,7 @@ func TestMailSenderSuccess(t *testing.T) {
 		data: "hello\n.\nQUIT\n",
 	}
 
-	hasSent := mailSender("example@example.domain", emailData, 4096, configs)
+	hasSent := mailSender("example@example.domain", []string{"example@example.domain"}, emailData, 4096, configs)
 
 	if !hasSent {
 		t.Error("The expected response result was not given")
@@ -254,13 +255,13 @@ func TestMailSenderSuccess(t *testing.T) {
 }
 
 func TestMailSenderFailure(t *testing.T) {
-	configs := test.Configs
+	configs := mock.Configs
 	waitGroup := new(sync.WaitGroup)
 	waitGroup.Add(1)
 
 	// MOCK SMTP SERVER
 	go func() {
-		result := test.MailSenderMock("Invalid reply", waitGroup)
+		result := mock.MailSenderMock("Invalid reply", waitGroup)
 		if result != "Exited the connection" {
 			t.Error(result)
 		}
@@ -275,7 +276,7 @@ func TestMailSenderFailure(t *testing.T) {
 		data: "hello\n.\nQUIT\n",
 	}
 
-	hasSent := mailSender("example@example.domain", emailData, 4096, configs)
+	hasSent := mailSender("example@example.domain", []string{"example@example.domain"}, emailData, 4096, configs)
 
 	if hasSent {
 		t.Error("Function believes the email should have went through")

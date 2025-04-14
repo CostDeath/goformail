@@ -1,5 +1,9 @@
 # See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
 
+# idea
+.idea
+!.idea/runConfigurations
+
 # dependencies
 src/web/node_modules
 src/web/.pnp
@@ -19,6 +23,7 @@ src/goformail/internal/interfaces/out/
 
 # production
 src/web/build
+src/goformail/internal/rest/out
 
 # misc
 src/web/.DS_Store

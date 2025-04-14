@@ -2,7 +2,7 @@ package db
 
 import (
 	"github.com/lib/pq"
-	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal/rest/model"
+	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal/model"
 )
 
 func (db *Db) GetList(id int) (*model.List, *Error) {
@@ -55,8 +55,8 @@ func (db *Db) DeleteList(id int) *Error {
 	return nil
 }
 
-func (db *Db) GetAllLists() (*[]model.List, *Error) {
-	var lists []model.List
+func (db *Db) GetAllLists() (*[]*model.List, *Error) {
+	var lists []*model.List
 	rows, err := db.conn.Query(`
 		SELECT name, recipients FROM lists
 	`)
@@ -67,7 +67,7 @@ func (db *Db) GetAllLists() (*[]model.List, *Error) {
 			return nil, getError(err)
 		}
 
-		lists = append(lists, list)
+		lists = append(lists, &list)
 	}
 
 	if err != nil {

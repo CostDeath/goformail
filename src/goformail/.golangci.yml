@@ -3,3 +3,4 @@ linters:
   default: standard
   enable:
     - lll
+    - testifylint

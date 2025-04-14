@@ -4,12 +4,23 @@ import (
 	"database/sql"
 	"fmt"
 	_ "github.com/lib/pq"
+	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal/model"
 	"log"
 	"strconv"
 	"time"
 )
 
+type IDb interface {
+	GetList(id int) (*model.List, *Error)
+	CreateList(name string, recipients []string) (int, *Error)
+	PatchList(id int, name string, recipients []string) *Error
+	DeleteList(id int) *Error
+	GetAllLists() (*[]*model.List, *Error)
+	GetRecipientsFromListName(name string) ([]string, error)
+}
+
 type Db struct {
+	IDb
 	conn *sql.DB
 }
 
@@ -38,5 +49,5 @@ func InitDB(configs map[string]string) *Db {
 		log.Fatal(err)
 	}
 
-	return &Db{db}
+	return &Db{conn: db}
 }

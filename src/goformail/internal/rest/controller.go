@@ -10,11 +10,11 @@ import (
 
 type Controller struct {
 	configs map[string]string
-	db      *db.Db
+	db      db.IDb
 	mux     *http.ServeMux
 }
 
-func NewController(configs map[string]string, db *db.Db) *Controller {
+func NewController(configs map[string]string, db db.IDb) *Controller {
 	return &Controller{
 		configs: configs,
 		db:      db,
