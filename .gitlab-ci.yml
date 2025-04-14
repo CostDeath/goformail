@@ -28,7 +28,7 @@ lint_go:
   script:
     - cd src/goformail
     - wget -O- -nv https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s v2.1.1
-    - ./bin/golangci-lint run --out-format tab
+    - ./bin/golangci-lint run
 
 vulncheck_go:
   image: golang:1.24-alpine
