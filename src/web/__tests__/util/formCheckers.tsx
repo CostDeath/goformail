@@ -14,3 +14,9 @@ export function PasswordChecker() {
     expect(passwordBox.getAttribute("type")).toBe("password");
     expect(passwordBox.getAttribute("required")).toBeDefined();
 }
+
+export function StudentIDChecker() {
+    const studentIDBox = screen.getByRole("textbox", {name: "Student ID"});
+    expect(studentIDBox).toBeDefined();
+    expect(studentIDBox.getAttribute("type")).toBe("text")
+}
