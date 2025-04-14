@@ -4,7 +4,16 @@ import Page from "@/app/page";
 
 test("Whole page is rendered", () => {
     render(<Page />);
-    expect(screen.getByRole("textbox", {name: "Email"})).toBeDefined();
-    expect(screen.getByLabelText("Password")).toBeDefined();
+    const emailBox = screen.getByRole("textbox", {name: "Email"});
+    expect(emailBox).toBeDefined();
+    expect(emailBox.getAttribute("type")).toBe("email");
+    expect(emailBox.getAttribute("required")).toBeDefined();
+
+    const passwordBox = screen.getByLabelText("Password");
+    expect(passwordBox).toBeDefined();
+    expect(passwordBox.getAttribute("type")).toBe("password");
+    expect(passwordBox.getAttribute("required")).toBeDefined();
+
+
     expect(screen.getByTestId("to-sign-up")).toBeDefined();
 })
