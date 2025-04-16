@@ -2,7 +2,7 @@ package rest
 
 import (
 	"github.com/stretchr/testify/assert"
-	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/test/mock"
+	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal/util"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -14,7 +14,7 @@ func uiCleanUp() {
 
 func TestAddUiHandlerAddsUIEndpoint(t *testing.T) {
 	t.Cleanup(uiCleanUp)
-	ctrl := NewController(mock.Configs, nil)
+	ctrl := NewController(util.MockConfigs, nil)
 	ctrl.addUiHandler()
 
 	// Mock the request
@@ -32,7 +32,7 @@ func TestAddUiHandlerAddsUIEndpoint(t *testing.T) {
 
 func TestAddUiHandlerAddsRootRedirect(t *testing.T) {
 	t.Cleanup(uiCleanUp)
-	ctrl := NewController(mock.Configs, nil)
+	ctrl := NewController(util.MockConfigs, nil)
 	ctrl.addUiHandler()
 
 	// Mock the request
@@ -51,7 +51,7 @@ func TestAddUiHandlerAddsRootRedirect(t *testing.T) {
 
 func TestAddUiHandlerAdds404Page(t *testing.T) {
 	t.Cleanup(uiCleanUp)
-	ctrl := NewController(mock.Configs, nil)
+	ctrl := NewController(util.MockConfigs, nil)
 	ctrl.addUiHandler()
 
 	// Mock the request

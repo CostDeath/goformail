@@ -1,7 +1,6 @@
 package forwarding
 
 import (
-	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/test/mock"
 	"log"
 	"net"
 	"regexp"
@@ -68,7 +67,7 @@ func TestConnectToSMTP(t *testing.T) {
 	waitGroup.Add(1)
 	// MOCK Listener
 	go func() {
-		mock.ConnectSMTPSocketMock(waitGroup)
+		ConnectSMTPSocketMock(waitGroup)
 		t.Log("Goroutine function has finished")
 	}()
 
@@ -100,7 +99,7 @@ func TestFailConnectToSMTP(t *testing.T) {
 	waitGroup.Add(1)
 	// MOCK Listener
 	go func() {
-		mock.ConnectFailSMTPSocketMock(waitGroup)
+		ConnectFailSMTPSocketMock(waitGroup)
 		t.Log("Goroutine within TestFailConnectToSMTP function finished")
 	}()
 

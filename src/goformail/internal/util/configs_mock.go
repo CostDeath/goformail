@@ -1,6 +1,6 @@
-package mock
+package util
 
-var Configs = map[string]string{
+var MockConfigs = map[string]string{
 	"EMAIL_DOMAIN":     "example.domain",
 	"DEBUG_MODE":       "false",
 	"POSTFIX_ADDRESS":  "127.0.0.1",
@@ -10,7 +10,7 @@ var Configs = map[string]string{
 	"BUFFER_SIZE":      "4096",
 	"ORIGINAL_SENDER":  "true",
 	"SQL_ADDRESS":      "127.0.0.1",
-	"SQL_PORT":         "5432",
+	"SQL_PORT":         "6432",
 	"SQL_USER":         "goformail",
 	"SQL_PASSWORD":     "password",
 	"SQL_DB_NAME":      "goformail",

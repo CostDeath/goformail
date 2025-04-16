@@ -1,7 +1,7 @@
 package forwarding
 
 import (
-	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/test/mock"
+	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal/util"
 	"log"
 	"net"
 	"strings"
@@ -15,7 +15,7 @@ func TestSendResponse(t *testing.T) {
 	waitGroup.Add(1)
 	go func() {
 
-		isSuccessful := mock.SendResponseMock(waitGroup)
+		isSuccessful := SendResponseMock(waitGroup)
 		if !isSuccessful {
 			t.Error("Response was not able to be received")
 		}
@@ -47,7 +47,7 @@ func TestSendSuccessfulGoodBye(t *testing.T) {
 	waitGroup.Add(1)
 
 	go func() {
-		returnedMessages := strings.Lines(mock.SendGoodbyeMock(waitGroup))
+		returnedMessages := strings.Lines(SendGoodbyeMock(waitGroup))
 
 		t.Log("Goroutine has finished in TestSendSuccessfulGoodbye")
 
@@ -96,7 +96,7 @@ func TestSendFailGoodBye(t *testing.T) {
 	waitGroup.Add(1)
 
 	go func() {
-		returnedMessages := strings.Lines(mock.SendGoodbyeMock(waitGroup))
+		returnedMessages := strings.Lines(SendGoodbyeMock(waitGroup))
 
 		t.Log("Goroutine has finished in TestSendSuccessfulGoodbye")
 
@@ -143,7 +143,7 @@ func TestSuccessfulMailReceiver(t *testing.T) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	configs := mock.Configs
+	configs := util.MockConfigs
 	waitGroup := new(sync.WaitGroup)
 
 	defer func(tcpSocket net.Listener) {
@@ -156,7 +156,7 @@ func TestSuccessfulMailReceiver(t *testing.T) {
 	// MOCK MTA
 	go func() {
 
-		result := mock.MailReceiverMock("LHLO example.domain", waitGroup)
+		result := MailReceiverMock("LHLO example.domain", waitGroup)
 		if result != "successfully received the email" {
 			t.Error(result)
 		}
@@ -187,7 +187,7 @@ func TestFailedMailReceiver(t *testing.T) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	configs := mock.Configs
+	configs := util.MockConfigs
 	waitGroup := new(sync.WaitGroup)
 
 	defer func(tcpSocket net.Listener) {
@@ -200,7 +200,7 @@ func TestFailedMailReceiver(t *testing.T) {
 
 	// MOCK MTA
 	go func() {
-		result := mock.MailReceiverMock("Invalid response", waitGroup)
+		result := MailReceiverMock("Invalid response", waitGroup)
 		if result != "receiving the email was unsuccessful" {
 			t.Error(result)
 		}
@@ -224,14 +224,14 @@ func TestFailedMailReceiver(t *testing.T) {
 }
 
 func TestMailSenderSuccess(t *testing.T) {
-	configs := mock.Configs
+	configs := util.MockConfigs
 	configs["POSTFIX_PORT"] = "8025"
 	waitGroup := new(sync.WaitGroup)
 	waitGroup.Add(1)
 
 	// MOCK SMTP SERVER
 	go func() {
-		result := mock.MailSenderMock("250-example.domain\n250-PIPELINING\n250 CHUNKING\n", waitGroup)
+		result := MailSenderMock("250-example.domain\n250-PIPELINING\n250 CHUNKING\n", waitGroup)
 		if result != "Exited the connection" {
 			t.Error(result)
 		}
@@ -255,13 +255,13 @@ func TestMailSenderSuccess(t *testing.T) {
 }
 
 func TestMailSenderFailure(t *testing.T) {
-	configs := mock.Configs
+	configs := util.MockConfigs
 	waitGroup := new(sync.WaitGroup)
 	waitGroup.Add(1)
 
 	// MOCK SMTP SERVER
 	go func() {
-		result := mock.MailSenderMock("Invalid reply", waitGroup)
+		result := MailSenderMock("Invalid reply", waitGroup)
 		if result != "Exited the connection" {
 			t.Error(result)
 		}

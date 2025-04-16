@@ -17,11 +17,11 @@ func (db *Db) GetList(id int) (*model.List, *Error) {
 	return &list, nil
 }
 
-func (db *Db) CreateList(name string, recipients []string) (int, *Error) {
+func (db *Db) CreateList(list *model.List) (int, *Error) {
 	var id int
 	if err := db.conn.QueryRow(`
 		INSERT INTO lists (name, recipients) VALUES ($1, $2) RETURNING id
-	`, name, pq.Array(recipients),
+	`, list.Name, pq.Array(list.Recipients),
 	).Scan(&id); err != nil {
 		return 0, getError(err)
 	}
@@ -29,14 +29,14 @@ func (db *Db) CreateList(name string, recipients []string) (int, *Error) {
 	return id, nil
 }
 
-func (db *Db) PatchList(id int, name string, recipients []string) *Error {
+func (db *Db) PatchList(id int, list *model.List) *Error {
 	if _, err := db.conn.Exec(`
 		UPDATE lists
 		SET
 		    name = COALESCE(NULLIF($1, ''), name),
 		    recipients = COALESCE(NULLIF($2, ARRAY[]::TEXT[]), recipients)
 		WHERE id = $3;
-	`, name, pq.Array(recipients), id,
+	`, list.Name, pq.Array(list.Recipients), id,
 	); err != nil {
 		return getError(err)
 	}
@@ -55,15 +55,15 @@ func (db *Db) DeleteList(id int) *Error {
 	return nil
 }
 
-func (db *Db) GetAllLists() (*[]*model.List, *Error) {
-	var lists []*model.List
+func (db *Db) GetAllLists() (*[]*model.ListWithId, *Error) {
+	var lists []*model.ListWithId
 	rows, err := db.conn.Query(`
-		SELECT name, recipients FROM lists
+		SELECT id, name, recipients FROM lists
 	`)
 
 	for rows.Next() {
-		var list model.List
-		if err := rows.Scan(&list.Name, pq.Array(&list.Recipients)); err != nil {
+		list := model.ListWithId{List: &model.List{}}
+		if err := rows.Scan(&list.Id, &list.List.Name, pq.Array(&list.List.Recipients)); err != nil {
 			return nil, getError(err)
 		}
 

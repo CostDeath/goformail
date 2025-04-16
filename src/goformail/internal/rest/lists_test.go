@@ -9,13 +9,14 @@ import (
 	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal/db"
 	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal/model"
 	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal/rest/util"
-	mock2 "gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/test/mock"
+	util2 "gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal/util"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
 
 var defaultList = &model.List{Name: "name", Recipients: []string{"example@domain.tld"}}
+var defaultListWithId = &model.ListWithId{Id: 1, List: defaultList}
 
 func listsCleanUp() {
 	http.DefaultServeMux = new(http.ServeMux)
@@ -23,9 +24,9 @@ func listsCleanUp() {
 
 func TestGetList(t *testing.T) {
 	t.Cleanup(listsCleanUp)
-	mockObj := new(mock2.IDbMock)
+	mockObj := new(db.IDbMock)
 	mockObj.On("GetList", 1).Return(defaultList)
-	ctrl := NewController(mock2.Configs, mockObj)
+	ctrl := NewController(util2.MockConfigs, mockObj)
 	ctrl.addListHandlers()
 
 	// Mock the request
@@ -44,9 +45,9 @@ func TestGetList(t *testing.T) {
 
 func TestGetList404sOnNoParam(t *testing.T) {
 	t.Cleanup(listsCleanUp)
-	mockObj := new(mock2.IDbMock)
+	mockObj := new(db.IDbMock)
 	mockObj.On("GetList", mock.Anything).Panic("GetList should not have been called")
-	ctrl := NewController(mock2.Configs, mockObj)
+	ctrl := NewController(util2.MockConfigs, mockObj)
 	ctrl.addListHandlers()
 
 	// Mock the request
@@ -62,9 +63,9 @@ func TestGetList404sOnNoParam(t *testing.T) {
 
 func TestGetList404sOnInvalidParam(t *testing.T) {
 	t.Cleanup(listsCleanUp)
-	mockObj := new(mock2.IDbMock)
+	mockObj := new(db.IDbMock)
 	mockObj.On("GetList", mock.Anything).Panic("GetList should not have been called")
-	ctrl := NewController(mock2.Configs, mockObj)
+	ctrl := NewController(util2.MockConfigs, mockObj)
 	ctrl.addListHandlers()
 
 	// Mock the request
@@ -80,9 +81,9 @@ func TestGetList404sOnInvalidParam(t *testing.T) {
 
 func TestGetList404sWhenNoSuchId(t *testing.T) {
 	t.Cleanup(listsCleanUp)
-	mockObj := mock2.NewIDbMockWithError(db.ErrNoRows)
+	mockObj := db.NewIDbMockWithError(db.ErrNoRows)
 	mockObj.On("GetList", 1).Return(defaultList)
-	ctrl := NewController(mock2.Configs, mockObj)
+	ctrl := NewController(util2.MockConfigs, mockObj)
 	ctrl.addListHandlers()
 
 	// Mock the request
@@ -98,9 +99,9 @@ func TestGetList404sWhenNoSuchId(t *testing.T) {
 
 func TestGetList500sOnDbError(t *testing.T) {
 	t.Cleanup(listsCleanUp)
-	mockObj := mock2.NewIDbMockWithError(db.Unknown)
+	mockObj := db.NewIDbMockWithError(db.Unknown)
 	mockObj.On("GetList", 1).Return(defaultList)
-	ctrl := NewController(mock2.Configs, mockObj)
+	ctrl := NewController(util2.MockConfigs, mockObj)
 	ctrl.addListHandlers()
 
 	// Mock the request
@@ -116,9 +117,9 @@ func TestGetList500sOnDbError(t *testing.T) {
 
 func TestPostList(t *testing.T) {
 	t.Cleanup(listsCleanUp)
-	mockObj := new(mock2.IDbMock)
-	mockObj.On("CreateList", defaultList.Name, defaultList.Recipients).Return(1)
-	ctrl := NewController(mock2.Configs, mockObj)
+	mockObj := new(db.IDbMock)
+	mockObj.On("CreateList", defaultList).Return(1)
+	ctrl := NewController(util2.MockConfigs, mockObj)
 	ctrl.addListHandlers()
 
 	// Mock the request
@@ -137,10 +138,10 @@ func TestPostList(t *testing.T) {
 
 func TestPostList400sOnMissingField(t *testing.T) {
 	t.Cleanup(listsCleanUp)
-	mockObj := new(mock2.IDbMock)
-	mockObj.On("CreateList", mock.Anything, mock.Anything).
+	mockObj := new(db.IDbMock)
+	mockObj.On("CreateList", mock.Anything).
 		Panic("CreateList should not have been called")
-	ctrl := NewController(mock2.Configs, mockObj)
+	ctrl := NewController(util2.MockConfigs, mockObj)
 	ctrl.addListHandlers()
 
 	// Mock the request
@@ -157,10 +158,10 @@ func TestPostList400sOnMissingField(t *testing.T) {
 
 func TestPostList400sOnInvalidPayload(t *testing.T) {
 	t.Cleanup(listsCleanUp)
-	mockObj := new(mock2.IDbMock)
-	mockObj.On("CreateList", mock.Anything, mock.Anything).
+	mockObj := new(db.IDbMock)
+	mockObj.On("CreateList", mock.Anything).
 		Panic("CreateList should not have been called")
-	ctrl := NewController(mock2.Configs, mockObj)
+	ctrl := NewController(util2.MockConfigs, mockObj)
 	ctrl.addListHandlers()
 
 	// Mock the request
@@ -176,9 +177,9 @@ func TestPostList400sOnInvalidPayload(t *testing.T) {
 
 func TestPostList409sOnDuplicateName(t *testing.T) {
 	t.Cleanup(listsCleanUp)
-	mockObj := mock2.NewIDbMockWithError(db.ErrDuplicate)
-	mockObj.On("CreateList", defaultList.Name, defaultList.Recipients).Return(0)
-	ctrl := NewController(mock2.Configs, mockObj)
+	mockObj := db.NewIDbMockWithError(db.ErrDuplicate)
+	mockObj.On("CreateList", defaultList).Return(0)
+	ctrl := NewController(util2.MockConfigs, mockObj)
 	ctrl.addListHandlers()
 
 	// Mock the request
@@ -194,9 +195,9 @@ func TestPostList409sOnDuplicateName(t *testing.T) {
 
 func TestPostList500sOnDbError(t *testing.T) {
 	t.Cleanup(listsCleanUp)
-	mockObj := mock2.NewIDbMockWithError(db.Unknown)
-	mockObj.On("CreateList", defaultList.Name, defaultList.Recipients).Return(0)
-	ctrl := NewController(mock2.Configs, mockObj)
+	mockObj := db.NewIDbMockWithError(db.Unknown)
+	mockObj.On("CreateList", defaultList).Return(0)
+	ctrl := NewController(util2.MockConfigs, mockObj)
 	ctrl.addListHandlers()
 
 	// Mock the request
@@ -212,9 +213,9 @@ func TestPostList500sOnDbError(t *testing.T) {
 
 func TestPatchList(t *testing.T) {
 	t.Cleanup(listsCleanUp)
-	mockObj := new(mock2.IDbMock)
-	mockObj.On("PatchList", 1, defaultList.Name, defaultList.Recipients).Return(1)
-	ctrl := NewController(mock2.Configs, mockObj)
+	mockObj := new(db.IDbMock)
+	mockObj.On("PatchList", 1, defaultList).Return(1)
+	ctrl := NewController(util2.MockConfigs, mockObj)
 	ctrl.addListHandlers()
 
 	// Mock the request
@@ -233,10 +234,10 @@ func TestPatchList(t *testing.T) {
 
 func TestPatchList404sOnNoParam(t *testing.T) {
 	t.Cleanup(listsCleanUp)
-	mockObj := new(mock2.IDbMock)
-	mockObj.On("PatchList", mock.Anything, mock.Anything, mock.Anything).
+	mockObj := new(db.IDbMock)
+	mockObj.On("PatchList", mock.Anything, mock.Anything).
 		Panic("PatchList should not have been called")
-	ctrl := NewController(mock2.Configs, mockObj)
+	ctrl := NewController(util2.MockConfigs, mockObj)
 	ctrl.addListHandlers()
 
 	// Mock the request
@@ -252,10 +253,10 @@ func TestPatchList404sOnNoParam(t *testing.T) {
 
 func TestPatchList404sOnInvalidParam(t *testing.T) {
 	t.Cleanup(listsCleanUp)
-	mockObj := new(mock2.IDbMock)
-	mockObj.On("PatchList", mock.Anything, mock.Anything, mock.Anything).
+	mockObj := new(db.IDbMock)
+	mockObj.On("PatchList", mock.Anything, mock.Anything).
 		Panic("PatchList should not have been called")
-	ctrl := NewController(mock2.Configs, mockObj)
+	ctrl := NewController(util2.MockConfigs, mockObj)
 	ctrl.addListHandlers()
 
 	// Mock the request
@@ -271,10 +272,10 @@ func TestPatchList404sOnInvalidParam(t *testing.T) {
 
 func TestPatchList400sOnInvalidPayload(t *testing.T) {
 	t.Cleanup(listsCleanUp)
-	mockObj := new(mock2.IDbMock)
-	mockObj.On("PatchList", mock.Anything, mock.Anything, mock.Anything).
+	mockObj := new(db.IDbMock)
+	mockObj.On("PatchList", mock.Anything, mock.Anything).
 		Panic("PatchList should not have been called")
-	ctrl := NewController(mock2.Configs, mockObj)
+	ctrl := NewController(util2.MockConfigs, mockObj)
 	ctrl.addListHandlers()
 
 	// Mock the request
@@ -290,9 +291,9 @@ func TestPatchList400sOnInvalidPayload(t *testing.T) {
 
 func TestPatchList409sOnDuplicateName(t *testing.T) {
 	t.Cleanup(listsCleanUp)
-	mockObj := mock2.NewIDbMockWithError(db.ErrDuplicate)
-	mockObj.On("PatchList", 1, defaultList.Name, defaultList.Recipients).Return(0)
-	ctrl := NewController(mock2.Configs, mockObj)
+	mockObj := db.NewIDbMockWithError(db.ErrDuplicate)
+	mockObj.On("PatchList", 1, defaultList).Return(0)
+	ctrl := NewController(util2.MockConfigs, mockObj)
 	ctrl.addListHandlers()
 
 	// Mock the request
@@ -308,9 +309,9 @@ func TestPatchList409sOnDuplicateName(t *testing.T) {
 
 func TestPatchList404sWhenNoSuchId(t *testing.T) {
 	t.Cleanup(listsCleanUp)
-	mockObj := mock2.NewIDbMockWithError(db.ErrNoRows)
-	mockObj.On("PatchList", 1, defaultList.Name, defaultList.Recipients).Return(0)
-	ctrl := NewController(mock2.Configs, mockObj)
+	mockObj := db.NewIDbMockWithError(db.ErrNoRows)
+	mockObj.On("PatchList", 1, defaultList).Return(0)
+	ctrl := NewController(util2.MockConfigs, mockObj)
 	ctrl.addListHandlers()
 
 	// Mock the request
@@ -326,9 +327,9 @@ func TestPatchList404sWhenNoSuchId(t *testing.T) {
 
 func TestPatchList500sOnDbError(t *testing.T) {
 	t.Cleanup(listsCleanUp)
-	mockObj := mock2.NewIDbMockWithError(db.Unknown)
-	mockObj.On("PatchList", 1, defaultList.Name, defaultList.Recipients).Return(0)
-	ctrl := NewController(mock2.Configs, mockObj)
+	mockObj := db.NewIDbMockWithError(db.Unknown)
+	mockObj.On("PatchList", 1, defaultList).Return(0)
+	ctrl := NewController(util2.MockConfigs, mockObj)
 	ctrl.addListHandlers()
 
 	// Mock the request
@@ -344,9 +345,9 @@ func TestPatchList500sOnDbError(t *testing.T) {
 
 func TestDeleteList(t *testing.T) {
 	t.Cleanup(listsCleanUp)
-	mockObj := new(mock2.IDbMock)
+	mockObj := new(db.IDbMock)
 	mockObj.On("DeleteList", 1).Return()
-	ctrl := NewController(mock2.Configs, mockObj)
+	ctrl := NewController(util2.MockConfigs, mockObj)
 	ctrl.addListHandlers()
 
 	// Mock the request
@@ -365,9 +366,9 @@ func TestDeleteList(t *testing.T) {
 
 func TestDeleteList404sOnNoParam(t *testing.T) {
 	t.Cleanup(listsCleanUp)
-	mockObj := new(mock2.IDbMock)
+	mockObj := new(db.IDbMock)
 	mockObj.On("DeleteList", mock.Anything).Panic("DeleteList should not have been called")
-	ctrl := NewController(mock2.Configs, mockObj)
+	ctrl := NewController(util2.MockConfigs, mockObj)
 	ctrl.addListHandlers()
 
 	// Mock the request
@@ -383,9 +384,9 @@ func TestDeleteList404sOnNoParam(t *testing.T) {
 
 func TestDeleteList404sOnInvalidParam(t *testing.T) {
 	t.Cleanup(listsCleanUp)
-	mockObj := new(mock2.IDbMock)
+	mockObj := new(db.IDbMock)
 	mockObj.On("DeleteList", mock.Anything).Panic("DeleteList should not have been called")
-	ctrl := NewController(mock2.Configs, mockObj)
+	ctrl := NewController(util2.MockConfigs, mockObj)
 	ctrl.addListHandlers()
 
 	// Mock the request
@@ -401,9 +402,9 @@ func TestDeleteList404sOnInvalidParam(t *testing.T) {
 
 func TestDeleteList404sWhenNoSuchId(t *testing.T) {
 	t.Cleanup(listsCleanUp)
-	mockObj := mock2.NewIDbMockWithError(db.ErrNoRows)
+	mockObj := db.NewIDbMockWithError(db.ErrNoRows)
 	mockObj.On("DeleteList", 1).Return()
-	ctrl := NewController(mock2.Configs, mockObj)
+	ctrl := NewController(util2.MockConfigs, mockObj)
 	ctrl.addListHandlers()
 
 	// Mock the request
@@ -419,9 +420,9 @@ func TestDeleteList404sWhenNoSuchId(t *testing.T) {
 
 func TestDeleteList500sOnDbError(t *testing.T) {
 	t.Cleanup(listsCleanUp)
-	mockObj := mock2.NewIDbMockWithError(db.Unknown)
+	mockObj := db.NewIDbMockWithError(db.Unknown)
 	mockObj.On("DeleteList", 1).Return()
-	ctrl := NewController(mock2.Configs, mockObj)
+	ctrl := NewController(util2.MockConfigs, mockObj)
 	ctrl.addListHandlers()
 
 	// Mock the request
@@ -437,9 +438,9 @@ func TestDeleteList500sOnDbError(t *testing.T) {
 
 func TestGetLists(t *testing.T) {
 	t.Cleanup(listsCleanUp)
-	mockObj := new(mock2.IDbMock)
-	mockObj.On("GetAllLists").Return(&[]*model.List{defaultList})
-	ctrl := NewController(mock2.Configs, mockObj)
+	mockObj := new(db.IDbMock)
+	mockObj.On("GetAllLists").Return(&[]*model.ListWithId{defaultListWithId})
+	ctrl := NewController(util2.MockConfigs, mockObj)
 	ctrl.addListHandlers()
 
 	// Mock the request
@@ -452,15 +453,15 @@ func TestGetLists(t *testing.T) {
 
 	// Check the response is what we expect.
 	assert.Equal(t, http.StatusOK, rr.Code)
-	expected := getExpectedListResponse(t, "Successfully fetched lists!", []*model.List{defaultList})
+	expected := getExpectedListResponse(t, "Successfully fetched lists!", []*model.ListWithId{defaultListWithId})
 	assert.Equal(t, expected, rr.Body.String())
 }
 
 func TestGetListsList404sWhenNoLists(t *testing.T) {
 	t.Cleanup(listsCleanUp)
-	mockObj := mock2.NewIDbMockWithError(db.ErrNoRows)
-	mockObj.On("GetAllLists").Return(&[]*model.List{defaultList})
-	ctrl := NewController(mock2.Configs, mockObj)
+	mockObj := db.NewIDbMockWithError(db.ErrNoRows)
+	mockObj.On("GetAllLists").Return(&[]*model.ListWithId{defaultListWithId})
+	ctrl := NewController(util2.MockConfigs, mockObj)
 	ctrl.addListHandlers()
 
 	// Mock the request
@@ -476,9 +477,9 @@ func TestGetListsList404sWhenNoLists(t *testing.T) {
 
 func TestGetLists500sOnDbError(t *testing.T) {
 	t.Cleanup(listsCleanUp)
-	mockObj := mock2.NewIDbMockWithError(db.Unknown)
-	mockObj.On("GetAllLists").Return(&[]*model.List{defaultList})
-	ctrl := NewController(mock2.Configs, mockObj)
+	mockObj := db.NewIDbMockWithError(db.Unknown)
+	mockObj.On("GetAllLists").Return(&[]*model.ListWithId{defaultListWithId})
+	ctrl := NewController(util2.MockConfigs, mockObj)
 	ctrl.addListHandlers()
 
 	// Mock the request

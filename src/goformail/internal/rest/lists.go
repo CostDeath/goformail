@@ -73,7 +73,7 @@ func (ctrl Controller) postList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	id, err := ctrl.db.CreateList(list.Name, list.Recipients)
+	id, err := ctrl.db.CreateList(&list)
 	if err != nil {
 		switch err.Code {
 		case db.ErrDuplicate:
@@ -101,7 +101,7 @@ func (ctrl Controller) patchList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := ctrl.db.PatchList(id, list.Name, list.Recipients); err != nil || r.Body == http.NoBody {
+	if err := ctrl.db.PatchList(id, &list); err != nil || r.Body == http.NoBody {
 		switch err.Code {
 		case db.ErrDuplicate:
 			util.HandleError(w, r, util.ListAlreadyExists)
