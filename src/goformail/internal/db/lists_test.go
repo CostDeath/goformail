@@ -42,13 +42,13 @@ func (suite *DbListsSuite) SetupSuite() {
 			hostConfig.Tmpfs = map[string]string{"/var/lib/postgresql/data": "rw"}
 		}),
 	)
-	suite.NoError(err)
+	suite.Require().NoError(err)
 
 	info := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
 		util.MockConfigs["SQL_ADDRESS"], port, util.MockConfigs["SQL_USER"], util.MockConfigs["SQL_PASSWORD"],
 		util.MockConfigs["SQL_DB_NAME"])
 	db, err := sql.Open("postgres", info)
-	suite.NoError(err)
+	suite.Require().NoError(err)
 
 	suite.c, suite.db = c, &Db{conn: db}
 }
@@ -68,7 +68,7 @@ func (suite *DbListsSuite) TestGetList() {
 	err := suite.db.conn.QueryRow(`
 		SELECT * FROM lists WHERE name = $1
 	`, "get-test-0").Scan(new(int), &expected.Name, pq.Array(&expected.Recipients))
-	suite.NoError(err)
+	suite.Require().NoError(err)
 
 	suite.Equal(&expected, actual)
 }
@@ -89,7 +89,7 @@ func (suite *DbListsSuite) TestCreateList() {
 	err := suite.db.conn.QueryRow(`
 		SELECT * FROM lists WHERE id = $1
 	`, id).Scan(new(int), &actual.Name, pq.Array(&actual.Recipients))
-	suite.NoError(err)
+	suite.Require().NoError(err)
 
 	suite.Equal(expected, &actual)
 }
@@ -102,6 +102,87 @@ func (suite *DbListsSuite) TestCreateListReturnsErrorOnDuplicate() {
 	suite.Equal(ErrDuplicate, err.Code)
 }
 
+func (suite *DbListsSuite) TestPatchList() {
+	// Run function
+	expected := createList("patch-test-8")
+	suite.db.PatchList(2, expected)
+
+	// Check list was patched properly
+	var actual model.List
+	err := suite.db.conn.QueryRow(`
+		SELECT * FROM lists WHERE id = $1
+	`, 2).Scan(new(int), &actual.Name, pq.Array(&actual.Recipients))
+	suite.Require().NoError(err)
+
+	suite.Equal(expected, &actual)
+}
+
+func (suite *DbListsSuite) TestPatchListUpdatesPartially() {
+	// Run function
+	expected := &model.List{Recipients: []string{"example2@domain.tld"}}
+	suite.db.PatchList(3, expected)
+
+	// Check list was patched properly
+	var actual model.List
+	err := suite.db.conn.QueryRow(`
+		SELECT * FROM lists WHERE id = $1
+	`, 3).Scan(new(int), &actual.Name, pq.Array(&actual.Recipients))
+	suite.Require().NoError(err)
+
+	suite.Equal(&model.List{Name: "patch-test-1", Recipients: expected.Recipients}, &actual)
+}
+
+func (suite *DbListsSuite) TestPatchListReturnsNoRowsOnInvalidId() {
+	err := suite.db.PatchList(0, createList("patch-test-0"))
+
+	suite.Equal(ErrNoRows, err.Code)
+}
+
+func (suite *DbListsSuite) TestPatchListReturnsDuplicateOnExistingList() {
+	err := suite.db.PatchList(2, createList("patch-test-1"))
+
+	suite.Equal(ErrDuplicate, err.Code)
+}
+
+func (suite *DbListsSuite) TestDeleteList() {
+	// Run function
+	suite.db.DeleteList(4)
+
+	// Check list was patched properly
+	err := suite.db.conn.QueryRow(`
+		SELECT * FROM lists WHERE id = $1
+	`, 4).Scan()
+
+	suite.Equal(sql.ErrNoRows, err)
+}
+
+func (suite *DbListsSuite) TestDeleteListReturnsNoRowsOnInvalidId() {
+	err := suite.db.DeleteList(0)
+
+	suite.Equal(ErrNoRows, err.Code)
+}
+
 func createList(name string) *model.List {
 	return &model.List{Name: name, Recipients: []string{"example@domain.tld"}}
+}
+
+func (suite *DbListsSuite) TestGetAllList() {
+	// Run function
+	actual, _ := suite.db.GetAllLists()
+
+	// Get expected
+	var expected []*model.ListWithId
+	rows, err := suite.db.conn.Query(`
+		SELECT * FROM lists
+	`)
+	suite.Require().NoError(err)
+	for rows.Next() {
+		list := model.ListWithId{List: &model.List{}}
+		err := rows.Scan(&list.Id, &list.List.Name, pq.Array(&list.List.Recipients))
+		suite.Require().NoError(err)
+
+		expected = append(expected, &list)
+	}
+
+	suite.Equal(&expected, actual)
 }

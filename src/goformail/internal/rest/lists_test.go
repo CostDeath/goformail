@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal/db"
 	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal/model"
 	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal/rest/util"
@@ -495,20 +496,14 @@ func TestGetLists500sOnDbError(t *testing.T) {
 
 func createListRequest(t *testing.T, method string, uri string, body interface{}) *http.Request {
 	jsonBody, err := json.Marshal(body)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	req, err := http.NewRequest(method, uri, bytes.NewBuffer(jsonBody))
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	return req
 }
 
 func getExpectedListResponse(t *testing.T, msg string, data interface{}) string {
 	jsonData, err := json.Marshal(data)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	return fmt.Sprintf("{\"message\":\"%s\",\"data\":%s}", msg, jsonData)
 }

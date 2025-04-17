@@ -7,6 +7,7 @@ import (
 	"github.com/docker/go-connections/nat"
 	_ "github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/modules/postgres"
 	"github.com/testcontainers/testcontainers-go/wait"
@@ -41,7 +42,7 @@ func TestInitDBCreatesTables(t *testing.T) {
 			hostConfig.Tmpfs = map[string]string{"/var/lib/postgresql/data": "rw"}
 		}),
 	)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 
 	defer func() {
 		if err := testcontainers.TerminateContainer(c); err != nil {
@@ -58,12 +59,12 @@ func TestInitDBCreatesTables(t *testing.T) {
 		FROM information_schema.columns
 		WHERE table_name = 'lists';
 	`)
-	assert.NoError(t, err)
+	require.NoError(t, err)
 	var columns []column
 	for rows.Next() {
 		column := column{}
 		err := rows.Scan(&column.name, &column.ctype, &column.nullable, &column.dflt)
-		assert.NoError(t, err)
+		require.NoError(t, err)
 
 		columns = append(columns, column)
 	}

@@ -3,6 +3,7 @@ package util
 import (
 	"encoding/json"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"net/http/httptest"
 	"testing"
 )
@@ -14,9 +15,8 @@ func TestSetsResponseWithStringData(t *testing.T) {
 	assert.Equal(t, "application/json", rr.Header().Get("Content-Type"))
 	actualBody := rr.Body.String()
 	expectedBody, err := json.Marshal(response{Message: "test message", Data: "data"})
-	if err != nil || actualBody != string(expectedBody) {
-		t.Errorf("Incorrect response body. Expected: '%s', got '%s'", expectedBody, actualBody)
-	}
+	require.NoError(t, err)
+	assert.Equal(t, string(expectedBody), actualBody)
 }
 
 func TestSetsResponseWithStructData(t *testing.T) {
@@ -26,7 +26,6 @@ func TestSetsResponseWithStructData(t *testing.T) {
 	assert.Equal(t, "application/json", rr.Header().Get("Content-Type"))
 	actualBody := rr.Body.String()
 	expectedBody, err := json.Marshal(response{Message: "test message", Data: IdObject{Id: 1}})
-	if err != nil || actualBody != string(expectedBody) {
-		t.Errorf("Incorrect response body. Expected: '%s', got '%s'", expectedBody, actualBody)
-	}
+	require.NoError(t, err)
+	assert.Equal(t, string(expectedBody), actualBody)
 }

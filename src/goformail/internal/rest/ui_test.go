@@ -2,6 +2,7 @@ package rest
 
 import (
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal/util"
 	"net/http"
 	"net/http/httptest"
@@ -19,9 +20,7 @@ func TestAddUiHandlerAddsUIEndpoint(t *testing.T) {
 
 	// Mock the request
 	req, err := http.NewRequest("GET", "/ui/", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	rr := httptest.NewRecorder()
 	ctrl.mux.ServeHTTP(rr, req)
 
@@ -37,9 +36,7 @@ func TestAddUiHandlerAddsRootRedirect(t *testing.T) {
 
 	// Mock the request
 	req, err := http.NewRequest("GET", "/", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	rr := httptest.NewRecorder()
 	ctrl.mux.ServeHTTP(rr, req)
 
@@ -56,9 +53,7 @@ func TestAddUiHandlerAdds404Page(t *testing.T) {
 
 	// Mock the request
 	req, err := http.NewRequest("GET", "/invalidEndpoint", nil)
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 	rr := httptest.NewRecorder()
 	ctrl.mux.ServeHTTP(rr, req)
 

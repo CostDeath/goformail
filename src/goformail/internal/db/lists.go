@@ -30,26 +30,32 @@ func (db *Db) CreateList(list *model.List) (int, *Error) {
 }
 
 func (db *Db) PatchList(id int, list *model.List) *Error {
-	if _, err := db.conn.Exec(`
+	res, err := db.conn.Exec(`
 		UPDATE lists
 		SET
 		    name = COALESCE(NULLIF($1, ''), name),
 		    recipients = COALESCE(NULLIF($2, ARRAY[]::TEXT[]), recipients)
 		WHERE id = $3;
 	`, list.Name, pq.Array(list.Recipients), id,
-	); err != nil {
+	)
+	if err != nil {
 		return getError(err)
+	} else if count, err := res.RowsAffected(); count == 0 || err != nil {
+		return &Error{Err: err, Code: ErrNoRows}
 	}
 
 	return nil
 }
 
 func (db *Db) DeleteList(id int) *Error {
-	if _, err := db.conn.Exec(`
+	res, err := db.conn.Exec(`
 		DELETE FROM lists WHERE id = $1;
 	`, id,
-	); err != nil {
+	)
+	if err != nil {
 		return getError(err)
+	} else if count, err := res.RowsAffected(); count == 0 || err != nil {
+		return &Error{Err: err, Code: ErrNoRows}
 	}
 
 	return nil
@@ -60,6 +66,9 @@ func (db *Db) GetAllLists() (*[]*model.ListWithId, *Error) {
 	rows, err := db.conn.Query(`
 		SELECT id, name, recipients FROM lists
 	`)
+	if err != nil {
+		return nil, getError(err)
+	}
 
 	for rows.Next() {
 		list := model.ListWithId{List: &model.List{}}
@@ -68,10 +77,6 @@ func (db *Db) GetAllLists() (*[]*model.ListWithId, *Error) {
 		}
 
 		lists = append(lists, &list)
-	}
-
-	if err != nil {
-		return nil, getError(err)
 	}
 
 	return &lists, nil
