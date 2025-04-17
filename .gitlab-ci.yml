@@ -78,6 +78,8 @@ test_node:
 test_go:
   image: golang:1.24-alpine
   stage: test
+  services:
+    - docker:dind
   script:
     - cd src/goformail
     - go test ./...
