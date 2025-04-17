@@ -15,7 +15,7 @@ export default function Pagination({totalPages}: { totalPages: number }) {
     return (
         <div data-testid="pagination" className="flex justify-center py-5">
             {allPages.map(key => (
-                <div key={key} onClick={() => pageToggler(key)} className="hover:cursor-pointer">
+                <div key={key} onClick={() => pageToggler(key)} className="hover:cursor-pointer px-[3]">
                     <div className={clsx(
                         "flex h-10 w-10 items-center justify-center text-sm border border-neutral-700/25 rounded-md",
                         {
