@@ -5,7 +5,6 @@ import (
 	"database/sql"
 	"fmt"
 	"github.com/docker/docker/api/types/container"
-	"github.com/docker/go-connections/nat"
 	"github.com/lib/pq"
 	"github.com/stretchr/testify/suite"
 	"github.com/testcontainers/testcontainers-go"
@@ -27,9 +26,9 @@ func TestDbListsSuite(t *testing.T) {
 }
 
 func (suite *DbListsSuite) SetupSuite() {
-	port := util.MockConfigs["SQL_PORT"]
+	ctx := context.Background()
 	c, err := postgres.Run(
-		context.Background(),
+		ctx,
 		"postgres:latest",
 		postgres.WithDatabase("goformail"),
 		postgres.WithUsername("goformail"),
@@ -38,14 +37,15 @@ func (suite *DbListsSuite) SetupSuite() {
 		testcontainers.WithWaitStrategy(wait.ForListeningPort("5432/tcp")),
 		testcontainers.WithHostConfigModifier(func(hostConfig *container.HostConfig) {
 			hostConfig.AutoRemove = true
-			hostConfig.PortBindings = map[nat.Port][]nat.PortBinding{"5432/tcp": {{HostPort: port}}}
 			hostConfig.Tmpfs = map[string]string{"/var/lib/postgresql/data": "rw"}
 		}),
 	)
 	suite.Require().NoError(err)
 
+	host, _ := c.Host(ctx)
+	mappedPort, _ := c.MappedPort(ctx, "5432")
 	info := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		util.MockConfigs["SQL_ADDRESS"], port, util.MockConfigs["SQL_USER"], util.MockConfigs["SQL_PASSWORD"],
+		host, mappedPort.Port(), util.MockConfigs["SQL_USER"], util.MockConfigs["SQL_PASSWORD"],
 		util.MockConfigs["SQL_DB_NAME"])
 	db, err := sql.Open("postgres", info)
 	suite.Require().NoError(err)

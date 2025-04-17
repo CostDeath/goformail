@@ -4,7 +4,6 @@ import (
 	"context"
 	"database/sql"
 	"github.com/docker/docker/api/types/container"
-	"github.com/docker/go-connections/nat"
 	_ "github.com/lib/pq"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -28,9 +27,9 @@ var expectedColumns = []column{
 
 func TestInitDBCreatesTables(t *testing.T) {
 	// Define the postgres container config
-	port := util.MockConfigs["SQL_PORT"]
+	ctx := context.Background()
 	c, err := postgres.Run(
-		context.Background(),
+		ctx,
 		"postgres:latest",
 		postgres.WithDatabase("goformail"),
 		postgres.WithUsername("goformail"),
@@ -38,7 +37,6 @@ func TestInitDBCreatesTables(t *testing.T) {
 		testcontainers.WithWaitStrategy(wait.ForListeningPort("5432/tcp")),
 		testcontainers.WithHostConfigModifier(func(hostConfig *container.HostConfig) {
 			hostConfig.AutoRemove = true
-			hostConfig.PortBindings = map[nat.Port][]nat.PortBinding{"5432/tcp": {{HostPort: port}}}
 			hostConfig.Tmpfs = map[string]string{"/var/lib/postgresql/data": "rw"}
 		}),
 	)
@@ -51,7 +49,16 @@ func TestInitDBCreatesTables(t *testing.T) {
 	}()
 
 	// Run function
-	db := InitDB(util.MockConfigs)
+	host, _ := c.Host(ctx)
+	mappedPort, _ := c.MappedPort(ctx, "5432")
+	containerConfig := map[string]string{
+		"SQL_ADDRESS":  host,
+		"SQL_PORT":     mappedPort.Port(),
+		"SQL_USER":     util.MockConfigs["SQL_USER"],
+		"SQL_PASSWORD": util.MockConfigs["SQL_PASSWORD"],
+		"SQL_DB_NAME":  util.MockConfigs["SQL_DB_NAME"],
+	}
+	db := InitDB(containerConfig)
 
 	// Check correct tables are present
 	rows, err := db.conn.Query(`
