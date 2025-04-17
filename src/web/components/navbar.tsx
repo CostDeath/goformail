@@ -17,21 +17,28 @@ export default function Navbar() {
     ];
 
     return (
-        <div className="flex h-full flex-col px-3 py-4 md:px-2 bg-gray-100">
+        <div className="
+        flex
+        h-full
+        flex-col
+        py-4
+        shadow-[0_3px_10px_-1px_rgba(0,0,0,1)]
+        ">
             {links.map((link) => (
-                <Link href={link.href} key={link.name} data-testid={link.name} onClick={() => resetPagination()}
-                className={clsx(
-                    "flex h-[48px] border-b-4 grow items-center justify-center gap-2 rounded-md p-3 text-sm font-medium hover:bg-gray-200 hover:text-gray-700 hover:cursor-pointer md:flex-none md:justify-start w-full",
-                    {
-                        "bg-gray-200 text-gray-700 font-bold": currentPageName === link.href
-                    }
-                )}>{link.name}</Link>
-            ))}
+                    <Link href={link.href} key={link.name} data-testid={link.name} onClick={() => resetPagination()}
+                          className={clsx(
+                              "flex h-[60px] border-t-1 border-b-1 border-neutral-700  shadow-[0_3px_10px_-1px_rgba(0,0,0,0.3)] grow items-center justify-center gap-2 p-3 text-sm font-medium hover:bg-cyan-500 hover:text-gray-200 hover:cursor-pointer md:flex-none md:justify-start w-full",
+                              {
+                                  "bg-cyan-600 border-t-1 border-b-1 border-neutral-700 shadow-[0_3px_10px_-1px_rgba(0,0,0,0.3)]  text-gray-200 font-bold": currentPageName === link.href
+                              }
+                          )}>{link.name}</Link>
+                )
+            )}
 
             <Link
                 href={LinkTo.LOGIN}
                 data-testid={PageName.LOGIN}
-                 className="flex h-[48px] border-b-4 grow items-center justify-center gap-2 rounded-md p-3 text-sm font-medium hover:bg-gray-200 hover:text-gray-700 hover:cursor-pointer md:flex-none md:justify-start w-full">
+                className="flex h-[60px] shadow-[0_3px_10px_-1px_rgba(0,0,0,0.3)] grow items-center justify-center gap-2 rounded-md p-3 text-sm font-medium hover:bg-red-700 hover:text-gray-200 hover:cursor-pointer md:flex-none md:justify-start w-full">
                 {/* For now we'll use Link to sign out as there is no logic for users yet */}
                 Sign Out
             </Link>
