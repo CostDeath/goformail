@@ -2,9 +2,11 @@ package forwarding
 
 import (
 	"fmt"
+	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal/db"
 	"log"
 	"net"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -12,7 +14,7 @@ func (e *emailCollectionError) Error() string {
 	return fmt.Sprintf("%s: %s", e.errorType, e.Err.Error())
 }
 
-func LMTPService(configs map[string]string) {
+func LMTPService(configs map[string]string, db *db.Db) {
 	fmt.Println(getCurrentTime() + " Starting LMTP Service...")
 	lmtpPort, exists := configs["LMTP_PORT"]
 	if !exists {
@@ -62,10 +64,14 @@ func LMTPService(configs map[string]string) {
 		// SEND MAIL LOGIC
 		if data.data != "" {
 			for _, mailingList := range data.rcpt {
+				rcpt, err := db.GetRecipientsFromListName(strings.Split(mailingList, "@")[0])
+				if err != nil {
+					log.Println(err)
+				}
 				if originalSender == "true" {
-					mailForwardSuccess = mailSender(data.from, data, bufferSize, configs)
+					mailForwardSuccess = mailSender(data.from, rcpt, data, bufferSize, configs)
 				} else {
-					mailForwardSuccess = mailSender(mailingList, data, bufferSize, configs)
+					mailForwardSuccess = mailSender(mailingList, rcpt, data, bufferSize, configs)
 				}
 			}
 		}
