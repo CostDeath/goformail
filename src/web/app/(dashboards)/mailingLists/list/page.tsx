@@ -2,7 +2,7 @@
 
 import Pagination from "@/components/pagination";
 import {Suspense} from "react";
-import ListEmailsTableWrapper from "@/components/list/listEmailsTableWrapper";
+import ListEmailsTable from "@/components/list/listEmailsTable";
 
 export default function Page() {
 
@@ -10,7 +10,7 @@ export default function Page() {
     return (
         <div className="w-full">
             <Suspense>
-                <ListEmailsTableWrapper />
+                <ListEmailsTable />
             </Suspense>
 
             <Suspense>
