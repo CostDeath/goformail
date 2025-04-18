@@ -162,10 +162,6 @@ func (suite *DbListsSuite) TestDeleteListReturnsNoRowsOnInvalidId() {
 	suite.Equal(ErrNoRows, err.Code)
 }
 
-func createList(name string) *model.List {
-	return &model.List{Name: name, Recipients: []string{"example@domain.tld"}}
-}
-
 func (suite *DbListsSuite) TestGetAllList() {
 	// Run function
 	actual, _ := suite.db.GetAllLists()
@@ -185,4 +181,8 @@ func (suite *DbListsSuite) TestGetAllList() {
 	}
 
 	suite.Equal(&expected, actual)
+}
+
+func createList(name string) *model.List {
+	return &model.List{Name: name, Recipients: []string{"example@domain.tld"}}
 }
