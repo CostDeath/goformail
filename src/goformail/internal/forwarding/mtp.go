@@ -42,7 +42,10 @@ func sendGoodbye(conn net.Conn, mailForwardSuccess bool, remainingAcks []string)
 }
 
 func validEmail(email string) bool {
-	matches, err := regexp.Match(`^([A-z0-9+._/&!][-A-z0-9+._/&!]*)@(([a-z0-9][-a-z0-9]*\.)([-a-z0-9]+\.)*[a-z]{2,})$`, []byte(email))
+	matches, err := regexp.Match(
+		`^([A-z0-9+._/&!][-A-z0-9+._/&!]*)@(([a-z0-9][-a-z0-9]*\.)([-a-z0-9]+\.)*[a-z]{2,})$`,
+		[]byte(email),
+	)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -101,7 +104,8 @@ func mailReceiver(conn net.Conn, bufferSize int, configs map[string]string) (Ema
 					return data, nil
 				} else {
 					emailMessage += message
-					fullStopFound = false // need to reset to false if fullstop was found earlier but QUIT message was not followed up next
+					// need to reset to false if fullstop was found earlier but QUIT message was not followed up next
+					fullStopFound = false
 				}
 			case strings.HasPrefix(message, "LHLO"):
 				sendResponse(fmt.Sprintf("250-%s\n250-PIPELINING\n250 SIZE\n", domainName), conn)
@@ -139,7 +143,7 @@ func mailReceiver(conn net.Conn, bufferSize int, configs map[string]string) (Ema
 
 }
 
-func mailSender(sender string, emailData EmailData, bufferSize int, configs map[string]string) bool {
+func mailSender(sender string, rcpt []string, emailData EmailData, bufferSize int, configs map[string]string) bool {
 	addr, exists := configs["POSTFIX_ADDRESS"]
 	if !exists {
 		log.Fatal("Missing POSTFIX_ADDRESS config")
@@ -148,7 +152,7 @@ func mailSender(sender string, emailData EmailData, bufferSize int, configs map[
 	if !exists {
 		log.Fatal("Missing POSTFIX_PORT config")
 	}
-	domainName := configs["EMAIL_DOMAIN"] // no need to check for this as this would have been checked earlier in mailReceiver
+	domainName := configs["EMAIL_DOMAIN"] // no need to check this, it would have been checked earlier in mailReceiver
 	debugMode := configs["DEBUG_MODE"]    // same with this
 	timeoutDurationConfig, exists := configs["TIMEOUT_DURATION"]
 	if !exists {
@@ -218,7 +222,7 @@ func mailSender(sender string, emailData EmailData, bufferSize int, configs map[
 
 				initial = false
 			case strings.HasPrefix(message, "250 2.1.0"):
-				recipients := []string{emailData.from}
+				recipients := rcpt
 				for _, recipient := range recipients {
 					sendResponse(fmt.Sprintf("RCPT TO: %s\n", recipient), conn)
 					size, err = conn.Read(buffer)
