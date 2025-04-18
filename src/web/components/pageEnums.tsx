@@ -8,6 +8,6 @@ export const PageName = {
 export const LinkTo = {
     LOGIN: "/",
     SIGNUP: "/signup",
-    MAILINGLISTS: "/mailingLists",
-    APPROVALREQUESTS: "/approvals"
+    MAILINGLISTS: "/mailingLists.html",
+    APPROVALREQUESTS: "/approvals.html"
 }
