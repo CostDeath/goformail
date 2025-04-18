@@ -1,4 +1,7 @@
 import {useModal} from "@/states/modalStateHandler";
+import Modal from "@/components/modal";
+import {useState} from "react";
+import EmailApprovalForm from "@/components/emailApprovalRequests/emailApprovalForm";
 //import useSWR from "swr";
 
 
@@ -10,8 +13,15 @@ export default function ApprovalRequestsTable({currentPage, api}: {
     // let retriedData = data.json();
     console.log(api)
     console.log(currentPage)
+    const [id, setId] = useState("");
+    const showModal = useModal((state) => state.toggled)
 
     const toggleModal = useModal((state) => state.toggleModal);
+
+    const renderDataAndModal = (id: string) => {
+        toggleModal(true)
+        setId(id)
+    }
 
     /* potentially what we can use to fetch
     const fetcher = (...args) => fetch(...args).then((res) => res.json())
@@ -25,6 +35,7 @@ export default function ApprovalRequestsTable({currentPage, api}: {
 
 
     return (
+        <>
         <div className="min-w-full table text-gray-900 shadow-[0_3px_10px_-1px_rgba(0,0,0,1)]">
             <div className="table-header-group text-left text-sm font-normal">
                 <div data-testid="table-head" className="table-row bg-neutral-800/45 text-neutral-300">
@@ -40,7 +51,7 @@ export default function ApprovalRequestsTable({currentPage, api}: {
                 </div>
             </div>
             <div data-testid="table-body" className="table-row-group">
-                <div className="table-row shadow-inner text-neutral-300 hover:bg-neutral-600/75  hover:cursor-pointer" onClick={() => toggleModal(true)}>
+                <div className="table-row shadow-inner text-neutral-300 hover:bg-neutral-600/75  hover:cursor-pointer" onClick={() => renderDataAndModal("1")}>
                     <div className="table-cell border-black border-b py-3 text-sm">
                         <div className="whitespace-nowrap py-3 pl-6 pr-3 flex items-center gap-3">
                             exampleentry@email.com
@@ -58,7 +69,7 @@ export default function ApprovalRequestsTable({currentPage, api}: {
                     </div>
                 </div>
 
-                <div className="table-row shadow-inner text-neutral-300 hover:bg-neutral-600/75  hover:cursor-pointer" onClick={() => toggleModal(true)}>
+                <div className="table-row shadow-inner text-neutral-300 hover:bg-neutral-600/75  hover:cursor-pointer" onClick={() => renderDataAndModal("2")}>
                     <div className="table-cell black border-black py-3 text-sm">
                         <div className="whitespace-nowrap py-3 pl-6 pr-3 flex items-center gap-3">
                             exampleentry2@email.com
@@ -77,5 +88,10 @@ export default function ApprovalRequestsTable({currentPage, api}: {
                 </div>
             </div>
         </div>
+
+            {showModal && (
+                <Modal><EmailApprovalForm id={id} /></Modal>
+            )}
+            </>
     )
 }

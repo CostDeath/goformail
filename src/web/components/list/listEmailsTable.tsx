@@ -1,10 +1,23 @@
 "use client"
 
 import {useModal} from "@/states/modalStateHandler";
+import Modal from "@/components/modal";
+import EmailView from "@/components/emailView";
+import {useState} from "react";
 
 export default function ListEmailsTable() {
+    const [id, setId] = useState("")
+    const showModal = useModal((state) => state.toggled)
     const toggleModal = useModal((state) => state.toggleModal)
+
+    const renderDataAndModal = (id: string) => {
+        toggleModal(true)
+        setId(id)
+    }
+
+
     return (
+        <>
         <div className="min-w-full table text-gray-900 shadow-[0_3px_10px_-1px_rgba(0,0,0,1)]">
             <div className="table-header-group text-left text-sm font-normal">
                 <div data-testid="table-head" className="table-row bg-neutral-800/45 text-neutral-300">
@@ -20,7 +33,7 @@ export default function ListEmailsTable() {
                 </div>
             </div>
             <div data-testid="table-body" className="table-row-group">
-                <div className="table-row shadow-inner text-neutral-300 hover:bg-neutral-600/75  hover:cursor-pointer" onClick={() => toggleModal(true)}>
+                <div className="table-row shadow-inner text-neutral-300 hover:bg-neutral-600/75  hover:cursor-pointer" onClick={() => renderDataAndModal("list1")}>
                     <div className="table-cell border-black border-b py-3 text-sm">
                         <div className="whitespace-nowrap py-3 pl-6 pr-3 flex items-center gap-3">
                             me@example.com
@@ -38,7 +51,7 @@ export default function ListEmailsTable() {
                     </div>
                 </div>
 
-                <div className="table-row shadow-inner text-neutral-300 hover:bg-neutral-600/75  hover:cursor-pointer" onClick={() => toggleModal(true)}>
+                <div className="table-row shadow-inner text-neutral-300 hover:bg-neutral-600/75  hover:cursor-pointer" onClick={() => renderDataAndModal("list2")}>
                     <div className="table-cell black border-black py-3 text-sm">
                         <div className="whitespace-nowrap py-3 pl-6 pr-3 flex items-center gap-3">
                             exampleentry2@email.com
@@ -57,5 +70,8 @@ export default function ListEmailsTable() {
                 </div>
             </div>
         </div>
+
+            {showModal && (<Modal><EmailView id={id} /></Modal>)}
+            </>
     )
 }

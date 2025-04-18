@@ -2,15 +2,11 @@
 
 import {useSearchParams} from "next/navigation";
 import useSWR from "swr";
-import {useModal} from "@/states/modalStateHandler";
 import ListEmailsTable from "@/components/list/listEmailsTable";
-import Modal from "@/components/modal";
-import EmailView from "@/components/emailApprovalRequests/emailView";
 import Pagination from "@/components/pagination";
 import {Suspense} from "react";
 
 export default function Page() {
-    const showModal = useModal((state) => state.toggled)
     const searchParams = useSearchParams()
     const id = searchParams.get("id")
 
@@ -38,7 +34,6 @@ export default function Page() {
                 <Pagination totalPages={1} />
             </Suspense>
 
-            {showModal && (<Modal><EmailView /></Modal>)}
 
         </div>
 

@@ -1,6 +1,6 @@
 import {expect, test} from "vitest";
 import {render, screen} from "@testing-library/react";
-import EmailView from "@/components/emailApprovalRequests/emailView";
+import EmailView from "@/components/emailView";
 
 test("Email view is rendered", () => {
     render(<EmailView />);
