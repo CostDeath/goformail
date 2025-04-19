@@ -12,6 +12,7 @@ export default function Navbar() {
     const currentPageName = usePathname() + ".html"
 
     const links = [
+        {name: PageName.MANAGEMENT, href: LinkTo.MANAGEMENT},
         {name: PageName.MAILINGLISTS, href: LinkTo.MAILINGLISTS},
         {name: PageName.APPROVALREQUESTS, href: LinkTo.APPROVALREQUESTS},
     ];
