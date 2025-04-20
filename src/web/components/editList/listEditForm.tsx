@@ -25,8 +25,14 @@ export default function ListEditForm() {
         setRecipients(values)
     }
 
-    const fetcher = (...args: Parameters<typeof fetch>) =>
-        fetch(...args).then((res) => res.json())
+
+    const fetcher = async(url: string) => {
+        const response = await fetch(url)
+        const data = await response.json()
+        // placeholder
+        setRecipients([{value: data.title}])
+        return data
+    }
 
     const {data, error} = useSWR(`https://jsonplaceholder.typicode.com/posts/${listId}`, fetcher)
 
@@ -43,7 +49,7 @@ export default function ListEditForm() {
 
     const placeholder = () => {
         // This will be a patch request
-        console.log(data.Name)
+        console.log(data)
         console.log(recipients)
     }
 
