@@ -2,14 +2,6 @@
 
 export const permissionsList = [
     {
-        label: "View Lists",
-        value: false,
-    },
-    {
-        label: "View Emails",
-        value: false,
-    },
-    {
         label: "Approve Emails",
         value: false,
     },
@@ -18,15 +10,7 @@ export const permissionsList = [
         value: false,
     },
     {
-        label: "Manage Own Account",
-        value: false,
-    },
-    {
-        label: "Manage Other Accounts",
-        value: false
-    },
-    {
-        label: "Change Accounts' permissions",
+        label: "Manage Other Accounts' Permissions",
         value: false
     }
 ]
