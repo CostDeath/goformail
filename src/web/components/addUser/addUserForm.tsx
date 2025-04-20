@@ -25,7 +25,7 @@ export default function AddUserForm() {
             <h1 className="text-2xl font-bold py-5">Create a user</h1>
             <hr/>
             <div className="grid grid-cols-2 py-10">
-                <label className="text-xl p-1">Email Address</label>
+                <label htmlFor="email" className="text-xl p-1">Email Address</label>
                 <input
                     className="
                         bg-neutral-700
@@ -51,7 +51,7 @@ export default function AddUserForm() {
             </div>
 
             <div className="grid grid-cols-2">
-                <label className="text-xl p-1">Password</label>
+                <label htmlFor="password" className="text-xl p-1">Password</label>
                 <input
                     className="
                         bg-neutral-700
@@ -83,8 +83,8 @@ export default function AddUserForm() {
             <div className="py-5">
                 {permissions.map((permission, index) => (
                     <div className="grid grid-cols-3 px-2 py-3" key={index}>
-                        <label className="text-xl">{permission.label}</label>
-                        <input id="permission" type="checkbox" value="" onClick={() => handleChange(index)} />
+                        <label htmlFor={permission.id} className="text-xl">{permission.label}</label>
+                        <input id={permission.id} name={permission.id} type="checkbox" value="" onClick={() => handleChange(index)} />
                     </div>
                 ))}
             </div>
@@ -92,7 +92,7 @@ export default function AddUserForm() {
             <div className="flex flex-row justify-end px-5">
                 <button className="bg-green-600/75 hover:bg-green-600 px-2 py-1 rounded-md"
                         onClick={placeholder}>
-                    Submit
+                    Create User
                 </button>
             </div>
         </>
