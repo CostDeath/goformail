@@ -20,7 +20,7 @@ vitest.mock("next/navigation", () => {
 })
 
 test("Modal is rendered", () => {
-    render(<Modal><h1>Mock component</h1></Modal>);
+    render(<Modal width="100vh" height="90vh"><h1>Mock component</h1></Modal>);
 
     expect(screen.getByRole("button", { name: "X" })).toBeDefined();
     expect(screen.getByRole("heading", {level: 1, name: "Mock component"})).toBeDefined();

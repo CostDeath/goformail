@@ -19,7 +19,7 @@ export default function DeleteList() {
 
             {showModal && (
                 <Modal width="150vh" height="85vh">
-                    <h1 className="text-3xl py-5 text-center">Delete Mailing List?</h1>
+                    <h1 data-testid="Delete Modal Header" className="text-3xl py-5 text-center">Delete Mailing List?</h1>
                     <div className="p-5 text-xl">Are you sure you want to delete this mailing list?</div>
                     <br/>
                     <footer className="p-4 flex flex-row justify-end">
