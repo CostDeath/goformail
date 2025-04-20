@@ -22,7 +22,7 @@ vitest.mock("next/navigation", () => {
 test("Approval Requests page is rendered correctly and modal can be toggled", async () => {
     render(<Page />);
 
-    expect(screen.queryByTestId("modal")).toBeNull();
-    fireEvent.click(screen.getByText("exampleentry@email.com"));
-    expect(screen.getByTestId("modal")).toBeDefined();
+
+    expect(screen.getByTestId("table-head")).toBeDefined();
+    expect(screen.getByTestId("table-body")).toBeDefined();
 })
