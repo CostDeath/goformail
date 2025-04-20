@@ -30,7 +30,7 @@ export default function ListCreationForm() {
     return (
         <>
             <div className="grid grid-cols-2 py-10">
-                <div className="px-5 text-xl">Mailing List Name</div>
+                <label htmlFor="listName" className="px-5 text-xl">Mailing List Email</label>
                 <input
                     className="
                 bg-neutral-700
@@ -46,9 +46,10 @@ export default function ListCreationForm() {
                 placeholder:text-neutral-500
                 "
                     id="listName"
-                    type="text"
+                    type="email"
                     name="listName"
                     value={name}
+                    placeholder="Mailing List Email"
                     onChange={e => setName(e.target.value)}
                     required
                 />
@@ -74,16 +75,17 @@ export default function ListCreationForm() {
                 outline-2
                 placeholder:text-neutral-500
                 "
-                            id="recipient"
+                            id={`recipient${index}`}
                             type="email"
-                            name="recipient"
+                            name={`recipient${index}`}
+                            aria-label={`recipient${index}`}
                             value={recipient.value}
                             onChange={e => handleChange(index, e)}
                             placeholder="Email Address"
                             required
                         />
                         <div className="px-7">
-                            <button className="bg-red-600 hover:bg-red-700 py-2 px-3 rounded-md"
+                            <button aria-label={`delete${index}`} className="bg-red-600 hover:bg-red-700 py-2 px-3 rounded-md"
                                     onClick={() => handleRemove(index)}>
                                 Remove
                             </button>
