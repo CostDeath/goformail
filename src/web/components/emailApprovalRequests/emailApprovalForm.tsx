@@ -3,7 +3,8 @@ import {useState} from "react";
 
 
 export default function EmailApprovalForm({id}: {id: string}) {
-    //TODO: Remove this post example once dashboard is set up
+    /*
+    //TODO: Remove this post example once doing fetching ticket
     const [title, setTitle] = useState("");
     const [body, setBody] = useState("");
 
@@ -23,6 +24,8 @@ export default function EmailApprovalForm({id}: {id: string}) {
         response = await response.json();
         alert(JSON.stringify(response))
     }
+
+     */
     return (
         <>
             <EmailView id={id}/>
@@ -36,6 +39,7 @@ export default function EmailApprovalForm({id}: {id: string}) {
             </div>
 
 
+            {/*
             <br/>
             <br/>
             <h1>This is a post test</h1>
@@ -46,6 +50,7 @@ export default function EmailApprovalForm({id}: {id: string}) {
 
                 <button onClick={submitApproval}>Submit</button>
             </div>
+            */}
         </>
     )
 }
