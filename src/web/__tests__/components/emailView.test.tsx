@@ -1,13 +1,10 @@
 import {expect, test} from "vitest";
 import {render, screen} from "@testing-library/react";
 import EmailView from "@/components/emailView";
+import {EmailViewChecker} from "@/__tests__/util/emailViewChecker";
 
 test("Email view is rendered", () => {
     render(<EmailView id={"1"} />);
 
-    expect(screen.getByTestId("soc-email")).toBeDefined();
-    expect(screen.getByTestId("email-title")).toBeDefined();
-    expect(screen.getByTestId("email-subject")).toBeDefined();
-    expect(screen.getByTestId("email-content")).toBeDefined();
-
+    EmailViewChecker()
 })
