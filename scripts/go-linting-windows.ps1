@@ -4,4 +4,4 @@ $root_location = "."
 $exec_location = "../../scripts/golangci-lint.exe"
 
 cd $root_location
-& $exec_location run --out-format tab
+& $exec_location run

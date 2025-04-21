@@ -1,7 +1,6 @@
 package forwarding
 
 import (
-	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/test"
 	"log"
 	"net"
 	"regexp"
@@ -13,7 +12,11 @@ func TestGetCurrentTime(t *testing.T) {
 	formattedTime := getCurrentTime()
 
 	// EXPECTED FORMAT [YYYY-MM-DD HH:MM:SS]
-	matched, err := regexp.Match(`\[([0-9]{4})(-([0-9]{2})){2}\s([0-5][0-9]:){2}[0-5][0-9]]`, []byte(formattedTime))
+
+	matched, err := regexp.Match(
+		`\[([0-9]{4})(-([0-9]{2})){2}\s([0-5][0-9]:){2}[0-5][0-9]]`,
+		[]byte(formattedTime),
+	)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -64,7 +67,7 @@ func TestConnectToSMTP(t *testing.T) {
 	waitGroup.Add(1)
 	// MOCK Listener
 	go func() {
-		test.ConnectSMTPSocketMock(waitGroup)
+		ConnectSMTPSocketMock(waitGroup)
 		t.Log("Goroutine function has finished")
 	}()
 
@@ -96,7 +99,7 @@ func TestFailConnectToSMTP(t *testing.T) {
 	waitGroup.Add(1)
 	// MOCK Listener
 	go func() {
-		test.ConnectFailSMTPSocketMock(waitGroup)
+		ConnectFailSMTPSocketMock(waitGroup)
 		t.Log("Goroutine within TestFailConnectToSMTP function finished")
 	}()
 

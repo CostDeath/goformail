@@ -27,8 +27,8 @@ lint_go:
   stage: check
   script:
     - cd src/goformail
-    - wget -O- -nv https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s v1.64.8
-    - ./bin/golangci-lint run --out-format tab
+    - wget -O- -nv https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s v2.1.1
+    - ./bin/golangci-lint run
 
 vulncheck_go:
   image: golang:1.24-alpine
@@ -56,8 +56,8 @@ build_go:
   stage: build
   script:
     - cd src/goformail
-    - rm -r ./internal/interfaces/out
-    - cp -r ../web/out ./internal/interfaces/out
+    - rm -r ./internal/rest/out
+    - cp -r ../web/out ./internal/rest/out
     - go build ./cmd/goformail
   needs:
     - build_node
@@ -78,6 +78,8 @@ test_node:
 test_go:
   image: golang:1.24-alpine
   stage: test
+  services:
+    - docker:dind
   script:
     - cd src/goformail
     - go test ./...
