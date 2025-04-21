@@ -47,7 +47,7 @@ export default function EditUserForm() {
             <h1 className="text-2xl font-bold py-5">Edit User</h1>
             <hr/>
             <div className="grid grid-cols-2 py-10">
-                <label className="text-xl p-1">Email Address</label>
+                <label htmlFor="email" className="text-xl p-1">Email Address</label>
                 <input
                     className="
                         bg-neutral-700
@@ -80,8 +80,8 @@ export default function EditUserForm() {
             <div className="py-5">
                 {permissions.map((permission, index) => (
                     <div className="grid grid-cols-3 px-2 py-3" key={index}>
-                        <label className="text-xl">{permission.label}</label>
-                        <input id="permission" type="checkbox" value="" onClick={() => handleChange(index)} />
+                        <label htmlFor={permission.id} className="text-xl">{permission.label}</label>
+                        <input id={permission.id} name={permission.id} type="checkbox" value="" onClick={() => handleChange(index)} />
                     </div>
                 ))}
             </div>
