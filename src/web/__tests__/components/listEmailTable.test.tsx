@@ -1,9 +1,6 @@
 import {expect, test, vitest} from "vitest";
-import {fireEvent, render, screen} from "@testing-library/react";
-import EditUserForm from "@/components/editUser/editUserForm";
+import {render, screen} from "@testing-library/react";
 import useSWR from "swr";
-import {EmailChecker} from "@/__tests__/util/formCheckers";
-import ListEditForm from "@/components/editList/listEditForm";
 import ListEmailsTable from "@/components/list/listEmailsTable";
 
 vitest.mock("next/navigation", () => {

@@ -33,7 +33,7 @@ test("List Email page is loading", async () => {
 
 vitest.mock("swr")
 
-test("List Email Table page has loaded and is rendered", async () => {
+test("List Email page has loaded and is rendered", async () => {
     useSWR.mockReturnValue({
         data: {id: "1"}
     })
@@ -47,7 +47,7 @@ test("List Email Table page has loaded and is rendered", async () => {
     wrapper.unmount()
 })
 
-test("List Email Table page has loaded but given data was invalid", async () => {
+test("List Email page has loaded but given data was invalid", async () => {
     useSWR.mockReturnValue({
         data: {}
     })

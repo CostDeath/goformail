@@ -1,4 +1,4 @@
-import {expect, test} from "vitest";
+import {test} from "vitest";
 import {render} from "@testing-library/react";
 import Page from "@/app/(dashboards)/mailingLists/list/email/page"
 import {EmailViewChecker} from "@/__tests__/util/emailViewChecker";

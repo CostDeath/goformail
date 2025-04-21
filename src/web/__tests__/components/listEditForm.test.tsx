@@ -1,6 +1,5 @@
 import {expect, test, vitest} from "vitest";
 import {fireEvent, render, screen} from "@testing-library/react";
-import EditUserForm from "@/components/editUser/editUserForm";
 import useSWR from "swr";
 import {EmailChecker} from "@/__tests__/util/formCheckers";
 import ListEditForm from "@/components/editList/listEditForm";
@@ -70,7 +69,7 @@ test("Edit List component has loaded but given data was invalid", async () => {
     useSWR.mockReturnValue({
         data: {}
     })
-    const wrapper = render(<EditUserForm />)
+    const wrapper = render(<ListEditForm />)
 
     vitest.useFakeTimers()
     vitest.runAllTimers()

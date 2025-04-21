@@ -1,5 +1,5 @@
-import {expect, test} from "vitest";
-import {render, screen} from "@testing-library/react";
+import {test} from "vitest";
+import {render} from "@testing-library/react";
 import EmailView from "@/components/emailView";
 import {EmailViewChecker} from "@/__tests__/util/emailViewChecker";
 

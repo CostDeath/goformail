@@ -1,5 +1,5 @@
 import {expect, test, vitest} from "vitest";
-import {fireEvent, render, screen} from "@testing-library/react";
+import {render, screen} from "@testing-library/react";
 import Page from "@/app/(dashboards)/approvals/page";
 
 
