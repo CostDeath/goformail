@@ -54,7 +54,7 @@ test("List Email Table component has loaded but given data was invalid", async (
     useSWR.mockReturnValue({
         data: {}
     })
-    const wrapper = render(<EditUserForm />)
+    const wrapper = render(<ListEmailsTable />)
 
     vitest.useFakeTimers()
     vitest.runAllTimers()
