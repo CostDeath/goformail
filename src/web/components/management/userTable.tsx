@@ -12,7 +12,7 @@ export default function UserTable() {
                     </div>
                 </div>
                 <div data-testid="table-body" className="table-row-group">
-                    <Link href={`/management/edit?id=${1}`} className="table-row shadow-inner text-neutral-300 hover:bg-neutral-600/75  hover:cursor-pointer">
+                    <Link href={`/management/edit.html?id=${1}`} className="table-row shadow-inner text-neutral-300 hover:bg-neutral-600/75  hover:cursor-pointer">
                         <div className="table-cell border-black border-b py-3 text-sm">
                             <div className="whitespace-nowrap py-3 pl-6 pr-3 flex items-center gap-3">
                                 user@example.com
@@ -20,7 +20,7 @@ export default function UserTable() {
                         </div>
                     </Link>
 
-                    <Link href={`/management/edit?id=${2}`} className="table-row shadow-inner text-neutral-300 hover:bg-neutral-600/75  hover:cursor-pointer">
+                    <Link href={`/management/edit.html?id=${2}`} className="table-row shadow-inner text-neutral-300 hover:bg-neutral-600/75  hover:cursor-pointer">
                         <div className="table-cell black border-black py-3 text-sm">
                             <div className="whitespace-nowrap py-3 pl-6 pr-3 flex items-center gap-3">
                                 user2@example.com

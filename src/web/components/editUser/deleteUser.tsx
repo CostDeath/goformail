@@ -1,11 +1,11 @@
-import {useSearchParams} from "next/navigation";
+// import {useSearchParams} from "next/navigation";
 import {useModal} from "@/states/modalStateHandler";
 import Modal from "@/components/modal";
 
 
 export default function DeleteUser() {
-    const search = useSearchParams()
-    const id = search.get("id")
+    // const search = useSearchParams()
+    // const id = search.get("id")
     const showModal = useModal((state) => state.toggled)
     const toggleModal = useModal((state) => state.toggleModal)
     return (

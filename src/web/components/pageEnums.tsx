@@ -11,5 +11,5 @@ export const LinkTo = {
     SIGNUP: "/signup",
     MAILINGLISTS: "/mailingLists.html",
     APPROVALREQUESTS: "/approvals.html",
-    MANAGEMENT: "/management"
+    MANAGEMENT: "/management.html"
 }
