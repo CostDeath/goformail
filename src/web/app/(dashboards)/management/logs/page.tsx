@@ -1,4 +1,3 @@
-import Card from "@/components/card";
 import LogsTable from "@/components/logs/logsTable";
 
 

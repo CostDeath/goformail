@@ -1,6 +1,7 @@
 "use client"
 
 import useSWR from "swr";
+import Log from "@/models/logs";
 
 export default function LogsTable() {
     const fetcher = async(url: string) => {
@@ -32,7 +33,7 @@ export default function LogsTable() {
                 </div>
             </div>
             <div data-testid="table-body" className="table-row-group">
-                {data.map((log: any) => (
+                {data.map((log: Log) => (
                     <div key={log.id} className="table-row shadow-inner text-neutral-300 hover:bg-neutral-600/75">
                         <div className="table-cell border-black border-b py-3 text-sm">
                             <div className="whitespace-nowrap py-3 pl-6 pr-3 flex items-center gap-3">
