@@ -1,16 +1,16 @@
 package rest
 
 import (
+	"github.com/stretchr/testify/assert"
+	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal/db"
+	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal/service"
 	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal/util"
 	"net/http"
-	"reflect"
 	"testing"
 )
 
 func TestNewController(t *testing.T) {
-	actual := NewController(util.MockConfigs, nil)
-	expected := &Controller{util.MockConfigs, nil, http.DefaultServeMux}
-	if !reflect.DeepEqual(actual, expected) {
-		t.Fatalf("NewController created invalid controller. Expected: '%v', got '%v'", expected, actual)
-	}
+	actual := NewController(util.MockConfigs, &db.Db{}, &service.UserManager{})
+	expected := &Controller{util.MockConfigs, &db.Db{}, &service.UserManager{}, http.DefaultServeMux}
+	assert.Equal(t, expected, actual)
 }
