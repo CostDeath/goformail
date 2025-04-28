@@ -20,10 +20,8 @@ export default function MailingListTable({api}: {
     if (!data) {
         return <div>Loading</div>
     } else if (data.message !== "Successfully fetched lists!") {
-        console.log(data)
         return <div>Error</div>
     }
-    // console.log(data)
 
     return (
         <div className="overflow-auto max-h-[75vh] shadow-[0_3px_10px_-1px_rgba(0,0,0,1)]">
