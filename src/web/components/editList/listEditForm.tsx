@@ -2,6 +2,8 @@ import {useSearchParams} from "next/navigation";
 import {ChangeEvent, useState} from "react";
 import useSWR from "swr";
 import DeleteList from "@/components/editList/deleteList";
+import {api} from "@/components/api";
+import {List} from "@/models/list";
 
 export default function ListEditForm() {
     const searchParams = useSearchParams()
@@ -30,21 +32,25 @@ export default function ListEditForm() {
         const response = await fetch(url)
         const data = await response.json()
         // placeholder
-        setRecipients([{value: data.title}])
+        const rcpts: string[] = data.data.recipients
+        const rcptsBuilder: {value: string}[] = []
+        for (let i = 0; i < rcpts.length; i++) {
+            rcptsBuilder.push({value: rcpts[i]})
+        }
+        setRecipients(rcptsBuilder)
         return data
     }
 
-    const {data, error} = useSWR(`https://jsonplaceholder.typicode.com/posts/${listId}`, fetcher)
+    const {data, error} = useSWR(`${api.url}${api.list}?id=${listId}`, fetcher)
 
     if (error) return <div>Error</div>
     if (!data) {
         return <div>Loading</div>
-    } else if (!data.id) {
+    } else if (data.message !== "Successfully fetched list!") {
         return <div>Error</div>
     }
 
-    // TODO: uncomment this once doing ticket for connecting frontend and backend
-    // setRecipients(data.Recipients) // Assumption that this is how it'll work when fetched
+    const result: List = data.data
 
 
     const placeholder = () => {
@@ -75,7 +81,7 @@ export default function ListEditForm() {
                     id="listName"
                     type="email"
                     name="listName"
-                    value={data.Name}
+                    value={result.name}
                     disabled
                 />
             </div>
