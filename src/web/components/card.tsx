@@ -8,12 +8,9 @@ export default function Card(props: {children: ReactNode, height?: string, width
     return (
         <div data-testid="card"
              className="
-             flex
-             justify-center
-             items-center
              shadow-[0_3px_10px_-1px_rgba(0,0,0,1)]
              rounded-xl py-2">
-            <div className="flex flex-col">
+            <div className="">
                 <div className={divContentStyle}>
                     {props.children}
                 </div>

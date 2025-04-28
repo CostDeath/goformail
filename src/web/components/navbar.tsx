@@ -9,9 +9,10 @@ import {usePathname} from "next/navigation";
 
 export default function Navbar() {
     const resetPagination = togglePagination((state) => state.reset)
-    const currentPageName = usePathname()
+    const currentPageName = usePathname() + ".html"
 
     const links = [
+        {name: PageName.MANAGEMENT, href: LinkTo.MANAGEMENT},
         {name: PageName.MAILINGLISTS, href: LinkTo.MAILINGLISTS},
         {name: PageName.APPROVALREQUESTS, href: LinkTo.APPROVALREQUESTS},
     ];

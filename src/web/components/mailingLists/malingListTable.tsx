@@ -1,3 +1,5 @@
+import Link from "next/link";
+
 export default function MailingListTable({query, currentPage, api}: {
     query?: string;
     currentPage?: number;
@@ -22,10 +24,10 @@ export default function MailingListTable({query, currentPage, api}: {
                 </div>
             </div>
             <div data-testid="table-body" className="table-row-group">
-                <div className="table-row shadow-inner text-neutral-300 hover:bg-neutral-600/75 hover:cursor-pointer">
+                <Link href={`/mailingLists/list.html?id=${1}`} className="table-row shadow-inner text-neutral-300 hover:bg-neutral-600/75 hover:cursor-pointer">
                     <div className="table-cell border-black border-b py-3 text-sm">
                         <div className="whitespace-nowrap py-3 pl-6 pr-3 flex items-center gap-3">
-                            Example Entry Society
+                            Example Entry
                         </div>
                     </div>
                     <div className="table-cell border-black border-b py-3 text-sm">
@@ -33,9 +35,9 @@ export default function MailingListTable({query, currentPage, api}: {
                             exampleentry@email.com
                         </div>
                     </div>
-                </div>
+                </Link>
 
-                <div className="table-row shadow-inner text-neutral-300 hover:bg-neutral-600/75 hover:cursor-pointer">
+                <Link href={`/mailingLists/list.html?id=${2}`} className="table-row shadow-inner text-neutral-300 hover:bg-neutral-600/75 hover:cursor-pointer">
                     <div className="table-cell border-black border-b py-3 text-sm">
                         <div className="whitespace-nowrap py-3 pl-6 pr-3 flex items-center gap-3">
                             Example Entry 2 Society
@@ -46,7 +48,7 @@ export default function MailingListTable({query, currentPage, api}: {
                             exampleentry2@email.com
                         </div>
                     </div>
-                </div>
+                </Link>
             </div>
         </div>
     )

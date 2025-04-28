@@ -1,6 +1,6 @@
 import {test} from "vitest";
 import {render} from "@testing-library/react";
-import LoginForm from "@/components/loginSignup/loginForm";
+import LoginForm from "@/components/login/loginForm";
 import {EmailChecker, PasswordChecker} from "@/__tests__/util/formCheckers";
 
 test("Login form is rendered", () => {

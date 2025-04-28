@@ -1,4 +1,4 @@
-import {useModal} from "@/states/modalStateHandler";
+import Link from "next/link";
 //import useSWR from "swr";
 
 
@@ -10,8 +10,7 @@ export default function ApprovalRequestsTable({currentPage, api}: {
     // let retriedData = data.json();
     console.log(api)
     console.log(currentPage)
-
-    const toggleModal = useModal((state) => state.toggleModal);
+    // const [id, setId] = useState("");
 
     /* potentially what we can use to fetch
     const fetcher = (...args) => fetch(...args).then((res) => res.json())
@@ -25,6 +24,7 @@ export default function ApprovalRequestsTable({currentPage, api}: {
 
 
     return (
+        <>
         <div className="min-w-full table text-gray-900 shadow-[0_3px_10px_-1px_rgba(0,0,0,1)]">
             <div className="table-header-group text-left text-sm font-normal">
                 <div data-testid="table-head" className="table-row bg-neutral-800/45 text-neutral-300">
@@ -40,7 +40,7 @@ export default function ApprovalRequestsTable({currentPage, api}: {
                 </div>
             </div>
             <div data-testid="table-body" className="table-row-group">
-                <div className="table-row shadow-inner text-neutral-300 hover:bg-neutral-600/75  hover:cursor-pointer" onClick={() => toggleModal(true)}>
+                <Link href={`/approvals/email.html?id=${1}`} className="table-row shadow-inner text-neutral-300 hover:bg-neutral-600/75  hover:cursor-pointer">
                     <div className="table-cell border-black border-b py-3 text-sm">
                         <div className="whitespace-nowrap py-3 pl-6 pr-3 flex items-center gap-3">
                             exampleentry@email.com
@@ -56,9 +56,9 @@ export default function ApprovalRequestsTable({currentPage, api}: {
                             09/01/2025
                         </div>
                     </div>
-                </div>
+                </Link>
 
-                <div className="table-row shadow-inner text-neutral-300 hover:bg-neutral-600/75  hover:cursor-pointer" onClick={() => toggleModal(true)}>
+                <Link href={`/approvals/email.html?id=${2}`} className="table-row shadow-inner text-neutral-300 hover:bg-neutral-600/75  hover:cursor-pointer">
                     <div className="table-cell black border-black py-3 text-sm">
                         <div className="whitespace-nowrap py-3 pl-6 pr-3 flex items-center gap-3">
                             exampleentry2@email.com
@@ -74,8 +74,9 @@ export default function ApprovalRequestsTable({currentPage, api}: {
                             09/01/2025
                         </div>
                     </div>
-                </div>
+                </Link>
             </div>
         </div>
+        </>
     )
 }
