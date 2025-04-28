@@ -1,10 +1,65 @@
-import {expect, test} from "vitest";
+import {expect, test, vitest} from "vitest";
 import {render, screen} from "@testing-library/react";
 import MailingListTable from "@/components/mailingLists/malingListTable";
+import {api} from "@/components/api";
+import useSWR from "swr";
 
-test("mailing list table is rendered", () => {
-    render(<MailingListTable api="dummyAPI" />);
+vitest.mock("swr")
 
-    expect(screen.getByTestId("table-head")).toBeDefined();
-    expect(screen.getByTestId("table-body")).toBeDefined();
+test("mailing list table is loading", async () => {
+    useSWR.mockReturnValue({
+        data: undefined
+    })
+
+    const wrapper = render(<MailingListTable api={`${api.url}${api.mailingLists}`} />);
+
+    expect(wrapper.getByText("Loading")).toBeDefined()
+
+    wrapper.unmount()
+})
+
+test("mailing list table has loaded", async () => {
+    useSWR.mockReturnValue({
+        data: {message: "Successfully fetched lists!", data: [{id: 1, list: {name: "test"}}]}
+    })
+
+    const wrapper = render(<MailingListTable api={`${api.url}${api.mailingLists}`} />)
+
+    vitest.useFakeTimers()
+    vitest.runAllTimers()
+
+    expect(wrapper.getByTestId("table-head")).toBeDefined();
+    expect(wrapper.getByTestId("table-body")).toBeDefined();
+    expect(wrapper.getByRole("link", {name: "test"})).toBeDefined();
+    wrapper.unmount()
+})
+
+test("mailing list table has loaded but given data was invalid", async () => {
+    useSWR.mockReturnValue({
+        data: {message: "Error"}
+    })
+
+    const wrapper = render(<MailingListTable api={`${api.url}${api.mailingLists}`} />)
+
+    vitest.useFakeTimers()
+    vitest.runAllTimers()
+
+    expect(wrapper.getByText("Error")).toBeDefined();
+    wrapper.unmount()
+})
+
+test("mailing list table has loaded but no existing list data", async () => {
+    useSWR.mockReturnValue({
+        data: {message: "Successfully fetched lists!"}
+    })
+
+    const wrapper = render(<MailingListTable api={`${api.url}${api.mailingLists}`} />)
+
+    vitest.useFakeTimers()
+    vitest.runAllTimers()
+
+    expect(wrapper.getByTestId("table-head")).toBeDefined();
+    expect(wrapper.getByTestId("table-body")).toBeDefined();
+    expect(wrapper.getByText("No Data to Show")).toBeDefined();
+    wrapper.unmount()
 })
