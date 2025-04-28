@@ -1,9 +1,11 @@
-import {useSearchParams} from "next/navigation";
+import {redirect, useSearchParams} from "next/navigation";
 import {ChangeEvent, useState} from "react";
 import useSWR from "swr";
 import DeleteList from "@/components/editList/deleteList";
 import {api} from "@/components/api";
 import {List} from "@/models/list";
+import validateEmail from "@/components/validateEmails";
+import {LinkTo} from "@/components/pageEnums";
 
 export default function ListEditForm() {
     const searchParams = useSearchParams()
@@ -31,7 +33,6 @@ export default function ListEditForm() {
     const fetcher = async(url: string) => {
         const response = await fetch(url)
         const data = await response.json()
-        // placeholder
         const rcpts: string[] = data.data.recipients
         const rcptsBuilder: {value: string}[] = []
         for (let i = 0; i < rcpts.length; i++) {
@@ -53,10 +54,35 @@ export default function ListEditForm() {
     const result: List = data.data
 
 
-    const placeholder = () => {
-        // This will be a patch request
-        console.log(data)
-        console.log(recipients)
+    const editList = async () => {
+        const rcptList: string[]  = []
+        for (let i = 0; i < recipients.length; i++) {
+            if (!validateEmail(recipients[i].value)) {
+                alert(`${recipients[i].value} is not a valid email`)
+                return;
+            }
+            rcptList.push(recipients[i].value)
+        }
+
+        const response = await fetch(`${api.url}${api.list}?id=${listId}`, {
+            method: "PATCH",
+            body: JSON.stringify({
+                Name: result.name,
+                Recipients: rcptList,
+            }),
+            headers: {
+                "Content-Type": "application/json",
+            }
+        })
+
+        if (response.ok) {
+            const result = await response.json()
+            alert(result.message)
+            redirect(LinkTo.MAILINGLISTS)
+        } else {
+            const result = await response.text()
+            alert(result)
+        }
     }
 
     return (
@@ -131,7 +157,7 @@ export default function ListEditForm() {
 
             <div className="flex flex-row justify-end px-5">
                 <button className="bg-green-600/75 hover:bg-green-600 px-2 py-1 rounded-md"
-                        onClick={placeholder}>Submit
+                        onClick={editList}>Submit
                 </button>
             </div>
         </>
