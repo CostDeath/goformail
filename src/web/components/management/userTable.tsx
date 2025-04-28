@@ -1,4 +1,3 @@
-import Link from "next/link";
 
 export default function UserTable() {
     return(
@@ -12,21 +11,21 @@ export default function UserTable() {
                     </div>
                 </div>
                 <div data-testid="table-body" className="table-row-group">
-                    <Link href={`/management/edit.html?id=${1}`} className="table-row shadow-inner text-neutral-300 hover:bg-neutral-600/75  hover:cursor-pointer">
+                    <a href={`/ui/management/edit.html?id=${1}`} className="table-row shadow-inner text-neutral-300 hover:bg-neutral-600/75  hover:cursor-pointer">
                         <div className="table-cell border-black border-b py-3 text-sm">
                             <div className="whitespace-nowrap py-3 pl-6 pr-3 flex items-center gap-3">
                                 user@example.com
                             </div>
                         </div>
-                    </Link>
+                    </a>
 
-                    <Link href={`/management/edit.html?id=${2}`} className="table-row shadow-inner text-neutral-300 hover:bg-neutral-600/75  hover:cursor-pointer">
+                    <a href={`/ui/management/edit.html?id=${2}`} className="table-row shadow-inner text-neutral-300 hover:bg-neutral-600/75  hover:cursor-pointer">
                         <div className="table-cell black border-black py-3 text-sm">
                             <div className="whitespace-nowrap py-3 pl-6 pr-3 flex items-center gap-3">
                                 user2@example.com
                             </div>
                         </div>
-                    </Link>
+                    </a>
                 </div>
             </div>
         </>

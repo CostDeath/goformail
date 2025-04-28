@@ -1,5 +1,4 @@
 import UserTable from "@/components/management/userTable";
-import Link from "next/link";
 
 
 export default function Page() {
@@ -7,10 +6,10 @@ export default function Page() {
         <>
             <div className="py-5">
                 <span>
-                    <Link href="/management/add.html" className="bg-cyan-600 text-white hover:bg-cyan-500 px-3 py-2 rounded-md font-bold">+ New User</Link>
+                    <a href="/ui/management/add.html" className="bg-cyan-600 text-white hover:bg-cyan-500 px-3 py-2 rounded-md font-bold">+ New User</a>
                 </span>
                 <span className="px-5">
-                    <Link href="/management/logs.html" className="bg-cyan-600 text-white hover:bg-cyan-500 px-3 py-2 rounded-md font-bold">Audit Logs</Link>
+                    <a href="/ui/management/logs.html" className="bg-cyan-600 text-white hover:bg-cyan-500 px-3 py-2 rounded-md font-bold">Audit Logs</a>
                 </span>
             </div>
             <UserTable />

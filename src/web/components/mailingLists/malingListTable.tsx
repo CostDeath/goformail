@@ -1,6 +1,5 @@
 "use client"
 
-import Link from "next/link";
 import useSWR from "swr";
 import {MailingLists} from "@/models/list";
 
@@ -37,13 +36,13 @@ export default function MailingListTable({api}: {
                 {data.data && (
                         <>
                             {data.data.map((list: MailingLists) => (
-                                <Link key={list.id} href={`/mailingLists/list.html?id=${list.id}`} className="table-row shadow-inner text-neutral-300 hover:bg-neutral-600/75 hover:cursor-pointer">
+                                <a key={list.id} href={`/ui/mailingLists/list.html?id=${list.id}`} className="table-row shadow-inner text-neutral-300 hover:bg-neutral-600/75 hover:cursor-pointer">
                                     <div className="table-cell border-black border-b py-3 text-sm">
                                         <div className="whitespace-nowrap py-3 pl-6 pr-3 flex items-center gap-3">
                                             {list.list.name}
                                         </div>
                                     </div>
-                                </Link>
+                                </a>
                         ))}
                         </>
                 )
