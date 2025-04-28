@@ -1,5 +1,5 @@
 import {expect, test, vitest} from "vitest";
-import {render, screen} from "@testing-library/react";
+import {render} from "@testing-library/react";
 import MailingListTable from "@/components/mailingLists/malingListTable";
 import {api} from "@/components/api";
 import useSWR from "swr";
