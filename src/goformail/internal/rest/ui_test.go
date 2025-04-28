@@ -15,7 +15,7 @@ func uiCleanUp() {
 
 func TestAddUiHandlerAddsUIEndpoint(t *testing.T) {
 	t.Cleanup(uiCleanUp)
-	ctrl := NewController(util.MockConfigs, nil)
+	ctrl := NewController(util.MockConfigs, nil, nil)
 	ctrl.addUiHandler()
 
 	// Mock the request
@@ -31,7 +31,7 @@ func TestAddUiHandlerAddsUIEndpoint(t *testing.T) {
 
 func TestAddUiHandlerAddsRootRedirect(t *testing.T) {
 	t.Cleanup(uiCleanUp)
-	ctrl := NewController(util.MockConfigs, nil)
+	ctrl := NewController(util.MockConfigs, nil, nil)
 	ctrl.addUiHandler()
 
 	// Mock the request
@@ -48,7 +48,7 @@ func TestAddUiHandlerAddsRootRedirect(t *testing.T) {
 
 func TestAddUiHandlerAdds404Page(t *testing.T) {
 	t.Cleanup(uiCleanUp)
-	ctrl := NewController(util.MockConfigs, nil)
+	ctrl := NewController(util.MockConfigs, nil, nil)
 	ctrl.addUiHandler()
 
 	// Mock the request

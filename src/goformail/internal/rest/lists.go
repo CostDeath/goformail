@@ -63,7 +63,7 @@ func (ctrl Controller) getList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	util.SetResponse("Successfully fetched list!", list, w, r)
+	setResponse("Successfully fetched list!", list, w, r)
 }
 
 func (ctrl Controller) postList(w http.ResponseWriter, r *http.Request) {
@@ -85,7 +85,7 @@ func (ctrl Controller) postList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusCreated)
-	util.SetResponse("Successfully created list!", util.IdObject{Id: id}, w, r)
+	setResponse("Successfully created list!", IdObject{Id: id}, w, r)
 }
 
 func (ctrl Controller) patchList(w http.ResponseWriter, r *http.Request) {
@@ -114,7 +114,7 @@ func (ctrl Controller) patchList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	util.SetResponse("Successfully patched list!", util.IdObject{Id: id}, w, r)
+	setResponse("Successfully patched list!", IdObject{Id: id}, w, r)
 }
 
 func (ctrl Controller) deleteList(w http.ResponseWriter, r *http.Request) {
@@ -136,7 +136,7 @@ func (ctrl Controller) deleteList(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	util.SetResponse("Successfully deleted list!", util.IdObject{Id: id}, w, r)
+	setResponse("Successfully deleted list!", IdObject{Id: id}, w, r)
 }
 
 func (ctrl Controller) getLists(w http.ResponseWriter, r *http.Request) {
@@ -152,5 +152,5 @@ func (ctrl Controller) getLists(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.WriteHeader(http.StatusOK)
-	util.SetResponse("Successfully fetched lists!", lists, w, r)
+	setResponse("Successfully fetched lists!", lists, w, r)
 }

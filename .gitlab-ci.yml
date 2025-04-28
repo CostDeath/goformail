@@ -80,6 +80,8 @@ test_go:
   stage: test
   services:
     - docker:dind
+  tags:
+    - rootless_docker
   script:
     - cd src/goformail
     - go test ./...

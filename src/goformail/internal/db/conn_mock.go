@@ -48,3 +48,28 @@ func (mock *IDbMock) GetRecipientsFromListName(name string) ([]string, error) {
 	}
 	return args.Get(0).([]string), nil
 }
+
+func (mock *IDbMock) GetUser(id int) (*model.UserResponse, *Error) {
+	args := mock.Called(id)
+	return args.Get(0).(*model.UserResponse), mock.error
+}
+
+func (mock *IDbMock) CreateUser(user *model.UserRequest, hash string, salt string) (int, *Error) {
+	args := mock.Called(user, hash, salt)
+	return args.Int(0), mock.error
+}
+
+func (mock *IDbMock) UpdateUser(id int, user *model.UserRequest) *Error {
+	mock.Called(id, user)
+	return mock.error
+}
+
+func (mock *IDbMock) DeleteUser(id int) *Error {
+	mock.Called(id)
+	return mock.error
+}
+
+func (mock *IDbMock) GetAllUsers() (*[]*model.UserResponse, *Error) {
+	args := mock.Called()
+	return args.Get(0).(*[]*model.UserResponse), mock.error
+}
