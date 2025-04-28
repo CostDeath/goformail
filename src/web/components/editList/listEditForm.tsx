@@ -61,7 +61,7 @@ export default function ListEditForm() {
 
     return (
         <>
-            <DeleteList />
+            <DeleteList id={listId} />
             <div className="grid grid-cols-2 py-10">
                 <label htmlFor="listName" className="px-5 text-xl">Mailing List Name</label>
                 <input
