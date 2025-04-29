@@ -82,22 +82,24 @@ func (suite *DbUsersSuite) TestGetUserReturnsNoRowsOnInvalidId() {
 func (suite *DbUsersSuite) TestCreateUser() {
 	// Run function
 	expected := createUser("create@test-0.tld")
-	id, _ := suite.db.CreateUser(expected, "hash", "salt")
+	id, _ := suite.db.CreateUser(expected, "hash")
 
 	// Check list was created properly
 	var actual model.UserRequest
+	var actualHash string
 	err := suite.db.conn.QueryRow(`
-		SELECT email, permissions FROM users WHERE id = $1
-	`, id).Scan(&actual.Email, pq.Array(&actual.Permissions))
+		SELECT email, hash, permissions FROM users WHERE id = $1
+	`, id).Scan(&actual.Email, &actualHash, pq.Array(&actual.Permissions))
 	suite.Require().NoError(err)
 
 	suite.Equal(expected, &actual)
+	suite.Equal("hash", actualHash)
 }
 
 func (suite *DbUsersSuite) TestCreateUserReturnsErrorOnDuplicate() {
 	user := createUser("create@test-1.tld")
-	suite.db.CreateUser(user, "hash", "salt")
-	_, err := suite.db.CreateUser(user, "hash1", "salt1")
+	suite.db.CreateUser(user, "hash")
+	_, err := suite.db.CreateUser(user, "hash1")
 
 	suite.Equal(ErrDuplicate, err.Code)
 }
@@ -181,6 +183,54 @@ func (suite *DbUsersSuite) TestGetAllUsers() {
 	}
 
 	suite.Equal(&expected, actual)
+}
+
+func (suite *DbUsersSuite) TestGetUserPassword() {
+	actualId, actualHash, err := suite.db.GetUserPassword("get@test-0.tld")
+
+	suite.Nil(err)
+	suite.Equal(1, actualId)
+	suite.Equal("hash", actualHash)
+}
+
+func (suite *DbUsersSuite) TestGetUserPasswordReturnsNoRowsOnInvalidEmail() {
+	_, _, err := suite.db.GetUserPassword("invalid")
+
+	suite.Equal(ErrNoRows, err.Code)
+}
+
+func (suite *DbUsersSuite) TestUserExists() {
+	actual, err := suite.db.UserExists(1)
+
+	suite.Nil(err)
+	suite.True(actual)
+}
+
+func (suite *DbUsersSuite) TestUserExistsReturnsFalseOnInvalidId() {
+	actual, err := suite.db.UserExists(0)
+
+	suite.Nil(err)
+	suite.False(actual)
+}
+
+func (suite *DbUsersSuite) TestGetUserPerms() {
+	// Run function
+	actual, _ := suite.db.GetUserPerms(1)
+
+	// Get expected
+	var expected []string
+	err := suite.db.conn.QueryRow(`
+		SELECT permissions FROM users WHERE id = $1
+	`, 1).Scan(pq.Array(&expected))
+	suite.Require().NoError(err)
+
+	suite.Equal(expected, actual)
+}
+
+func (suite *DbUsersSuite) TestGetUserPermsReturnsNoRowsOnInvalidId() {
+	_, err := suite.db.GetUserPerms(0)
+
+	suite.Equal(ErrNoRows, err.Code)
 }
 
 func createUser(email string) *model.UserRequest {

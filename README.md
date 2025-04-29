@@ -26,14 +26,15 @@ implemented.
 
 ## To do
 
-- [ ] Email Forwarding
-- [ ] List Management
+- [X] Email Forwarding
+- [X] List Management
 - [ ] List Locking
 - [ ] Web UI
-- [ ] User Management
+- [X] User Management
 - [ ] Audit Logging
 - [ ] Feedback Emails
 - [ ] Email Scheduling
+- [ ] CLI interface
 
 The project is still in early development. Please be patient as we develop it.
 

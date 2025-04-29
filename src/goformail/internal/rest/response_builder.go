@@ -17,6 +17,10 @@ type IdObject struct {
 	Id int `json:"id"`
 }
 
+type TokenObject struct {
+	Token string `json:"token"`
+}
+
 func setResponse(msg string, data interface{}, w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 
@@ -40,6 +44,12 @@ func setErrorResponse(w http.ResponseWriter, r *http.Request, err *util.Error) {
 		http.Error(w, err.Message, http.StatusConflict)
 	case util.ErrNoUser:
 		http.Error(w, err.Message, http.StatusNotFound)
+	case util.ErrIncorrectPassword:
+		http.Error(w, err.Message, http.StatusUnauthorized)
+	case util.ErrInvalidToken:
+		http.Error(w, err.Message, http.StatusUnauthorized)
+	case util.ErrNoPermission:
+		http.Error(w, err.Message, http.StatusForbidden)
 	default:
 		http.Error(w, err.Message, http.StatusInternalServerError)
 	}

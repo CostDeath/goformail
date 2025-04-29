@@ -43,6 +43,13 @@ func (ctrl Controller) addUserHandlers() {
 }
 
 func (ctrl Controller) getUser(w http.ResponseWriter, r *http.Request) {
+	token := r.Header.Get("Authorization")
+	_, e := ctrl.auth.CheckTokenValidity(token)
+	if e != nil {
+		setErrorResponse(w, r, e)
+		return
+	}
+
 	id, err := strconv.Atoi(r.FormValue("id"))
 	if err != nil {
 		setErrorResponse(w, r, util.NewInvalidObjectError("Invalid id provided", nil))
@@ -60,13 +67,26 @@ func (ctrl Controller) getUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (ctrl Controller) postUser(w http.ResponseWriter, r *http.Request) {
+	token := r.Header.Get("Authorization")
+	id, e := ctrl.auth.CheckTokenValidity(token)
+	if e != nil {
+		setErrorResponse(w, r, e)
+		return
+	}
+
 	var user model.UserRequest
 	if err := json.NewDecoder(r.Body).Decode(&user); err != nil {
 		setErrorResponse(w, r, util.NewInvalidObjectError("Invalid json provided", nil))
 		return
 	}
 
-	id, e := ctrl.user.CreateUser(&user)
+	_, e = ctrl.auth.CheckUserPerms(id, "CRT_USER", user.Permissions)
+	if e != nil {
+		setErrorResponse(w, r, e)
+		return
+	}
+
+	id, e = ctrl.user.CreateUser(&user)
 	if e != nil {
 		setErrorResponse(w, r, e)
 		return
@@ -77,6 +97,13 @@ func (ctrl Controller) postUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (ctrl Controller) patchUser(w http.ResponseWriter, r *http.Request) {
+	token := r.Header.Get("Authorization")
+	_, e := ctrl.auth.CheckTokenValidity(token)
+	if e != nil {
+		setErrorResponse(w, r, e)
+		return
+	}
+
 	id, err := strconv.Atoi(r.FormValue("id"))
 	if err != nil {
 		setErrorResponse(w, r, util.NewInvalidObjectError("Invalid id provided", nil))
@@ -88,7 +115,13 @@ func (ctrl Controller) patchUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	e := ctrl.user.UpdateUser(id, &user)
+	_, e = ctrl.auth.CheckUserPerms(id, "MOD_USER", user.Permissions)
+	if e != nil {
+		setErrorResponse(w, r, e)
+		return
+	}
+
+	e = ctrl.user.UpdateUser(id, &user)
 	if e != nil {
 		setErrorResponse(w, r, e)
 		return
@@ -99,13 +132,26 @@ func (ctrl Controller) patchUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (ctrl Controller) deleteUser(w http.ResponseWriter, r *http.Request) {
+	token := r.Header.Get("Authorization")
+	_, e := ctrl.auth.CheckTokenValidity(token)
+	if e != nil {
+		setErrorResponse(w, r, e)
+		return
+	}
+
 	id, err := strconv.Atoi(r.FormValue("id"))
 	if err != nil {
 		setErrorResponse(w, r, util.NewInvalidObjectError("Invalid id provided", nil))
 		return
 	}
 
-	e := ctrl.user.DeleteUser(id)
+	e = ctrl.user.DeleteUser(id)
+	if e != nil {
+		setErrorResponse(w, r, e)
+		return
+	}
+
+	_, e = ctrl.auth.CheckPerms(id, "MOD_USER")
 	if e != nil {
 		setErrorResponse(w, r, e)
 		return
@@ -116,6 +162,13 @@ func (ctrl Controller) deleteUser(w http.ResponseWriter, r *http.Request) {
 }
 
 func (ctrl Controller) getUsers(w http.ResponseWriter, r *http.Request) {
+	token := r.Header.Get("Authorization")
+	_, e := ctrl.auth.CheckTokenValidity(token)
+	if e != nil {
+		setErrorResponse(w, r, e)
+		return
+	}
+
 	users, e := ctrl.user.GetAllUsers()
 	if e != nil {
 		setErrorResponse(w, r, e)

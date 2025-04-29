@@ -54,8 +54,8 @@ func (mock *IDbMock) GetUser(id int) (*model.UserResponse, *Error) {
 	return args.Get(0).(*model.UserResponse), mock.error
 }
 
-func (mock *IDbMock) CreateUser(user *model.UserRequest, hash string, salt string) (int, *Error) {
-	args := mock.Called(user, hash, salt)
+func (mock *IDbMock) CreateUser(user *model.UserRequest, hash string) (int, *Error) {
+	args := mock.Called(user, hash)
 	return args.Int(0), mock.error
 }
 
@@ -72,4 +72,19 @@ func (mock *IDbMock) DeleteUser(id int) *Error {
 func (mock *IDbMock) GetAllUsers() (*[]*model.UserResponse, *Error) {
 	args := mock.Called()
 	return args.Get(0).(*[]*model.UserResponse), mock.error
+}
+
+func (mock *IDbMock) GetUserPassword(email string) (int, string, *Error) {
+	args := mock.Called(email)
+	return args.Int(0), args.String(1), mock.error
+}
+
+func (mock *IDbMock) UserExists(id int) (bool, *Error) {
+	args := mock.Called(id)
+	return args.Bool(0), mock.error
+}
+
+func (mock *IDbMock) GetUserPerms(id int) ([]string, *Error) {
+	args := mock.Called(id)
+	return args.Get(0).([]string), mock.error
 }

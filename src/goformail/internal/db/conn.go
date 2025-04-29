@@ -1,6 +1,7 @@
 package db
 
 import (
+	"crypto/rand"
 	"database/sql"
 	"fmt"
 	_ "github.com/lib/pq"
@@ -18,10 +19,13 @@ type IDb interface {
 	GetAllLists() (*[]*model.ListWithId, *Error)
 	GetRecipientsFromListName(name string) ([]string, error)
 	GetUser(id int) (*model.UserResponse, *Error)
-	CreateUser(user *model.UserRequest, hash string, salt string) (int, *Error)
+	CreateUser(user *model.UserRequest, hash string) (int, *Error)
 	UpdateUser(id int, user *model.UserRequest) *Error
 	DeleteUser(id int) *Error
 	GetAllUsers() (*[]*model.UserResponse, *Error)
+	GetUserPassword(email string) (int, string, *Error)
+	UserExists(id int) (bool, *Error)
+	GetUserPerms(id int) ([]string, *Error)
 }
 
 type Db struct {
@@ -43,6 +47,13 @@ func InitDB(configs map[string]string) *Db {
 
 	// Generate tables that aren't there
 	if _, err := db.Exec(`
+		CREATE TABLE IF NOT EXISTS props (
+        	id SERIAL PRIMARY KEY
+    	);
+		ALTER TABLE props
+		    ADD COLUMN IF NOT EXISTS jwt_secret BYTEA;
+		INSERT INTO props DEFAULT VALUES;
+
 		CREATE TABLE IF NOT EXISTS lists (
         	id SERIAL PRIMARY KEY
     	);
@@ -56,12 +67,34 @@ func InitDB(configs map[string]string) *Db {
 		ALTER TABLE users
 		    ADD COLUMN IF NOT EXISTS email TEXT UNIQUE NOT NULL,
 		    ADD COLUMN IF NOT EXISTS hash TEXT NOT NULL,
-		    ADD COLUMN IF NOT EXISTS salt TEXT NOT NULL,
-		    ADD COLUMN IF NOT EXISTS token TEXT,
 		    ADD COLUMN IF NOT EXISTS permissions TEXT[];
 	`); err != nil {
 		log.Fatal(err)
 	}
 
 	return &Db{conn: db}
+}
+
+func (db *Db) GetJwtSecret() *[]byte {
+	secret := make([]byte, 32)
+	err := db.conn.QueryRow("SELECT jwt_secret FROM props LIMIT 1").Scan(&secret)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if secret == nil {
+		// Generate new secret
+		secret = make([]byte, 32)
+		_, err = rand.Read(secret)
+		if err != nil {
+			log.Fatal(err)
+		}
+
+		_, err = db.conn.Exec("UPDATE props SET jwt_secret = $1", secret)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	return &secret
 }
