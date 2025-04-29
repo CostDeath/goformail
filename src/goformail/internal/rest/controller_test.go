@@ -10,7 +10,13 @@ import (
 )
 
 func TestNewController(t *testing.T) {
-	actual := NewController(util.MockConfigs, &db.Db{}, &service.UserManager{})
-	expected := &Controller{util.MockConfigs, &db.Db{}, &service.UserManager{}, http.DefaultServeMux}
+	actual := NewController(util.MockConfigs, &db.Db{}, &service.UserManager{}, &service.AuthManager{})
+	expected := &Controller{
+		util.MockConfigs,
+		&db.Db{},
+		&service.UserManager{},
+		&service.AuthManager{},
+		http.DefaultServeMux,
+	}
 	assert.Equal(t, expected, actual)
 }

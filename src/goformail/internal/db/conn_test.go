@@ -19,6 +19,11 @@ type column struct {
 	dflt                  sql.NullString
 }
 
+var expectedPropColumns = []column{
+	{"id", "integer", "NO", sql.NullString{String: "nextval('props_id_seq'::regclass)", Valid: true}},
+	{name: "jwt_secret", ctype: "bytea", nullable: "YES", dflt: sql.NullString{String: "", Valid: false}},
+}
+
 var expectedListColumns = []column{
 	{"id", "integer", "NO", sql.NullString{String: "nextval('lists_id_seq'::regclass)", Valid: true}},
 	{name: "name", ctype: "text", nullable: "NO", dflt: sql.NullString{String: "", Valid: false}},
@@ -29,12 +34,10 @@ var expectedUserColumns = []column{
 	{"id", "integer", "NO", sql.NullString{String: "nextval('users_id_seq'::regclass)", Valid: true}},
 	{name: "email", ctype: "text", nullable: "NO", dflt: sql.NullString{String: "", Valid: false}},
 	{name: "hash", ctype: "text", nullable: "NO", dflt: sql.NullString{String: "", Valid: false}},
-	{name: "salt", ctype: "text", nullable: "NO", dflt: sql.NullString{String: "", Valid: false}},
-	{name: "token", ctype: "text", nullable: "YES", dflt: sql.NullString{String: "", Valid: false}},
 	{name: "permissions", ctype: "ARRAY", nullable: "YES", dflt: sql.NullString{String: "", Valid: false}},
 }
 
-func TestInitDBCreatesTables(t *testing.T) {
+func TestInitDBCreatesTablesAndJWTCreatesThenFetchesSecret(t *testing.T) {
 	// Define the postgres container config
 	ctx := context.Background()
 	c, err := postgres.Run(
@@ -69,14 +72,32 @@ func TestInitDBCreatesTables(t *testing.T) {
 	}
 	db := InitDB(containerConfig)
 
-	// Check correct lists columns are present
+	// Check correct props columns are present
 	rows, err := db.conn.Query(`
+		SELECT column_name, data_type, is_nullable, column_default
+		FROM information_schema.columns
+		WHERE table_name = 'props';
+	`)
+	require.NoError(t, err)
+	var columns []column
+	for rows.Next() {
+		column := column{}
+		err := rows.Scan(&column.name, &column.ctype, &column.nullable, &column.dflt)
+		require.NoError(t, err)
+
+		columns = append(columns, column)
+	}
+
+	assert.Equal(t, expectedPropColumns, columns)
+
+	// Check correct lists columns are present
+	rows, err = db.conn.Query(`
 		SELECT column_name, data_type, is_nullable, column_default
 		FROM information_schema.columns
 		WHERE table_name = 'lists';
 	`)
 	require.NoError(t, err)
-	var columns []column
+	columns = []column{}
 	for rows.Next() {
 		column := column{}
 		err := rows.Scan(&column.name, &column.ctype, &column.nullable, &column.dflt)
@@ -104,4 +125,19 @@ func TestInitDBCreatesTables(t *testing.T) {
 	}
 
 	assert.Equal(t, expectedUserColumns, columns)
+
+	secretInDb := make([]byte, 32)
+	err = db.conn.QueryRow("SELECT jwt_secret FROM props LIMIT 1;").Scan(&secretInDb)
+	require.NoError(t, err)
+	require.Nil(t, secretInDb)
+
+	secretGenerated := db.GetJwtSecret()
+	err = db.conn.QueryRow("SELECT jwt_secret FROM props LIMIT 1;").Scan(&secretInDb)
+	require.NoError(t, err)
+	require.NotNil(t, *secretGenerated)
+	require.Equal(t, *secretGenerated, secretInDb)
+
+	secretGenerated = db.GetJwtSecret()
+	require.NoError(t, err)
+	require.Equal(t, *secretGenerated, secretInDb)
 }

@@ -3,7 +3,6 @@ package rest
 import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal/util"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -15,7 +14,7 @@ func uiCleanUp() {
 
 func TestAddUiHandlerAddsUIEndpoint(t *testing.T) {
 	t.Cleanup(uiCleanUp)
-	ctrl := NewController(util.MockConfigs, nil, nil)
+	ctrl := &Controller{mux: new(http.ServeMux)}
 	ctrl.addUiHandler()
 
 	// Mock the request
@@ -31,7 +30,7 @@ func TestAddUiHandlerAddsUIEndpoint(t *testing.T) {
 
 func TestAddUiHandlerAddsRootRedirect(t *testing.T) {
 	t.Cleanup(uiCleanUp)
-	ctrl := NewController(util.MockConfigs, nil, nil)
+	ctrl := &Controller{mux: new(http.ServeMux)}
 	ctrl.addUiHandler()
 
 	// Mock the request
@@ -48,7 +47,7 @@ func TestAddUiHandlerAddsRootRedirect(t *testing.T) {
 
 func TestAddUiHandlerAdds404Page(t *testing.T) {
 	t.Cleanup(uiCleanUp)
-	ctrl := NewController(util.MockConfigs, nil, nil)
+	ctrl := &Controller{mux: new(http.ServeMux)}
 	ctrl.addUiHandler()
 
 	// Mock the request
