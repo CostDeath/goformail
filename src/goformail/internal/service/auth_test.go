@@ -87,7 +87,7 @@ func TestCheckToken(t *testing.T) {
 
 	dbMock.AssertExpectations(t)
 	assert.Nil(t, e)
-	assert.Equal(t, id, 1)
+	assert.Equal(t, 1, id)
 }
 
 func TestCheckTokenReturnsErrorOnInvalidToken(t *testing.T) {
@@ -158,7 +158,7 @@ func TestCheckPerms(t *testing.T) {
 	valid, err := man.CheckPerms(1, "CRT_LIST")
 
 	require.Nil(t, err)
-	assert.Equal(t, true, valid)
+	assert.True(t, valid)
 }
 
 func TestCheckPermsTrueOnAdmin(t *testing.T) {
@@ -169,7 +169,7 @@ func TestCheckPermsTrueOnAdmin(t *testing.T) {
 	valid, err := man.CheckPerms(1, "CRT_LIST")
 
 	require.Nil(t, err)
-	assert.Equal(t, true, valid)
+	assert.True(t, valid)
 }
 
 func TestCheckPermsWhenFalse(t *testing.T) {
@@ -180,7 +180,7 @@ func TestCheckPermsWhenFalse(t *testing.T) {
 	valid, err := man.CheckPerms(1, "CRT_LIST")
 
 	assert.Equal(t, util.NewNoPermissionError("CRT_LIST", nil), err)
-	assert.Equal(t, false, valid)
+	assert.False(t, valid)
 }
 
 func TestCheckPermsReturnsGenericError(t *testing.T) {
@@ -191,7 +191,7 @@ func TestCheckPermsReturnsGenericError(t *testing.T) {
 	valid, err := man.CheckPerms(1, "CRT_LIST")
 
 	assert.Equal(t, util.NewGenericError(nil), err)
-	assert.Equal(t, false, valid)
+	assert.False(t, valid)
 }
 
 func TestCheckUserPerms(t *testing.T) {
@@ -202,7 +202,7 @@ func TestCheckUserPerms(t *testing.T) {
 	valid, err := man.CheckUserPerms(1, "CRT_USER", []string{"CRT_USER", "CRT_LIST"})
 
 	require.Nil(t, err)
-	assert.Equal(t, true, valid)
+	assert.True(t, valid)
 }
 
 func TestCheckUserPermsTrueOnAdmin(t *testing.T) {
@@ -213,7 +213,7 @@ func TestCheckUserPermsTrueOnAdmin(t *testing.T) {
 	valid, err := man.CheckUserPerms(1, "CRT_USER", []string{"CRT_USER", "CRT_LIST"})
 
 	require.Nil(t, err)
-	assert.Equal(t, true, valid)
+	assert.True(t, valid)
 }
 
 func TestCheckUserPermsTrueOnLowercase(t *testing.T) {
@@ -224,7 +224,7 @@ func TestCheckUserPermsTrueOnLowercase(t *testing.T) {
 	valid, err := man.CheckUserPerms(1, "CRT_USER", []string{"crt_user", "crt_list"})
 
 	require.Nil(t, err)
-	assert.Equal(t, true, valid)
+	assert.True(t, valid)
 }
 
 func TestCheckUserPermsWhenNoActionPerm(t *testing.T) {
@@ -235,7 +235,7 @@ func TestCheckUserPermsWhenNoActionPerm(t *testing.T) {
 	valid, err := man.CheckUserPerms(1, "CRT_USER", []string{"CRT_LIST"})
 
 	assert.Equal(t, util.NewNoPermissionError("CRT_USER", nil), err)
-	assert.Equal(t, false, valid)
+	assert.False(t, valid)
 }
 
 func TestCheckUserPermsWhenNoRequiredPerm(t *testing.T) {
@@ -246,7 +246,7 @@ func TestCheckUserPermsWhenNoRequiredPerm(t *testing.T) {
 	valid, err := man.CheckUserPerms(1, "CRT_USER", []string{"CRT_LIST"})
 
 	assert.Equal(t, util.NewNoPermissionError("CRT_LIST", nil), err)
-	assert.Equal(t, false, valid)
+	assert.False(t, valid)
 }
 
 func TestCheckUserPermsWhenInvalidPerm(t *testing.T) {
@@ -258,7 +258,7 @@ func TestCheckUserPermsWhenInvalidPerm(t *testing.T) {
 
 	msg := "Missing or duplicate permission. Valid permissions- ADMIN,CRT_LIST,MOD_LIST,CRT_USER,MOD_USER"
 	assert.Equal(t, util.NewInvalidObjectError(msg, nil), err)
-	assert.Equal(t, false, valid)
+	assert.False(t, valid)
 }
 
 func TestCheckUserPermsReturnsGenericError(t *testing.T) {
@@ -269,5 +269,5 @@ func TestCheckUserPermsReturnsGenericError(t *testing.T) {
 	valid, err := man.CheckUserPerms(1, "CRT_USER", []string{"CRT_LIST"})
 
 	assert.Equal(t, util.NewGenericError(nil), err)
-	assert.Equal(t, false, valid)
+	assert.False(t, valid)
 }

@@ -145,13 +145,13 @@ func (ctrl Controller) deleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	e = ctrl.user.DeleteUser(id)
+	_, e = ctrl.auth.CheckPerms(id, "MOD_USER")
 	if e != nil {
 		setErrorResponse(w, r, e)
 		return
 	}
 
-	_, e = ctrl.auth.CheckPerms(id, "MOD_USER")
+	e = ctrl.user.DeleteUser(id)
 	if e != nil {
 		setErrorResponse(w, r, e)
 		return

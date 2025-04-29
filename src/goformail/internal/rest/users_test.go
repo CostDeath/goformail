@@ -139,6 +139,7 @@ func TestPostUser(t *testing.T) {
 	userMock.On("CreateUser", defaultUserRequest).Return(1)
 	authMock := new(service.IAuthManagerMock)
 	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
+	authMock.On("CheckUserPerms", 1, "CRT_USER", defaultUserRequest.Permissions).Return(true)
 	ctrl := &Controller{user: userMock, auth: authMock, mux: new(http.ServeMux)}
 	ctrl.addUserHandlers()
 
@@ -196,6 +197,7 @@ func TestPostUser400sOnInvalidObj(t *testing.T) {
 	userMock.On("CreateUser", defaultUserRequest).Return(1)
 	authMock := new(service.IAuthManagerMock)
 	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
+	authMock.On("CheckUserPerms", 1, "CRT_USER", defaultUserRequest.Permissions).Return(true)
 	ctrl := &Controller{user: userMock, auth: authMock, mux: new(http.ServeMux)}
 	ctrl.addUserHandlers()
 
@@ -215,6 +217,7 @@ func TestPostUser409sOnDuplicateUser(t *testing.T) {
 	userMock.On("CreateUser", defaultUserRequest).Return(1)
 	authMock := new(service.IAuthManagerMock)
 	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
+	authMock.On("CheckUserPerms", 1, "CRT_USER", defaultUserRequest.Permissions).Return(true)
 	ctrl := &Controller{user: userMock, auth: authMock, mux: new(http.ServeMux)}
 	ctrl.addUserHandlers()
 
@@ -234,6 +237,7 @@ func TestPostUser500sOnDbError(t *testing.T) {
 	userMock.On("CreateUser", defaultUserRequest).Return(1)
 	authMock := new(service.IAuthManagerMock)
 	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
+	authMock.On("CheckUserPerms", 1, "CRT_USER", defaultUserRequest.Permissions).Return(true)
 	ctrl := &Controller{user: userMock, auth: authMock, mux: new(http.ServeMux)}
 	ctrl.addUserHandlers()
 
@@ -253,6 +257,7 @@ func TestPatchUser(t *testing.T) {
 	userMock.On("UpdateUser", 1, defaultUserRequest).Return(1)
 	authMock := new(service.IAuthManagerMock)
 	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
+	authMock.On("CheckUserPerms", 1, "MOD_USER", defaultUserRequest.Permissions).Return(true)
 	ctrl := &Controller{user: userMock, auth: authMock, mux: new(http.ServeMux)}
 	ctrl.addUserHandlers()
 
@@ -348,6 +353,7 @@ func TestPatchUser400sOnInvalidObj(t *testing.T) {
 	userMock.On("UpdateUser", 1, defaultUserRequest).Return(1)
 	authMock := new(service.IAuthManagerMock)
 	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
+	authMock.On("CheckUserPerms", 1, "MOD_USER", defaultUserRequest.Permissions).Return(true)
 	ctrl := &Controller{user: userMock, auth: authMock, mux: new(http.ServeMux)}
 	ctrl.addUserHandlers()
 
@@ -367,6 +373,7 @@ func TestPatchUser409sOnDuplicateName(t *testing.T) {
 	userMock.On("UpdateUser", 1, defaultUserRequest).Return(1)
 	authMock := new(service.IAuthManagerMock)
 	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
+	authMock.On("CheckUserPerms", 1, "MOD_USER", defaultUserRequest.Permissions).Return(true)
 	ctrl := &Controller{user: userMock, auth: authMock, mux: new(http.ServeMux)}
 	ctrl.addUserHandlers()
 
@@ -386,6 +393,7 @@ func TestPatchUser404sWhenNoUser(t *testing.T) {
 	userMock.On("UpdateUser", 1, defaultUserRequest).Return(1)
 	authMock := new(service.IAuthManagerMock)
 	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
+	authMock.On("CheckUserPerms", 1, "MOD_USER", defaultUserRequest.Permissions).Return(true)
 	ctrl := &Controller{user: userMock, auth: authMock, mux: new(http.ServeMux)}
 	ctrl.addUserHandlers()
 
@@ -405,6 +413,7 @@ func TestPatchUser500sOnGenericError(t *testing.T) {
 	userMock.On("UpdateUser", 1, defaultUserRequest).Return(1)
 	authMock := new(service.IAuthManagerMock)
 	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
+	authMock.On("CheckUserPerms", 1, "MOD_USER", defaultUserRequest.Permissions).Return(true)
 	ctrl := &Controller{user: userMock, auth: authMock, mux: new(http.ServeMux)}
 	ctrl.addUserHandlers()
 
@@ -424,6 +433,7 @@ func TestDeleteUser(t *testing.T) {
 	userMock.On("DeleteUser", 1).Return()
 	authMock := new(service.IAuthManagerMock)
 	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
+	authMock.On("CheckPerms", 1, "MOD_USER").Return(true)
 	ctrl := &Controller{user: userMock, auth: authMock, mux: new(http.ServeMux)}
 	ctrl.addUserHandlers()
 
@@ -500,6 +510,7 @@ func TestDeleteUser404sWhenNoUser(t *testing.T) {
 	userMock.On("DeleteUser", 1).Return()
 	authMock := new(service.IAuthManagerMock)
 	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
+	authMock.On("CheckPerms", 1, "MOD_USER").Return(true)
 	ctrl := &Controller{user: userMock, auth: authMock, mux: new(http.ServeMux)}
 	ctrl.addUserHandlers()
 
@@ -519,6 +530,7 @@ func TestDeleteUser500sOnGenericError(t *testing.T) {
 	userMock.On("DeleteUser", 1).Return()
 	authMock := new(service.IAuthManagerMock)
 	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
+	authMock.On("CheckPerms", 1, "MOD_USER").Return(true)
 	ctrl := &Controller{user: userMock, auth: authMock, mux: new(http.ServeMux)}
 	ctrl.addUserHandlers()
 
