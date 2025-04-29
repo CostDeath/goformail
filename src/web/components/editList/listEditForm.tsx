@@ -1,7 +1,11 @@
-import {useSearchParams} from "next/navigation";
-import {ChangeEvent, useState} from "react";
+import {redirect, useSearchParams} from "next/navigation";
+import {ChangeEvent, useEffect, useState} from "react";
 import useSWR from "swr";
 import DeleteList from "@/components/editList/deleteList";
+import {api} from "@/components/api";
+import {List} from "@/models/list";
+import validateEmail from "@/components/validateEmails";
+import {LinkTo} from "@/components/pageEnums";
 
 export default function ListEditForm() {
     const searchParams = useSearchParams()
@@ -29,33 +33,69 @@ export default function ListEditForm() {
     const fetcher = async(url: string) => {
         const response = await fetch(url)
         const data = await response.json()
-        // placeholder
-        setRecipients([{value: data.title}])
+        const rcpts: string[] = data.data.recipients
+        const rcptsBuilder: {value: string}[] = []
+        for (let i = 0; i < rcpts.length; i++) {
+            rcptsBuilder.push({value: rcpts[i]})
+        }
+        setRecipients(rcptsBuilder)
         return data
     }
 
-    const {data, error} = useSWR(`https://jsonplaceholder.typicode.com/posts/${listId}`, fetcher)
+    const [baseUrl, setBaseUrl] = useState("")
+
+    useEffect(() => {
+        const url =`${window.location.origin}/api`
+        setBaseUrl(url)
+    }, [])
+
+    const {data, error} = useSWR((baseUrl) ? `${baseUrl}${api.list}?id=${listId}` : null, fetcher)
 
     if (error) return <div>Error</div>
     if (!data) {
         return <div>Loading</div>
-    } else if (!data.id) {
+    } else if (data.message !== "Successfully fetched list!") {
         return <div>Error</div>
     }
 
-    // TODO: uncomment this once doing ticket for connecting frontend and backend
-    // setRecipients(data.Recipients) // Assumption that this is how it'll work when fetched
+    const result: List = data.data
 
 
-    const placeholder = () => {
-        // This will be a patch request
-        console.log(data)
-        console.log(recipients)
+    const editList = async () => {
+        const url = `${window.location.origin}/api${api.list}?id=${listId}`
+        const rcptList: string[]  = []
+        for (let i = 0; i < recipients.length; i++) {
+            if (!validateEmail(recipients[i].value)) {
+                alert(`${recipients[i].value} is not a valid email`)
+                return;
+            }
+            rcptList.push(recipients[i].value)
+        }
+
+        const response = await fetch(url, {
+            method: "PATCH",
+            body: JSON.stringify({
+                Name: result.name,
+                Recipients: rcptList,
+            }),
+            headers: {
+                "Content-Type": "application/json",
+            }
+        })
+
+        if (response.ok) {
+            const result = await response.json()
+            alert(result.message)
+            redirect(LinkTo.MAILINGLISTS)
+        } else {
+            const result = await response.text()
+            alert(result)
+        }
     }
 
     return (
         <>
-            <DeleteList />
+            <DeleteList id={listId} />
             <div className="grid grid-cols-2 py-10">
                 <label htmlFor="listName" className="px-5 text-xl">Mailing List Name</label>
                 <input
@@ -75,7 +115,7 @@ export default function ListEditForm() {
                     id="listName"
                     type="email"
                     name="listName"
-                    value={data.Name}
+                    value={result.name}
                     disabled
                 />
             </div>
@@ -125,7 +165,7 @@ export default function ListEditForm() {
 
             <div className="flex flex-row justify-end px-5">
                 <button className="bg-green-600/75 hover:bg-green-600 px-2 py-1 rounded-md"
-                        onClick={placeholder}>Submit
+                        onClick={editList}>Submit
                 </button>
             </div>
         </>

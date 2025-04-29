@@ -1,14 +1,49 @@
 "use client"
 
 import {ChangeEvent, useState} from "react";
+import {api} from "@/components/api";
+import {redirect} from "next/navigation";
+import {LinkTo} from "@/components/pageEnums";
+import validateEmail from "@/components/validateEmails";
 
 export default function ListCreationForm() {
     const [name, setName] = useState("");
     const [recipients, setRecipients] = useState([{value: ""}])
 
-    const placeholder = () => {
-        console.log(name)
-        console.log(recipients)
+    const createList = async () => {
+        const url = `${window.location.origin}/api${api.list}`
+        if (!validateEmail(name)) {
+            alert("Please enter a valid mailing list email")
+            return;
+        }
+        const rcptList: string[] = []
+        for (let i = 0; i < recipients.length; i++) {
+            if (!validateEmail(recipients[i].value)) {
+                alert(`${recipients[i].value} is not a valid email`)
+                return;
+            }
+            rcptList.push(recipients[i].value)
+        }
+
+        const response = await fetch(url, {
+            method: "POST",
+            body: JSON.stringify({
+                Name: name,
+                Recipients: rcptList
+            }),
+            headers: {
+                "Content-Type": "application/json"
+            }
+        })
+
+        if (response.ok) {
+            const result = await response.json()
+            alert(result.message)
+            redirect(LinkTo.MAILINGLISTS)
+        } else {
+            const result = await response.text()
+            alert(result)
+        }
     }
 
     const handleChange = (index: number, e: ChangeEvent<HTMLInputElement>) => {
@@ -100,7 +135,7 @@ export default function ListCreationForm() {
 
             <div className="flex flex-row justify-end px-5">
                 <button className="bg-green-600/75 hover:bg-green-600 px-2 py-1 rounded-md"
-                        onClick={placeholder}>Submit
+                        onClick={createList}>Submit
                 </button>
             </div>
         </>
