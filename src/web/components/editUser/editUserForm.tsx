@@ -7,6 +7,7 @@ import {useEffect, useState} from "react";
 import {permissionsList} from "@/components/permissions";
 import DeleteUser from "@/components/editUser/deleteUser";
 import {api} from "@/components/api";
+import {User} from "@/models/user";
 
 export default function EditUserForm() {
     const [permissions, setPermissions] = useState(permissionsList)
@@ -50,8 +51,7 @@ export default function EditUserForm() {
         return <div>Error</div>
     }
 
-
-
+    const result: User = data.data
 
 
     const placeholder = () => {
@@ -82,7 +82,7 @@ export default function EditUserForm() {
                     id="email"
                     type="email"
                     name="email"
-                    value={data.data.email}
+                    value={result.email}
                     placeholder="Email Address"
                     disabled
                 />
@@ -121,7 +121,7 @@ export default function EditUserForm() {
                         Edit User
                         </button>
                     </div>
-                    <DeleteUser />
+                    <DeleteUser id={result.id} />
                 </div>
             </div>
         </>
