@@ -19,10 +19,19 @@ type column struct {
 	dflt                  sql.NullString
 }
 
-var expectedColumns = []column{
+var expectedListColumns = []column{
 	{"id", "integer", "NO", sql.NullString{String: "nextval('lists_id_seq'::regclass)", Valid: true}},
 	{name: "name", ctype: "text", nullable: "NO", dflt: sql.NullString{String: "", Valid: false}},
 	{name: "recipients", ctype: "ARRAY", nullable: "YES", dflt: sql.NullString{String: "", Valid: false}},
+}
+
+var expectedUserColumns = []column{
+	{"id", "integer", "NO", sql.NullString{String: "nextval('users_id_seq'::regclass)", Valid: true}},
+	{name: "email", ctype: "text", nullable: "NO", dflt: sql.NullString{String: "", Valid: false}},
+	{name: "hash", ctype: "text", nullable: "NO", dflt: sql.NullString{String: "", Valid: false}},
+	{name: "salt", ctype: "text", nullable: "NO", dflt: sql.NullString{String: "", Valid: false}},
+	{name: "token", ctype: "text", nullable: "YES", dflt: sql.NullString{String: "", Valid: false}},
+	{name: "permissions", ctype: "ARRAY", nullable: "YES", dflt: sql.NullString{String: "", Valid: false}},
 }
 
 func TestInitDBCreatesTables(t *testing.T) {
@@ -60,7 +69,7 @@ func TestInitDBCreatesTables(t *testing.T) {
 	}
 	db := InitDB(containerConfig)
 
-	// Check correct tables are present
+	// Check correct lists columns are present
 	rows, err := db.conn.Query(`
 		SELECT column_name, data_type, is_nullable, column_default
 		FROM information_schema.columns
@@ -76,5 +85,23 @@ func TestInitDBCreatesTables(t *testing.T) {
 		columns = append(columns, column)
 	}
 
-	assert.Equal(t, expectedColumns, columns)
+	assert.Equal(t, expectedListColumns, columns)
+
+	// Check correct lists columns are present
+	rows, err = db.conn.Query(`
+		SELECT column_name, data_type, is_nullable, column_default
+		FROM information_schema.columns
+		WHERE table_name = 'users';
+	`)
+	require.NoError(t, err)
+	columns = []column{}
+	for rows.Next() {
+		column := column{}
+		err := rows.Scan(&column.name, &column.ctype, &column.nullable, &column.dflt)
+		require.NoError(t, err)
+
+		columns = append(columns, column)
+	}
+
+	assert.Equal(t, expectedUserColumns, columns)
 }

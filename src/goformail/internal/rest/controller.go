@@ -3,6 +3,7 @@ package rest
 import (
 	"fmt"
 	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal/db"
+	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal/service"
 	"log"
 	"net/http"
 	"strconv"
@@ -11,19 +12,22 @@ import (
 type Controller struct {
 	configs map[string]string
 	db      db.IDb
+	user    service.IUserManager
 	mux     *http.ServeMux
 }
 
-func NewController(configs map[string]string, db db.IDb) *Controller {
+func NewController(configs map[string]string, db db.IDb, userMan service.IUserManager) *Controller {
 	return &Controller{
 		configs: configs,
 		db:      db,
+		user:    userMan,
 		mux:     http.DefaultServeMux,
 	}
 }
 
 func (ctrl Controller) Serve() {
 	ctrl.addListHandlers()
+	ctrl.addUserHandlers()
 	ctrl.addUiHandler()
 
 	// Start the server on port 8080

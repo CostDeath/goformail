@@ -17,6 +17,11 @@ type IDb interface {
 	DeleteList(id int) *Error
 	GetAllLists() (*[]*model.ListWithId, *Error)
 	GetRecipientsFromListName(name string) ([]string, error)
+	GetUser(id int) (*model.UserResponse, *Error)
+	CreateUser(user *model.UserRequest, hash string, salt string) (int, *Error)
+	UpdateUser(id int, user *model.UserRequest) *Error
+	DeleteUser(id int) *Error
+	GetAllUsers() (*[]*model.UserResponse, *Error)
 }
 
 type Db struct {
@@ -39,11 +44,21 @@ func InitDB(configs map[string]string) *Db {
 	// Generate tables that aren't there
 	if _, err := db.Exec(`
 		CREATE TABLE IF NOT EXISTS lists (
-        	id SERIAL PRIMARY KEY,
-		    name TEXT UNIQUE NOT NULL
+        	id SERIAL PRIMARY KEY
     	);
-		ALTER TABLE lists 
-		ADD COLUMN IF NOT EXISTS recipients TEXT[];
+		ALTER TABLE lists
+		    ADD COLUMN IF NOT EXISTS name TEXT UNIQUE NOT NULL,
+		    ADD COLUMN IF NOT EXISTS recipients TEXT[];
+
+		CREATE TABLE IF NOT EXISTS users (
+        	id SERIAL PRIMARY KEY
+    	);
+		ALTER TABLE users
+		    ADD COLUMN IF NOT EXISTS email TEXT UNIQUE NOT NULL,
+		    ADD COLUMN IF NOT EXISTS hash TEXT NOT NULL,
+		    ADD COLUMN IF NOT EXISTS salt TEXT NOT NULL,
+		    ADD COLUMN IF NOT EXISTS token TEXT,
+		    ADD COLUMN IF NOT EXISTS permissions TEXT[];
 	`); err != nil {
 		log.Fatal(err)
 	}
