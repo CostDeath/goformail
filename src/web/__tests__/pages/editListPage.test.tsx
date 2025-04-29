@@ -36,7 +36,7 @@ vitest.mock("swr")
 
 test("Edit List page has loaded and is rendered", async () => {
     useSWR.mockReturnValue({
-        data: {id: "1"}
+        data: {message: "Successfully fetched list!", data: {name: "someEmail@example.com"}}
     })
     const wrapper = render(<Page />)
 

@@ -1,4 +1,3 @@
-import Link from "next/link";
 //import useSWR from "swr";
 
 
@@ -40,7 +39,7 @@ export default function ApprovalRequestsTable({currentPage, api}: {
                 </div>
             </div>
             <div data-testid="table-body" className="table-row-group">
-                <Link href={`/approvals/email.html?id=${1}`} className="table-row shadow-inner text-neutral-300 hover:bg-neutral-600/75  hover:cursor-pointer">
+                <a href={`/ui/approvals/email.html?id=${1}`} className="table-row shadow-inner text-neutral-300 hover:bg-neutral-600/75  hover:cursor-pointer">
                     <div className="table-cell border-black border-b py-3 text-sm">
                         <div className="whitespace-nowrap py-3 pl-6 pr-3 flex items-center gap-3">
                             exampleentry@email.com
@@ -56,9 +55,9 @@ export default function ApprovalRequestsTable({currentPage, api}: {
                             09/01/2025
                         </div>
                     </div>
-                </Link>
+                </a>
 
-                <Link href={`/approvals/email.html?id=${2}`} className="table-row shadow-inner text-neutral-300 hover:bg-neutral-600/75  hover:cursor-pointer">
+                <a href={`/ui/approvals/email.html?id=${2}`} className="table-row shadow-inner text-neutral-300 hover:bg-neutral-600/75  hover:cursor-pointer">
                     <div className="table-cell black border-black py-3 text-sm">
                         <div className="whitespace-nowrap py-3 pl-6 pr-3 flex items-center gap-3">
                             exampleentry2@email.com
@@ -74,7 +73,7 @@ export default function ApprovalRequestsTable({currentPage, api}: {
                             09/01/2025
                         </div>
                     </div>
-                </Link>
+                </a>
             </div>
         </div>
         </>

@@ -13,7 +13,7 @@ vitest.mock("next/navigation", () => {
 })
 
 test("Delete User is rendered", () => {
-    render(<DeleteUser/>);
+    render(<DeleteUser id={1}/>);
 
     const deleteButton = screen.getByRole("button", { name: "Delete User" })
     expect(deleteButton).toBeDefined();
