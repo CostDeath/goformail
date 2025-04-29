@@ -2,18 +2,28 @@
 
 export const permissionsList = [
     {
-        label: "Approve Emails",
+        label: "Admin",
         value: false,
-        id: "approveEmails"
+        id: "ADMIN",
+    },
+    {
+        label: "Create Mailing Lists",
+        value: false,
+        id: "CRT_LIST"
     },
     {
         label: "Manage Mailing Lists",
         value: false,
-        id: "manageMailingLists"
+        id: "MOD_LIST"
     },
     {
-        label: "Manage Other Accounts' Permissions",
+        label: "Create Users",
         value: false,
-        id: "manageOtherAccounts"
+        id: "CRT_USER"
+    },
+    {
+        label: "Manage Users",
+        value: false,
+        id: "MOD_USER"
     }
 ]
