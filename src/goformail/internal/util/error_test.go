@@ -40,3 +40,35 @@ func TestNewUserAlreadyExistsError(t *testing.T) {
 	actual := NewUserAlreadyExistsError("test@domain.tld", err)
 	assert.Equal(t, expected, actual)
 }
+
+func TestNewIncorrectPasswordError(t *testing.T) {
+	err := errors.New("some error")
+	expected := &Error{Err: err, Code: ErrIncorrectPassword,
+		Message: "Incorrect password for user 'test@domain.tld'"}
+	actual := NewIncorrectPasswordError("test@domain.tld", err)
+	assert.Equal(t, expected, actual)
+}
+
+func TestNewInvalidTokenError(t *testing.T) {
+	err := errors.New("some error")
+	expected := &Error{Err: err, Code: ErrInvalidToken,
+		Message: "Invalid token provided"}
+	actual := NewInvalidTokenError(err)
+	assert.Equal(t, expected, actual)
+}
+
+func TestNewNoPermissionError(t *testing.T) {
+	err := errors.New("some error")
+	expected := &Error{Err: err, Code: ErrNoPermission,
+		Message: "Missing permission 'CRT_LIST' for this action"}
+	actual := NewNoPermissionError("CRT_LIST", err)
+	assert.Equal(t, expected, actual)
+}
+
+func TestNewEncryptionError(t *testing.T) {
+	err := errors.New("some error")
+	expected := &Error{Err: err, Code: ErrEncryption,
+		Message: "An error relating to encryption occurred: 'some error'"}
+	actual := NewEncryptionError(err)
+	assert.Equal(t, expected, actual)
+}

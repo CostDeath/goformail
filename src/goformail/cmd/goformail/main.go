@@ -12,6 +12,7 @@ func main() {
 	configs := util.LoadConfigs("configs.cf")
 	dbObj := db.InitDB(configs)
 	go forwarding.LMTPService(configs, dbObj)
+	auth := service.NewAuthManager(dbObj, dbObj.GetJwtSecret())
 	userManager := service.NewUserManager(dbObj)
-	rest.NewController(configs, dbObj, userManager).Serve()
+	rest.NewController(configs, dbObj, userManager, auth).Serve()
 }

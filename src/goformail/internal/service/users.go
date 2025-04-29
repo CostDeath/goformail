@@ -4,6 +4,7 @@ import (
 	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal/db"
 	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal/model"
 	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal/util"
+	"golang.org/x/crypto/bcrypt"
 	"strings"
 )
 
@@ -39,21 +40,24 @@ func (man *UserManager) GetUser(id int) (*model.UserResponse, *util.Error) {
 }
 
 func (man *UserManager) CreateUser(user *model.UserRequest) (int, *util.Error) {
+	// Ensure payload is valid
 	if valid, missing := validateAllSet(*user); !valid {
 		return 0, util.NewInvalidObjectError("Missing field(s) in user: "+strings.Join(*missing, ", "), nil)
 	}
-
 	user.Email = strings.ToLower(user.Email) // want to store lowercase, to prevent duplicates
 	if !validateEmail(user.Email) {
 		return 0, util.NewInvalidObjectError("Invalid email address '"+user.Email+"'", nil)
 	}
 
-	if len(user.Permissions) != 0 && !validatePermissions(user.Permissions) {
-		return 0, util.NewInvalidObjectError("Missing or duplicate permission. Valid permissions- "+
-			strings.Join(model.Permissions, ", "), nil)
+	// Create password hash
+	hashBytes, e := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
+	if e != nil {
+		return 0, util.NewEncryptionError(e)
 	}
+	hash := string(hashBytes)
 
-	id, err := man.db.CreateUser(user, "hash", "salt")
+	// Create user in db
+	id, err := man.db.CreateUser(user, hash)
 	if err != nil {
 		switch err.Code {
 		case db.ErrDuplicate:

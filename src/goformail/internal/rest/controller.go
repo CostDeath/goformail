@@ -13,14 +13,21 @@ type Controller struct {
 	configs map[string]string
 	db      db.IDb
 	user    service.IUserManager
+	auth    service.IAuthManager
 	mux     *http.ServeMux
 }
 
-func NewController(configs map[string]string, db db.IDb, userMan service.IUserManager) *Controller {
+func NewController(
+	configs map[string]string,
+	db db.IDb,
+	userMan service.IUserManager,
+	authMan service.IAuthManager,
+) *Controller {
 	return &Controller{
 		configs: configs,
 		db:      db,
 		user:    userMan,
+		auth:    authMan,
 		mux:     http.DefaultServeMux,
 	}
 }
@@ -28,6 +35,7 @@ func NewController(configs map[string]string, db db.IDb, userMan service.IUserMa
 func (ctrl Controller) Serve() {
 	ctrl.addListHandlers()
 	ctrl.addUserHandlers()
+	ctrl.addAuthHandlers()
 	ctrl.addUiHandler()
 
 	// Start the server on port 8080

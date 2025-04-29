@@ -5,6 +5,7 @@ import (
 	"log"
 	"reflect"
 	"regexp"
+	"strings"
 )
 
 func validateAllSet(object interface{}) (bool, *[]string) {
@@ -46,6 +47,7 @@ func validatePermissions(perms []string) bool {
 	}
 
 	for _, perm := range perms {
+		perm := strings.ToUpper(perm)
 		if !allowed[perm] || seen[perm] {
 			return false
 		}

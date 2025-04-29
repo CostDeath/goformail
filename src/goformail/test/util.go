@@ -14,6 +14,7 @@ func CreateHttpRequest(t *testing.T, method string, uri string, body interface{}
 	require.NoError(t, err)
 	req, err := http.NewRequest(method, uri, bytes.NewBuffer(jsonBody))
 	require.NoError(t, err)
+	req.Header.Set("Authorization", "Bearer token")
 	return req
 }
 

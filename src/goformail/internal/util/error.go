@@ -17,6 +17,10 @@ const (
 	ErrInvalidObject
 	ErrNoUser
 	ErrUserAlreadyExists
+	ErrIncorrectPassword
+	ErrInvalidToken
+	ErrNoPermission
+	ErrEncryption
 )
 
 func NewGenericError(err error) *Error {
@@ -37,7 +41,32 @@ func NewNoUserError(id int, err error) *Error {
 	return &Error{Err: err, Code: ErrNoUser, Message: msg}
 }
 
+func NewNoUserEmailError(email string, err error) *Error {
+	msg := fmt.Sprintf("Could not find a user with email '%s'", email)
+	return &Error{Err: err, Code: ErrNoUser, Message: msg}
+}
+
 func NewUserAlreadyExistsError(email string, err error) *Error {
 	msg := fmt.Sprintf("A user with the email '%s' already exists", email)
 	return &Error{Err: err, Code: ErrUserAlreadyExists, Message: msg}
+}
+
+func NewIncorrectPasswordError(email string, err error) *Error {
+	msg := fmt.Sprintf("Incorrect password for user '%s'", email)
+	return &Error{Err: err, Code: ErrIncorrectPassword, Message: msg}
+}
+
+func NewInvalidTokenError(err error) *Error {
+	msg := "Invalid token provided"
+	return &Error{Err: err, Code: ErrInvalidToken, Message: msg}
+}
+
+func NewNoPermissionError(perm string, err error) *Error {
+	msg := fmt.Sprintf("Missing permission '%s' for this action", perm)
+	return &Error{Err: err, Code: ErrNoPermission, Message: msg}
+}
+
+func NewEncryptionError(err error) *Error {
+	msg := fmt.Sprintf("An error relating to encryption occurred: '%s'", err.Error())
+	return &Error{Err: err, Code: ErrEncryption, Message: msg}
 }
