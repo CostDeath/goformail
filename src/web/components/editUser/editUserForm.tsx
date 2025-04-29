@@ -3,39 +3,56 @@
 
 import {useSearchParams} from "next/navigation";
 import useSWR from "swr";
-import {useState} from "react";
+import {useEffect, useState} from "react";
 import {permissionsList} from "@/components/permissions";
 import DeleteUser from "@/components/editUser/deleteUser";
+import {api} from "@/components/api";
 
 export default function EditUserForm() {
-    // TODO: Replace "permissionsList" with the appropriate data when doing fetching ticket
     const [permissions, setPermissions] = useState(permissionsList)
     const search = useSearchParams()
     const userId = search.get("id")
-
-
-    const fetcher = async(url: string) => {
-        const response = await fetch(url)
-        return await response.json()
-        // setPermissions(data.permissions)   something like that
-    }
-
-    const {data, error} = useSWR(`https://jsonplaceholder.typicode.com/posts/${userId}`, fetcher)
-
-    if (error) return <div>Error</div>
-    if (!data) {
-        return <div>Loading</div>
-    } else if (!data.id) {
-        return <div>Error</div>
-    }
-
-
 
     const handleChange = (index: number) => {
         const values = [...permissions]
         values[index].value = !values[index].value
         setPermissions(values)
     }
+
+
+    const fetcher = async(url: string) => {
+        const response = await fetch(url)
+        const data = await response.json()
+        const dataPerms: string[] = data.data.permissions
+        let perms = 0
+        for (let i = 0; i < permissions.length; i++) {
+            if (dataPerms[perms] === permissions[i].id) {
+                handleChange(i)
+                perms += 1
+            }
+        }
+        return data
+    }
+
+    const [baseUrl, setBaseUrl] = useState("")
+
+    useEffect(() => {
+        const url = `${window.location.origin}/api`
+        setBaseUrl(url)
+    }, [])
+
+    const {data, error} = useSWR((baseUrl) ? `${baseUrl}${api.user}?id=${userId}` : null, fetcher)
+
+    if (error) return <div>Error</div>
+    if (!data) {
+        return <div>Loading</div>
+    } else if (data.message !== "Successfully fetched user!") {
+        return <div>Error</div>
+    }
+
+
+
+
 
     const placeholder = () => {
         console.log(data.email) // assuming data given, email is name of key
@@ -65,7 +82,7 @@ export default function EditUserForm() {
                     id="email"
                     type="email"
                     name="email"
-                    value={data.email}
+                    value={data.data.email}
                     placeholder="Email Address"
                     disabled
                 />
@@ -81,13 +98,23 @@ export default function EditUserForm() {
                 {permissions.map((permission, index) => (
                     <div className="grid grid-cols-3 px-2 py-3" key={index}>
                         <label htmlFor={permission.id} className="text-xl">{permission.label}</label>
-                        <input id={permission.id} name={permission.id} type="checkbox" value="" onClick={() => handleChange(index)} />
+
+                        {permission.value && (
+                            <input checked id={permission.id} name={permission.id} type="checkbox" value=""
+                                   onClick={() => handleChange(index)}/>
+                        )}
+
+                        {!permission.value && (
+                            <input id={permission.id} name={permission.id} type="checkbox" value=""
+                                   onClick={() => handleChange(index)}/>
+                        )}
+
                     </div>
                 ))}
             </div>
 
             <div className="flex flex-row justify-end px-5">
-                <div className="grid grid-cols-2">
+            <div className="grid grid-cols-2">
                     <div>
                         <button className="bg-green-600/75 hover:bg-green-600 px-3 py-2 rounded-md"
                             onClick={placeholder}>
