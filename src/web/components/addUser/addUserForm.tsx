@@ -2,6 +2,10 @@
 
 import {useState} from "react";
 import {permissionsList} from "@/components/permissions";
+import {api} from "@/components/api";
+import validateEmail from "@/components/validateEmails";
+import {redirect} from "next/navigation";
+import {LinkTo} from "@/components/pageEnums";
 
 export default function AddUserForm() {
     const [email, setEmail] = useState("")
@@ -14,10 +18,36 @@ export default function AddUserForm() {
         setPermissions(values)
     }
 
-    const placeholder = () => {
-        console.log(email)
-        console.log(password)
-        console.log(permissions)
+    const createUser = async () => {
+        const url = `${window.location.origin}/api${api.user}`
+        if (!validateEmail(email)) {
+            alert(`${email} is not a valid email!`)
+            return
+        }
+        const perms: string[] = []
+        for (let i = 0; i < permissions.length; i++) {
+            if (permissions[i].value) {
+                perms.push(permissions[i].id)
+            }
+        }
+
+        const response = await fetch(url, {
+            method: "POST",
+            body: JSON.stringify({
+                Email: email,
+                Password: password,
+                Permissions: perms
+            })
+        })
+
+        if (response.ok) {
+            const result = await response.json()
+            alert(result.message)
+            redirect(LinkTo.MANAGEMENT)
+        } else {
+            const result = await response.text()
+            alert(result)
+        }
     }
 
     return (
@@ -91,7 +121,7 @@ export default function AddUserForm() {
 
             <div className="flex flex-row justify-end px-5">
                 <button className="bg-green-600/75 hover:bg-green-600 px-2 py-1 rounded-md"
-                        onClick={placeholder}>
+                        onClick={createUser}>
                     Create User
                 </button>
             </div>

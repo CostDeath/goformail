@@ -1,5 +1,7 @@
 
 export const api = {
     mailingLists: "/lists",
-    list: "/list/"
+    list: "/list/",
+    users: "/users/",
+    user: "/user/"
 }
