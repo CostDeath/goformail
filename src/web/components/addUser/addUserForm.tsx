@@ -37,7 +37,10 @@ export default function AddUserForm() {
                 Email: email,
                 Password: password,
                 Permissions: perms
-            })
+            }),
+            headers: {
+                "Content-Type": "application/json",
+            }
         })
 
         if (response.ok) {

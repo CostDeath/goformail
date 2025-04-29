@@ -1,13 +1,14 @@
 "use client"
 
 
-import {useSearchParams} from "next/navigation";
+import {redirect, useSearchParams} from "next/navigation";
 import useSWR from "swr";
 import {useEffect, useState} from "react";
 import {permissionsList} from "@/components/permissions";
 import DeleteUser from "@/components/editUser/deleteUser";
 import {api} from "@/components/api";
 import {User} from "@/models/user";
+import {LinkTo} from "@/components/pageEnums";
 
 export default function EditUserForm() {
     const [permissions, setPermissions] = useState(permissionsList)
@@ -54,9 +55,35 @@ export default function EditUserForm() {
     const result: User = data.data
 
 
-    const placeholder = () => {
-        console.log(data.email) // assuming data given, email is name of key
-        console.log(permissions)
+    const editUser = async () => {
+        const url = `${window.location.origin}/api${api.user}?id=${userId}`
+        const perms: string[] = []
+        for (let i = 0; i < permissions.length; i++) {
+            if (permissions[i].value) {
+                perms.push(permissions[i].id)
+            }
+        }
+
+        const response = await fetch(url, {
+            method: "PATCH",
+            body: JSON.stringify({
+                Email: result.email,
+                Permissions: perms
+            }),
+            headers: {
+                "Content-Type": "application/json",
+            }
+        })
+
+
+        if (response.ok) {
+            const result = await response.json()
+            alert(result.message)
+            redirect(LinkTo.MANAGEMENT)
+        } else {
+            const result = await response.text()
+            alert(result)
+        }
     }
 
     return (
@@ -115,14 +142,14 @@ export default function EditUserForm() {
 
             <div className="flex flex-row justify-end px-5">
             <div className="grid grid-cols-2">
-                    <div>
-                        <button className="bg-green-600/75 hover:bg-green-600 px-3 py-2 rounded-md"
-                            onClick={placeholder}>
+                <div>
+                    <button className="bg-green-600/75 hover:bg-green-600 px-3 py-2 rounded-md"
+                            onClick={editUser}>
                         Edit User
-                        </button>
-                    </div>
-                    <DeleteUser id={result.id} />
+                    </button>
                 </div>
+                <DeleteUser id={result.id}/>
+            </div>
             </div>
         </>
     )
