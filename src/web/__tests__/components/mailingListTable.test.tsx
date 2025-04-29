@@ -1,7 +1,6 @@
 import {expect, test, vitest} from "vitest";
 import {render} from "@testing-library/react";
 import MailingListTable from "@/components/mailingLists/malingListTable";
-import {api} from "@/components/api";
 import useSWR from "swr";
 
 vitest.mock("swr")
@@ -11,7 +10,7 @@ test("mailing list table is loading", async () => {
         data: undefined
     })
 
-    const wrapper = render(<MailingListTable api={`${api.url}${api.mailingLists}`} />);
+    const wrapper = render(<MailingListTable />);
 
     expect(wrapper.getByText("Loading")).toBeDefined()
 
@@ -23,7 +22,7 @@ test("mailing list table has loaded", async () => {
         data: {message: "Successfully fetched lists!", data: [{id: 1, list: {name: "test"}}]}
     })
 
-    const wrapper = render(<MailingListTable api={`${api.url}${api.mailingLists}`} />)
+    const wrapper = render(<MailingListTable />)
 
     vitest.useFakeTimers()
     vitest.runAllTimers()
@@ -39,7 +38,7 @@ test("mailing list table has loaded but given data was invalid", async () => {
         data: {message: "Error"}
     })
 
-    const wrapper = render(<MailingListTable api={`${api.url}${api.mailingLists}`} />)
+    const wrapper = render(<MailingListTable />)
 
     vitest.useFakeTimers()
     vitest.runAllTimers()
@@ -53,7 +52,7 @@ test("mailing list table has loaded but no existing list data", async () => {
         data: {message: "Successfully fetched lists!"}
     })
 
-    const wrapper = render(<MailingListTable api={`${api.url}${api.mailingLists}`} />)
+    const wrapper = render(<MailingListTable />)
 
     vitest.useFakeTimers()
     vitest.runAllTimers()

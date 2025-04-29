@@ -2,16 +2,23 @@
 
 import useSWR from "swr";
 import {MailingLists} from "@/models/list";
+import {api} from "@/components/api";
+import {useEffect, useState} from "react";
 
-export default function MailingListTable({api}: {
-    api: string;
-}) {
+export default function MailingListTable() {
     const fetcher = async(url: string) => {
         const response = await fetch(url)
         return await response.json()
     }
 
-    const {data, error} = useSWR(api, fetcher)
+    const [baseUrl, setBaseUrl] = useState("")
+
+    useEffect(() => {
+        const url =`${window.location.origin}/api`
+        setBaseUrl(url)
+    }, [])
+
+    const {data, error} = useSWR((baseUrl) ? `${baseUrl}${api.mailingLists}` : null, fetcher)
 
     if (error) {
         return <div>Error</div>

@@ -1,5 +1,5 @@
 import {redirect, useSearchParams} from "next/navigation";
-import {ChangeEvent, useState} from "react";
+import {ChangeEvent, useEffect, useState} from "react";
 import useSWR from "swr";
 import DeleteList from "@/components/editList/deleteList";
 import {api} from "@/components/api";
@@ -42,7 +42,14 @@ export default function ListEditForm() {
         return data
     }
 
-    const {data, error} = useSWR(`${api.url}${api.list}?id=${listId}`, fetcher)
+    const [baseUrl, setBaseUrl] = useState("")
+
+    useEffect(() => {
+        const url =`${window.location.origin}/api`
+        setBaseUrl(url)
+    }, [])
+
+    const {data, error} = useSWR((baseUrl) ? `${baseUrl}${api.list}?id=${listId}` : null, fetcher)
 
     if (error) return <div>Error</div>
     if (!data) {
@@ -55,6 +62,7 @@ export default function ListEditForm() {
 
 
     const editList = async () => {
+        const url = `${window.location.origin}/api${api.list}?id=${listId}`
         const rcptList: string[]  = []
         for (let i = 0; i < recipients.length; i++) {
             if (!validateEmail(recipients[i].value)) {
@@ -64,7 +72,7 @@ export default function ListEditForm() {
             rcptList.push(recipients[i].value)
         }
 
-        const response = await fetch(`${api.url}${api.list}?id=${listId}`, {
+        const response = await fetch(url, {
             method: "PATCH",
             body: JSON.stringify({
                 Name: result.name,

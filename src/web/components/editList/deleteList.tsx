@@ -10,7 +10,7 @@ export default function DeleteList({id}: {id: string | null}) {
     const toggleModal = useModal((state) => state.toggleModal)
 
     const deleteList = async () => {
-        const response = await fetch(`${api.url}${api.list}?id=${id}`, {
+        const response = await fetch(`${window.location.origin}/api${api.list}?id=${id}`, {
             method: "DELETE",
         })
 

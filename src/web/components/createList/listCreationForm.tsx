@@ -11,6 +11,7 @@ export default function ListCreationForm() {
     const [recipients, setRecipients] = useState([{value: ""}])
 
     const createList = async () => {
+        const url = `${window.location.origin}/api${api.list}`
         if (!validateEmail(name)) {
             alert("Please enter a valid mailing list email")
             return;
@@ -24,7 +25,7 @@ export default function ListCreationForm() {
             rcptList.push(recipients[i].value)
         }
 
-        const response = await fetch(`${api.url}${api.list}`, {
+        const response = await fetch(url, {
             method: "POST",
             body: JSON.stringify({
                 Name: name,
