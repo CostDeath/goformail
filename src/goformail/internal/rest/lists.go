@@ -2,17 +2,18 @@ package rest
 
 import (
 	"encoding/json"
-	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal/db"
 	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal/model"
-	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal/rest/util"
+	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal/util"
+	"io"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 func (ctrl Controller) addListHandlers() {
 	ctrl.mux.HandleFunc("/api/list/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/list/" {
-			util.HandleError(w, r, util.InvalidMethod)
+			handleUnknownMethod(w, r)
 			return
 		}
 		switch r.Method {
@@ -25,40 +26,41 @@ func (ctrl Controller) addListHandlers() {
 		case "DELETE":
 			ctrl.deleteList(w, r)
 		default:
-			util.HandleError(w, r, util.InvalidMethod)
+			handleUnknownMethod(w, r)
 		}
 	})
 
 	ctrl.mux.HandleFunc("/api/lists/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/lists/" {
-			util.HandleError(w, r, util.InvalidMethod)
+			handleUnknownMethod(w, r)
 			return
 		}
 		switch r.Method {
 		case "GET":
 			ctrl.getLists(w, r)
 		default:
-			util.HandleError(w, r, util.InvalidMethod)
+			handleUnknownMethod(w, r)
 		}
 	})
 }
 
 func (ctrl Controller) getList(w http.ResponseWriter, r *http.Request) {
-	var id int
-	id, err := strconv.Atoi(r.FormValue("id"))
-	if err != nil {
-		util.HandleError(w, r, util.ListNotFound)
+	token := r.Header.Get("Authorization")
+	_, e := ctrl.auth.CheckTokenValidity(token)
+	if e != nil {
+		setErrorResponse(w, r, e)
 		return
 	}
 
-	list, dbErr := ctrl.db.GetList(id)
-	if dbErr != nil {
-		switch dbErr.Code {
-		case db.ErrNoRows:
-			util.HandleError(w, r, util.ListNotFound)
-		default:
-			util.HandleError(w, r, util.DatabaseError)
-		}
+	id, err := strconv.Atoi(r.FormValue("id"))
+	if err != nil {
+		setErrorResponse(w, r, util.NewInvalidObjectError("Invalid id provided", err))
+		return
+	}
+
+	list, e := ctrl.list.GetList(id)
+	if e != nil {
+		setErrorResponse(w, r, e)
 		return
 	}
 
@@ -67,20 +69,29 @@ func (ctrl Controller) getList(w http.ResponseWriter, r *http.Request) {
 }
 
 func (ctrl Controller) postList(w http.ResponseWriter, r *http.Request) {
-	var list model.List
-	if err := json.NewDecoder(r.Body).Decode(&list); err != nil || !util.ValidateAllSet(list) {
-		util.HandleError(w, r, util.InvalidPayload)
+	token := r.Header.Get("Authorization")
+	id, e := ctrl.auth.CheckTokenValidity(token)
+	if e != nil {
+		setErrorResponse(w, r, e)
 		return
 	}
 
-	id, err := ctrl.db.CreateList(&list)
-	if err != nil {
-		switch err.Code {
-		case db.ErrDuplicate:
-			util.HandleError(w, r, util.ListAlreadyExists)
-		default:
-			util.HandleError(w, r, util.DatabaseError)
-		}
+	var list model.ListRequest
+	if err := json.NewDecoder(r.Body).Decode(&list); err != nil {
+		setErrorResponse(w, r, util.NewInvalidObjectError("Invalid json provided", err))
+		return
+	}
+
+	_, e = ctrl.auth.CheckPerms(id, "CRT_LIST")
+	if e != nil {
+		setErrorResponse(w, r, e)
+		return
+	}
+
+	list.Mods = append(list.Mods, int64(id))
+	id, e = ctrl.list.CreateList(&list)
+	if e != nil {
+		setErrorResponse(w, r, e)
 		return
 	}
 
@@ -89,27 +100,49 @@ func (ctrl Controller) postList(w http.ResponseWriter, r *http.Request) {
 }
 
 func (ctrl Controller) patchList(w http.ResponseWriter, r *http.Request) {
-	var id int
-	id, err := strconv.Atoi(r.FormValue("id"))
-	if err != nil {
-		util.HandleError(w, r, util.ListNotFound)
-		return
-	}
-	var list model.List
-	if err := json.NewDecoder(r.Body).Decode(&list); err != nil {
-		util.HandleError(w, r, util.InvalidPayload)
+	token := r.Header.Get("Authorization")
+	reqId, e := ctrl.auth.CheckTokenValidity(token)
+	if e != nil {
+		setErrorResponse(w, r, e)
 		return
 	}
 
-	if err := ctrl.db.PatchList(id, &list); err != nil || r.Body == http.NoBody {
-		switch err.Code {
-		case db.ErrDuplicate:
-			util.HandleError(w, r, util.ListAlreadyExists)
-		case db.ErrNoRows:
-			util.HandleError(w, r, util.ListNotFound)
-		default:
-			util.HandleError(w, r, util.DatabaseError)
-		}
+	// Check if there was a 'locked' property
+	bodyBytes, err := io.ReadAll(r.Body)
+	if err != nil {
+		setErrorResponse(w, r, util.NewInvalidObjectError("Invalid json provided", err))
+		return
+	}
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(bodyBytes, &raw); err != nil {
+		setErrorResponse(w, r, util.NewInvalidObjectError("Invalid json provided", err))
+		return
+	}
+
+	_, hasLocked := raw["locked"]
+
+	r.Body = io.NopCloser(strings.NewReader(string(bodyBytes))) // Restore the body for decoding into map
+
+	id, err := strconv.Atoi(r.FormValue("id"))
+	if err != nil {
+		setErrorResponse(w, r, util.NewInvalidObjectError("Invalid id provided", err))
+		return
+	}
+	var list model.ListRequest
+	if err := json.NewDecoder(r.Body).Decode(&list); err != nil {
+		setErrorResponse(w, r, util.NewInvalidObjectError("Invalid json provided", err))
+		return
+	}
+
+	_, e = ctrl.auth.CheckListMods(reqId, id)
+	if e != nil {
+		setErrorResponse(w, r, e)
+		return
+	}
+
+	e = ctrl.list.UpdateList(id, &list, hasLocked)
+	if e != nil {
+		setErrorResponse(w, r, e)
 		return
 	}
 
@@ -118,20 +151,28 @@ func (ctrl Controller) patchList(w http.ResponseWriter, r *http.Request) {
 }
 
 func (ctrl Controller) deleteList(w http.ResponseWriter, r *http.Request) {
-	var id int
-	id, err := strconv.Atoi(r.FormValue("id"))
-	if err != nil {
-		util.HandleError(w, r, util.ListNotFound)
+	token := r.Header.Get("Authorization")
+	reqId, e := ctrl.auth.CheckTokenValidity(token)
+	if e != nil {
+		setErrorResponse(w, r, e)
 		return
 	}
 
-	if err := ctrl.db.DeleteList(id); err != nil {
-		switch err.Code {
-		case db.ErrNoRows:
-			util.HandleError(w, r, util.ListNotFound)
-		default:
-			util.HandleError(w, r, util.DatabaseError)
-		}
+	id, err := strconv.Atoi(r.FormValue("id"))
+	if err != nil {
+		setErrorResponse(w, r, util.NewInvalidObjectError("Invalid id provided", err))
+		return
+	}
+
+	_, e = ctrl.auth.CheckListMods(reqId, id)
+	if e != nil {
+		setErrorResponse(w, r, e)
+		return
+	}
+
+	e = ctrl.list.DeleteList(id)
+	if e != nil {
+		setErrorResponse(w, r, e)
 		return
 	}
 
@@ -140,14 +181,16 @@ func (ctrl Controller) deleteList(w http.ResponseWriter, r *http.Request) {
 }
 
 func (ctrl Controller) getLists(w http.ResponseWriter, r *http.Request) {
-	lists, dbErr := ctrl.db.GetAllLists()
-	if dbErr != nil {
-		switch dbErr.Code {
-		case db.ErrNoRows:
-			util.HandleError(w, r, util.ListNotFound)
-		default:
-			util.HandleError(w, r, util.DatabaseError)
-		}
+	token := r.Header.Get("Authorization")
+	_, e := ctrl.auth.CheckTokenValidity(token)
+	if e != nil {
+		setErrorResponse(w, r, e)
+		return
+	}
+
+	lists, e := ctrl.list.GetAllLists()
+	if e != nil {
+		setErrorResponse(w, r, e)
 		return
 	}
 

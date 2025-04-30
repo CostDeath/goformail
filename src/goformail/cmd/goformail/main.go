@@ -11,8 +11,9 @@ import (
 func main() {
 	configs := util.LoadConfigs("configs.cf")
 	dbObj := db.InitDB(configs)
-	go forwarding.LMTPService(configs, dbObj)
+	list := service.NewListManager(dbObj)
+	user := service.NewUserManager(dbObj)
 	auth := service.NewAuthManager(dbObj, dbObj.GetJwtSecret())
-	userManager := service.NewUserManager(dbObj)
-	rest.NewController(configs, dbObj, userManager, auth).Serve()
+	go forwarding.LMTPService(configs, dbObj)
+	rest.NewController(list, user, auth).Serve(configs["HTTP_PORT"])
 }

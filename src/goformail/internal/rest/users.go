@@ -98,7 +98,7 @@ func (ctrl Controller) postUser(w http.ResponseWriter, r *http.Request) {
 
 func (ctrl Controller) patchUser(w http.ResponseWriter, r *http.Request) {
 	token := r.Header.Get("Authorization")
-	_, e := ctrl.auth.CheckTokenValidity(token)
+	reqId, e := ctrl.auth.CheckTokenValidity(token)
 	if e != nil {
 		setErrorResponse(w, r, e)
 		return
@@ -114,11 +114,13 @@ func (ctrl Controller) patchUser(w http.ResponseWriter, r *http.Request) {
 		setErrorResponse(w, r, util.NewInvalidObjectError("Invalid json provided", nil))
 		return
 	}
-
-	_, e = ctrl.auth.CheckUserPerms(id, "MOD_USER", user.Permissions)
-	if e != nil {
-		setErrorResponse(w, r, e)
-		return
+	
+	if reqId != id || len(user.Permissions) != 0 {
+		_, e = ctrl.auth.CheckUserPerms(reqId, "MOD_USER", user.Permissions)
+		if e != nil {
+			setErrorResponse(w, r, e)
+			return
+		}
 	}
 
 	e = ctrl.user.UpdateUser(id, &user)
@@ -133,7 +135,7 @@ func (ctrl Controller) patchUser(w http.ResponseWriter, r *http.Request) {
 
 func (ctrl Controller) deleteUser(w http.ResponseWriter, r *http.Request) {
 	token := r.Header.Get("Authorization")
-	_, e := ctrl.auth.CheckTokenValidity(token)
+	reqId, e := ctrl.auth.CheckTokenValidity(token)
 	if e != nil {
 		setErrorResponse(w, r, e)
 		return
@@ -145,10 +147,12 @@ func (ctrl Controller) deleteUser(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	_, e = ctrl.auth.CheckPerms(id, "MOD_USER")
-	if e != nil {
-		setErrorResponse(w, r, e)
-		return
+	if reqId != id {
+		_, e = ctrl.auth.CheckPerms(reqId, "MOD_USER")
+		if e != nil {
+			setErrorResponse(w, r, e)
+			return
+		}
 	}
 
 	e = ctrl.user.DeleteUser(id)

@@ -44,6 +44,10 @@ func setErrorResponse(w http.ResponseWriter, r *http.Request, err *util.Error) {
 		http.Error(w, err.Message, http.StatusConflict)
 	case util.ErrNoUser:
 		http.Error(w, err.Message, http.StatusNotFound)
+	case util.ErrListAlreadyExists:
+		http.Error(w, err.Message, http.StatusConflict)
+	case util.ErrNoList:
+		http.Error(w, err.Message, http.StatusNotFound)
 	case util.ErrIncorrectPassword:
 		http.Error(w, err.Message, http.StatusUnauthorized)
 	case util.ErrInvalidToken:

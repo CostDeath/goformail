@@ -26,8 +26,11 @@ var expectedPropColumns = []column{
 
 var expectedListColumns = []column{
 	{"id", "integer", "NO", sql.NullString{String: "nextval('lists_id_seq'::regclass)", Valid: true}},
+	{name: "mods", ctype: "ARRAY", nullable: "YES", dflt: sql.NullString{String: "", Valid: false}},
+	{name: "locked", ctype: "boolean", nullable: "YES", dflt: sql.NullString{String: "false", Valid: true}},
 	{name: "name", ctype: "text", nullable: "NO", dflt: sql.NullString{String: "", Valid: false}},
 	{name: "recipients", ctype: "ARRAY", nullable: "YES", dflt: sql.NullString{String: "", Valid: false}},
+	{name: "approved_senders", ctype: "ARRAY", nullable: "YES", dflt: sql.NullString{String: "", Valid: false}},
 }
 
 var expectedUserColumns = []column{

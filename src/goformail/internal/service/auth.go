@@ -17,6 +17,7 @@ type IAuthManager interface {
 	CheckTokenValidity(tokenStr string) (int, *util.Error)
 	CheckPerms(id int, required string) (bool, *util.Error)
 	CheckUserPerms(id int, action string, required []string) (bool, *util.Error)
+	CheckListMods(id int, listId int) (bool, *util.Error)
 }
 
 type AuthManager struct {
@@ -137,4 +138,23 @@ func (man *AuthManager) CheckUserPerms(id int, action string, required []string)
 	}
 
 	return true, nil
+}
+
+func (man *AuthManager) CheckListMods(id int, listId int) (bool, *util.Error) {
+	perms, status, dbErr := man.db.GetUserPermsAndModStatus(id, listId)
+	if dbErr != nil {
+		return false, util.NewGenericError(dbErr.Err)
+	}
+
+	if status {
+		return true, nil
+	}
+
+	for _, perm := range perms {
+		if perm == "ADMIN" || perm == "MOD_LIST" {
+			return true, nil
+		}
+	}
+
+	return false, util.NewNoPermissionError("MOD_LIST", nil)
 }
