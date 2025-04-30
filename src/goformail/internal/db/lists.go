@@ -1,27 +1,28 @@
 package db
 
 import (
+	"fmt"
 	"github.com/lib/pq"
 	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal/model"
 )
 
-func (db *Db) GetList(id int) (*model.List, *Error) {
-	var list model.List
+func (db *Db) GetList(id int) (*model.ListResponse, *Error) {
+	list := model.ListResponse{Id: id}
 	if err := db.conn.QueryRow(`
-		SELECT name, recipients FROM lists WHERE id = $1
+		SELECT name, recipients, mods, approved_senders FROM lists WHERE id = $1
 	`, id,
-	).Scan(&list.Name, pq.Array(&list.Recipients)); err != nil {
+	).Scan(&list.Name, pq.Array(&list.Recipients), pq.Array(&list.Mods), pq.Array(&list.ApprovedSenders)); err != nil {
 		return nil, getError(err)
 	}
 
 	return &list, nil
 }
 
-func (db *Db) CreateList(list *model.List) (int, *Error) {
+func (db *Db) CreateList(list *model.ListRequest) (int, *Error) {
 	var id int
 	if err := db.conn.QueryRow(`
-		INSERT INTO lists (name, recipients) VALUES ($1, $2) RETURNING id
-	`, list.Name, pq.Array(list.Recipients),
+		INSERT INTO lists (name, recipients, mods, approved_senders) VALUES ($1, $2, $3, $4) RETURNING id
+	`, list.Name, pq.Array(list.Recipients), pq.Array(list.Mods), pq.Array(list.ApprovedSenders),
 	).Scan(&id); err != nil {
 		return 0, getError(err)
 	}
@@ -29,14 +30,27 @@ func (db *Db) CreateList(list *model.List) (int, *Error) {
 	return id, nil
 }
 
-func (db *Db) PatchList(id int, list *model.List) *Error {
-	res, err := db.conn.Exec(`
+func (db *Db) PatchList(id int, list *model.ListRequest, override *model.ListOverrides) *Error {
+	rcpt := `recipients = COALESCE(NULLIF($2, ARRAY[]::TEXT[]), recipients)`
+	mods := `mods = COALESCE(NULLIF($3, ARRAY[]::INT[]), mods)`
+	senders := `approved_senders = COALESCE(NULLIF($4, ARRAY[]::TEXT[]), approved_senders)`
+	if override != nil && override.Recipients {
+		rcpt = `recipients = $2`
+	}
+	if override != nil && override.Mods {
+		mods = `mods = $3`
+	}
+	if override != nil && override.ApprovedSenders {
+		senders = `approved_senders = $4`
+	}
+
+	res, err := db.conn.Exec(fmt.Sprintf(`
 		UPDATE lists
 		SET
-		    name = COALESCE(NULLIF($1, ''), name),
-		    recipients = COALESCE(NULLIF($2, ARRAY[]::TEXT[]), recipients)
-		WHERE id = $3;
-	`, list.Name, pq.Array(list.Recipients), id,
+		    name = COALESCE(NULLIF($1, ''), name), %s, %s, %s
+		WHERE id = $5;
+	`, rcpt, mods, senders),
+		list.Name, pq.Array(list.Recipients), pq.Array(list.Mods), pq.Array(list.ApprovedSenders), id,
 	)
 	if err != nil {
 		return getError(err)
@@ -61,18 +75,19 @@ func (db *Db) DeleteList(id int) *Error {
 	return nil
 }
 
-func (db *Db) GetAllLists() (*[]*model.ListWithId, *Error) {
-	var lists []*model.ListWithId
+func (db *Db) GetAllLists() (*[]*model.ListResponse, *Error) {
+	var lists []*model.ListResponse
 	rows, err := db.conn.Query(`
-		SELECT id, name, recipients FROM lists
+		SELECT id, name, recipients, mods, approved_senders FROM lists
 	`)
 	if err != nil {
 		return nil, getError(err)
 	}
 
 	for rows.Next() {
-		list := model.ListWithId{List: &model.List{}}
-		if err := rows.Scan(&list.Id, &list.List.Name, pq.Array(&list.List.Recipients)); err != nil {
+		list := model.ListResponse{}
+		if err := rows.Scan(&list.Id, &list.Name, pq.Array(&list.Recipients), pq.Array(&list.Mods),
+			pq.Array(&list.ApprovedSenders)); err != nil {
 			return nil, getError(err)
 		}
 

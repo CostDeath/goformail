@@ -12,20 +12,22 @@ import (
 )
 
 type IDb interface {
-	GetList(id int) (*model.List, *Error)
-	CreateList(list *model.List) (int, *Error)
-	PatchList(id int, list *model.List) *Error
+	GetList(id int) (*model.ListResponse, *Error)
+	CreateList(list *model.ListRequest) (int, *Error)
+	PatchList(id int, list *model.ListRequest, override *model.ListOverrides) *Error
 	DeleteList(id int) *Error
-	GetAllLists() (*[]*model.ListWithId, *Error)
+	GetAllLists() (*[]*model.ListResponse, *Error)
 	GetRecipientsFromListName(name string) ([]string, error)
 	GetUser(id int) (*model.UserResponse, *Error)
 	CreateUser(user *model.UserRequest, hash string) (int, *Error)
-	UpdateUser(id int, user *model.UserRequest) *Error
+	UpdateUser(id int, user *model.UserRequest, overridePerms bool) *Error
 	DeleteUser(id int) *Error
 	GetAllUsers() (*[]*model.UserResponse, *Error)
 	GetUserPassword(email string) (int, string, *Error)
 	UserExists(id int) (bool, *Error)
+	UsersExist(ids []int64) ([]int64, *Error)
 	GetUserPerms(id int) ([]string, *Error)
+	GetUserPermsAndModStatus(id int, listId int) ([]string, bool, *Error)
 }
 
 type Db struct {
@@ -59,7 +61,9 @@ func InitDB(configs map[string]string) *Db {
     	);
 		ALTER TABLE lists
 		    ADD COLUMN IF NOT EXISTS name TEXT UNIQUE NOT NULL,
-		    ADD COLUMN IF NOT EXISTS recipients TEXT[];
+		    ADD COLUMN IF NOT EXISTS recipients TEXT[],
+		    ADD COLUMN IF NOT EXISTS mods INT[],
+		    ADD COLUMN IF NOT EXISTS approved_senders TEXT[];
 
 		CREATE TABLE IF NOT EXISTS users (
         	id SERIAL PRIMARY KEY

@@ -64,10 +64,11 @@ func (suite *DbListsSuite) TestGetList() {
 	actual, _ := suite.db.GetList(1)
 
 	// Get expected
-	var expected model.List
+	expected := model.ListResponse{Id: 1}
 	err := suite.db.conn.QueryRow(`
-		SELECT * FROM lists WHERE name = $1
-	`, "get-test-0").Scan(new(int), &expected.Name, pq.Array(&expected.Recipients))
+		SELECT name, recipients, mods, approved_senders FROM lists WHERE name = $1
+	`, "get-test-0").Scan(&expected.Name, pq.Array(&expected.Recipients), pq.Array(&expected.Mods),
+		pq.Array(&expected.ApprovedSenders))
 	suite.Require().NoError(err)
 
 	suite.Equal(&expected, actual)
@@ -85,10 +86,10 @@ func (suite *DbListsSuite) TestCreateList() {
 	id, _ := suite.db.CreateList(expected)
 
 	// Check list was created properly
-	var actual model.List
+	var actual model.ListRequest
 	err := suite.db.conn.QueryRow(`
-		SELECT * FROM lists WHERE id = $1
-	`, id).Scan(new(int), &actual.Name, pq.Array(&actual.Recipients))
+		SELECT name, recipients, mods, approved_senders FROM lists WHERE id = $1
+	`, id).Scan(&actual.Name, pq.Array(&actual.Recipients), pq.Array(&actual.Mods), pq.Array(&actual.ApprovedSenders))
 	suite.Require().NoError(err)
 
 	suite.Equal(expected, &actual)
@@ -105,13 +106,13 @@ func (suite *DbListsSuite) TestCreateListReturnsErrorOnDuplicate() {
 func (suite *DbListsSuite) TestPatchList() {
 	// Run function
 	expected := createList("patch-test-8")
-	suite.db.PatchList(2, expected)
+	suite.db.PatchList(2, expected, nil)
 
 	// Check list was patched properly
-	var actual model.List
+	var actual model.ListRequest
 	err := suite.db.conn.QueryRow(`
-		SELECT * FROM lists WHERE id = $1
-	`, 2).Scan(new(int), &actual.Name, pq.Array(&actual.Recipients))
+		SELECT name, recipients, mods, approved_senders FROM lists WHERE id = $1
+	`, 2).Scan(&actual.Name, pq.Array(&actual.Recipients), pq.Array(&actual.Mods), pq.Array(&actual.ApprovedSenders))
 	suite.Require().NoError(err)
 
 	suite.Equal(expected, &actual)
@@ -119,39 +120,102 @@ func (suite *DbListsSuite) TestPatchList() {
 
 func (suite *DbListsSuite) TestPatchListUpdatesPartially() {
 	// Run function
-	expected := &model.List{Recipients: []string{"example2@domain.tld"}}
-	suite.db.PatchList(3, expected)
+	expected := &model.ListRequest{Recipients: []string{"example2@domain.tld"}}
+	suite.db.PatchList(3, expected, nil)
 
 	// Check list was patched properly
-	var actual model.List
+	var actual model.ListRequest
 	err := suite.db.conn.QueryRow(`
-		SELECT * FROM lists WHERE id = $1
-	`, 3).Scan(new(int), &actual.Name, pq.Array(&actual.Recipients))
+		SELECT name, recipients, mods, approved_senders FROM lists WHERE id = $1
+	`, 3).Scan(&actual.Name, pq.Array(&actual.Recipients), pq.Array(&actual.Mods), pq.Array(&actual.ApprovedSenders))
 	suite.Require().NoError(err)
 
-	suite.Equal(&model.List{Name: "patch-test-1", Recipients: expected.Recipients}, &actual)
+	suite.Equal(&model.ListRequest{Name: "patch-test-1", Recipients: expected.Recipients, Mods: []int64{1},
+		ApprovedSenders: []string{"example@domain.tld"}}, &actual)
+}
+
+func (suite *DbListsSuite) TestPatchListOverrideRecipients() {
+	// Run function
+	expected := &model.ListRequest{Recipients: []string{}}
+	suite.db.PatchList(4, expected, &model.ListOverrides{Recipients: true})
+
+	// Check list was patched properly
+	var actual model.ListRequest
+	err := suite.db.conn.QueryRow(`
+		SELECT name, recipients FROM lists WHERE id = $1
+	`, 4).Scan(&actual.Name, pq.Array(&actual.Recipients))
+	suite.Require().NoError(err)
+
+	suite.Equal(&model.ListRequest{Name: "patch-test-2", Recipients: expected.Recipients}, &actual)
+}
+
+func (suite *DbListsSuite) TestPatchListOverrideMods() {
+	// Run function
+	expected := &model.ListRequest{Mods: []int64{}}
+	suite.db.PatchList(4, expected, &model.ListOverrides{Mods: true})
+
+	// Check list was patched properly
+	var actual model.ListRequest
+	err := suite.db.conn.QueryRow(`
+		SELECT name, mods FROM lists WHERE id = $1
+	`, 4).Scan(&actual.Name, pq.Array(&actual.Mods))
+	suite.Require().NoError(err)
+
+	suite.Equal(&model.ListRequest{Name: "patch-test-2", Mods: expected.Mods}, &actual)
+}
+
+func (suite *DbListsSuite) TestPatchListOverrideApprovedSenders() {
+	// Run function
+	expected := &model.ListRequest{ApprovedSenders: []string{}}
+	suite.db.PatchList(4, expected, &model.ListOverrides{ApprovedSenders: true})
+
+	// Check list was patched properly
+	var actual model.ListRequest
+	err := suite.db.conn.QueryRow(`
+		SELECT name, approved_senders FROM lists WHERE id = $1
+	`, 4).Scan(&actual.Name, pq.Array(&actual.ApprovedSenders))
+	suite.Require().NoError(err)
+
+	suite.Equal(&model.ListRequest{Name: "patch-test-2", ApprovedSenders: expected.ApprovedSenders}, &actual)
+}
+
+func (suite *DbListsSuite) TestPatchListOverrideAll() {
+	// Run function
+	expected := &model.ListRequest{Recipients: []string{}}
+	suite.db.PatchList(5, expected, &model.ListOverrides{Recipients: true, Mods: true, ApprovedSenders: true})
+
+	// Check list was patched properly
+	var actual model.ListRequest
+	err := suite.db.conn.QueryRow(`
+		SELECT name, recipients, mods, approved_senders FROM lists WHERE id = $1
+	`, 5).Scan(&actual.Name, pq.Array(&actual.Recipients), pq.Array(&actual.Mods),
+		pq.Array(&actual.ApprovedSenders))
+	suite.Require().NoError(err)
+
+	suite.Equal(&model.ListRequest{Name: "patch-test-3", Recipients: expected.Recipients, Mods: expected.Mods,
+		ApprovedSenders: expected.ApprovedSenders}, &actual)
 }
 
 func (suite *DbListsSuite) TestPatchListReturnsNoRowsOnInvalidId() {
-	err := suite.db.PatchList(0, createList("patch-test-0"))
+	err := suite.db.PatchList(0, createList("patch-test-0"), nil)
 
 	suite.Equal(ErrNoRows, err.Code)
 }
 
 func (suite *DbListsSuite) TestPatchListReturnsDuplicateOnExistingList() {
-	err := suite.db.PatchList(2, createList("patch-test-1"))
+	err := suite.db.PatchList(2, createList("patch-test-1"), nil)
 
 	suite.Equal(ErrDuplicate, err.Code)
 }
 
 func (suite *DbListsSuite) TestDeleteList() {
 	// Run function
-	suite.db.DeleteList(4)
+	suite.db.DeleteList(6)
 
 	// Check list was patched properly
 	err := suite.db.conn.QueryRow(`
 		SELECT * FROM lists WHERE id = $1
-	`, 4).Scan()
+	`, 6).Scan()
 
 	suite.Equal(sql.ErrNoRows, err)
 }
@@ -167,14 +231,15 @@ func (suite *DbListsSuite) TestGetAllList() {
 	actual, _ := suite.db.GetAllLists()
 
 	// Get expected
-	var expected []*model.ListWithId
+	var expected []*model.ListResponse
 	rows, err := suite.db.conn.Query(`
 		SELECT * FROM lists
 	`)
 	suite.Require().NoError(err)
 	for rows.Next() {
-		list := model.ListWithId{List: &model.List{}}
-		err := rows.Scan(&list.Id, &list.List.Name, pq.Array(&list.List.Recipients))
+		list := model.ListResponse{}
+		err := rows.Scan(&list.Id, &list.Name, pq.Array(&list.Recipients), pq.Array(&list.Mods),
+			pq.Array(&list.ApprovedSenders))
 		suite.Require().NoError(err)
 
 		expected = append(expected, &list)
@@ -183,6 +248,11 @@ func (suite *DbListsSuite) TestGetAllList() {
 	suite.Equal(&expected, actual)
 }
 
-func createList(name string) *model.List {
-	return &model.List{Name: name, Recipients: []string{"example@domain.tld"}}
+func createList(name string) *model.ListRequest {
+	return &model.ListRequest{
+		Name:            name,
+		Recipients:      []string{"example@domain.tld"},
+		Mods:            []int64{1},
+		ApprovedSenders: []string{"example2@domain.tld"},
+	}
 }

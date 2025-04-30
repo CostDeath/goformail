@@ -1,507 +1,618 @@
 package rest
 
 import (
-	"bytes"
-	"encoding/json"
-	"fmt"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
-	"github.com/stretchr/testify/require"
-	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal/db"
 	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal/model"
+	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal/service"
+	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal/util"
+	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/test"
 	"net/http"
 	"net/http/httptest"
 	"testing"
 )
 
-var defaultList = &model.List{Name: "name", Recipients: []string{"example@domain.tld"}}
-var defaultListWithId = &model.ListWithId{Id: 1, List: defaultList}
+var defaultListRequest = &model.ListRequest{
+	Name:            "test",
+	Recipients:      []string{"rcpt1@domain.tld", "rcpt2@domain.tld"},
+	Mods:            []int64{1, 2},
+	ApprovedSenders: []string{"sdr1@domain.tld", "sdr2@domain.tld"},
+}
 
-func listsCleanUp() {
-	http.DefaultServeMux = new(http.ServeMux)
+var defaultListResponse = &model.ListResponse{
+	Id:              1,
+	Name:            defaultListRequest.Name,
+	Recipients:      defaultListRequest.Recipients,
+	Mods:            defaultListRequest.Mods,
+	ApprovedSenders: defaultListRequest.ApprovedSenders,
 }
 
 func TestGetList(t *testing.T) {
-	t.Cleanup(listsCleanUp)
-	mockObj := new(db.IDbMock)
-	mockObj.On("GetList", 1).Return(defaultList)
-	ctrl := &Controller{db: mockObj, mux: new(http.ServeMux)}
+	listMock := new(service.IListManagerMock)
+	listMock.On("GetList", 1).Return(defaultListResponse)
+	authMock := new(service.IAuthManagerMock)
+	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
+	ctrl := &Controller{list: listMock, auth: authMock, mux: new(http.ServeMux)}
 	ctrl.addListHandlers()
 
 	// Mock the request
-	req := createListRequest(t, "GET", "/api/list/?id=1", nil)
+	req := test.CreateHttpRequest(t, "GET", "/api/list/?id=1", nil)
 	rr := httptest.NewRecorder()
 	ctrl.mux.ServeHTTP(rr, req)
 
 	// Check db was called with correct args
-	mockObj.AssertExpectations(t)
+	listMock.AssertExpectations(t)
 
 	// Check the response is what we expect.
 	assert.Equal(t, http.StatusOK, rr.Code)
-	expected := getExpectedListResponse(t, "Successfully fetched list!", defaultList)
+	expected := test.GetExpectedJsonResponse(t, "Successfully fetched list!", defaultListResponse)
 	assert.Equal(t, expected, rr.Body.String())
 }
 
-func TestGetList404sOnNoParam(t *testing.T) {
-	t.Cleanup(listsCleanUp)
-	mockObj := new(db.IDbMock)
-	mockObj.On("GetList", mock.Anything).Panic("GetList should not have been called")
-	ctrl := &Controller{db: mockObj, mux: new(http.ServeMux)}
+func TestGetList401sOnInvalidToken(t *testing.T) {
+	authMock := service.NewIAuthManagerMockWithError(util.ErrInvalidToken)
+	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
+	ctrl := &Controller{auth: authMock, mux: new(http.ServeMux)}
 	ctrl.addListHandlers()
 
 	// Mock the request
-	req := createListRequest(t, "GET", "/api/list/", nil)
+	req := test.CreateHttpRequest(t, "GET", "/api/list/?id=1", nil)
+	rr := httptest.NewRecorder()
+	ctrl.mux.ServeHTTP(rr, req)
+
+	// Check the response is what we expect.
+	assert.Equal(t, http.StatusUnauthorized, rr.Code)
+	assert.Equal(t, "mocked error\n", rr.Body.String())
+}
+
+func TestGetList400sOnNoParam(t *testing.T) {
+	listMock := new(service.IListManagerMock)
+	listMock.On("GetList", mock.Anything).Panic("GetList should not have been called")
+	authMock := new(service.IAuthManagerMock)
+	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
+	ctrl := &Controller{list: listMock, auth: authMock, mux: new(http.ServeMux)}
+	ctrl.addListHandlers()
+
+	// Mock the request
+	req := test.CreateHttpRequest(t, "GET", "/api/list/", nil)
+	rr := httptest.NewRecorder()
+	ctrl.mux.ServeHTTP(rr, req)
+
+	// Check the response is what we expect.
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+	expected := "Invalid object: Invalid id provided\n"
+	assert.Equal(t, expected, rr.Body.String())
+}
+
+func TestGetList400sOnInvalidParam(t *testing.T) {
+	listMock := new(service.IListManagerMock)
+	listMock.On("GetList", mock.Anything).Panic("GetList should not have been called")
+	authMock := new(service.IAuthManagerMock)
+	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
+	ctrl := &Controller{list: listMock, auth: authMock, mux: new(http.ServeMux)}
+	ctrl.addListHandlers()
+
+	// Mock the request
+	req := test.CreateHttpRequest(t, "GET", "/api/list/?id=a", nil)
+	rr := httptest.NewRecorder()
+	ctrl.mux.ServeHTTP(rr, req)
+
+	// Check the response is what we expect.
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+	expected := "Invalid object: Invalid id provided\n"
+	assert.Equal(t, expected, rr.Body.String())
+}
+
+func TestGetList404sWhenNoUser(t *testing.T) {
+	listMock := service.NewIListManagerMockWithError(util.ErrNoUser)
+	listMock.On("GetList", 1).Return(defaultListResponse)
+	authMock := new(service.IAuthManagerMock)
+	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
+	ctrl := &Controller{list: listMock, auth: authMock, mux: new(http.ServeMux)}
+	ctrl.addListHandlers()
+
+	// Mock the request
+	req := test.CreateHttpRequest(t, "GET", "/api/list/?id=1", nil)
 	rr := httptest.NewRecorder()
 	ctrl.mux.ServeHTTP(rr, req)
 
 	// Check the response is what we expect.
 	assert.Equal(t, http.StatusNotFound, rr.Code)
-	expected := "List not found\n"
+	expected := "mocked error\n"
 	assert.Equal(t, expected, rr.Body.String())
 }
 
-func TestGetList404sOnInvalidParam(t *testing.T) {
-	t.Cleanup(listsCleanUp)
-	mockObj := new(db.IDbMock)
-	mockObj.On("GetList", mock.Anything).Panic("GetList should not have been called")
-	ctrl := &Controller{db: mockObj, mux: new(http.ServeMux)}
+func TestGetList500sOnGenericError(t *testing.T) {
+	listMock := service.NewIListManagerMockWithError(util.Unknown)
+	listMock.On("GetList", 1).Return(defaultListResponse)
+	authMock := new(service.IAuthManagerMock)
+	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
+	ctrl := &Controller{list: listMock, auth: authMock, mux: new(http.ServeMux)}
 	ctrl.addListHandlers()
 
 	// Mock the request
-	req := createListRequest(t, "GET", "/api/list/?id=a", defaultList)
-	rr := httptest.NewRecorder()
-	ctrl.mux.ServeHTTP(rr, req)
-
-	// Check the response is what we expect.
-	assert.Equal(t, http.StatusNotFound, rr.Code)
-	expected := "List not found\n"
-	assert.Equal(t, expected, rr.Body.String())
-}
-
-func TestGetList404sWhenNoSuchId(t *testing.T) {
-	t.Cleanup(listsCleanUp)
-	mockObj := db.NewIDbMockWithError(db.ErrNoRows)
-	mockObj.On("GetList", 1).Return(defaultList)
-	ctrl := &Controller{db: mockObj, mux: new(http.ServeMux)}
-	ctrl.addListHandlers()
-
-	// Mock the request
-	req := createListRequest(t, "GET", "/api/list/?id=1", defaultList)
-	rr := httptest.NewRecorder()
-	ctrl.mux.ServeHTTP(rr, req)
-
-	// Check the response is what we expect.
-	assert.Equal(t, http.StatusNotFound, rr.Code)
-	expected := "List not found\n"
-	assert.Equal(t, expected, rr.Body.String())
-}
-
-func TestGetList500sOnDbError(t *testing.T) {
-	t.Cleanup(listsCleanUp)
-	mockObj := db.NewIDbMockWithError(db.Unknown)
-	mockObj.On("GetList", 1).Return(defaultList)
-	ctrl := &Controller{db: mockObj, mux: new(http.ServeMux)}
-	ctrl.addListHandlers()
-
-	// Mock the request
-	req := createListRequest(t, "GET", "/api/list/?id=1", defaultList)
+	req := test.CreateHttpRequest(t, "GET", "/api/list/?id=1", nil)
 	rr := httptest.NewRecorder()
 	ctrl.mux.ServeHTTP(rr, req)
 
 	// Check the response is what we expect.
 	assert.Equal(t, http.StatusInternalServerError, rr.Code)
-	expected := "An error occurred relating to the database\n"
+	expected := "mocked error\n"
 	assert.Equal(t, expected, rr.Body.String())
 }
 
 func TestPostList(t *testing.T) {
-	t.Cleanup(listsCleanUp)
-	mockObj := new(db.IDbMock)
-	mockObj.On("CreateList", defaultList).Return(1)
-	ctrl := &Controller{db: mockObj, mux: new(http.ServeMux)}
+	expectedList := &model.ListRequest{Name: defaultListRequest.Name, Recipients: defaultListRequest.Recipients,
+		Mods: append(defaultListRequest.Mods, 1), ApprovedSenders: defaultListRequest.ApprovedSenders}
+	listMock := new(service.IListManagerMock)
+	listMock.On("CreateList", expectedList).Return(1)
+	authMock := new(service.IAuthManagerMock)
+	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
+	authMock.On("CheckPerms", 1, "CRT_LIST").Return(true)
+	ctrl := &Controller{list: listMock, auth: authMock, mux: new(http.ServeMux)}
 	ctrl.addListHandlers()
 
 	// Mock the request
-	req := createListRequest(t, "POST", "/api/list/", defaultList)
+	req := test.CreateHttpRequest(t, "POST", "/api/list/", defaultListRequest)
 	rr := httptest.NewRecorder()
 	ctrl.mux.ServeHTTP(rr, req)
 
 	// Check db was called with correct args
-	mockObj.AssertExpectations(t)
+	listMock.AssertExpectations(t)
 
 	// Check the response is what we expect.
 	assert.Equal(t, http.StatusCreated, rr.Code)
-	expected := getExpectedListResponse(t, "Successfully created list!", IdObject{Id: 1})
+	expected := test.GetExpectedJsonResponse(t, "Successfully created list!", IdObject{Id: 1})
 	assert.Equal(t, expected, rr.Body.String())
 }
 
-func TestPostList400sOnMissingField(t *testing.T) {
-	t.Cleanup(listsCleanUp)
-	mockObj := new(db.IDbMock)
-	mockObj.On("CreateList", mock.Anything).
-		Panic("CreateList should not have been called")
-	ctrl := &Controller{db: mockObj, mux: new(http.ServeMux)}
+func TestPostList401sOnInvalidToken(t *testing.T) {
+	authMock := service.NewIAuthManagerMockWithError(util.ErrInvalidToken)
+	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
+	ctrl := &Controller{auth: authMock, mux: new(http.ServeMux)}
 	ctrl.addListHandlers()
 
 	// Mock the request
-	list := &model.List{Name: "name"}
-	req := createListRequest(t, "POST", "/api/list/", list)
+	req := test.CreateHttpRequest(t, "POST", "/api/list/", nil)
+	rr := httptest.NewRecorder()
+	ctrl.mux.ServeHTTP(rr, req)
+
+	// Check the response is what we expect.
+	assert.Equal(t, http.StatusUnauthorized, rr.Code)
+	assert.Equal(t, "mocked error\n", rr.Body.String())
+}
+
+func TestPostList400sOnInvalidJson(t *testing.T) {
+	listMock := new(service.IListManagerMock)
+	listMock.On("CreateList", mock.Anything).Panic("CreateList should not have been called")
+	authMock := new(service.IAuthManagerMock)
+	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
+	ctrl := &Controller{list: listMock, auth: authMock, mux: new(http.ServeMux)}
+	ctrl.addListHandlers()
+
+	// Mock the request
+	req := test.CreateHttpRequest(t, "POST", "/api/list/", 1)
 	rr := httptest.NewRecorder()
 	ctrl.mux.ServeHTTP(rr, req)
 
 	// Check the response is what we expect.
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
-	expected := "Invalid payload\n"
+	expected := "Invalid object: Invalid json provided\n"
 	assert.Equal(t, expected, rr.Body.String())
 }
 
-func TestPostList400sOnInvalidPayload(t *testing.T) {
-	t.Cleanup(listsCleanUp)
-	mockObj := new(db.IDbMock)
-	mockObj.On("CreateList", mock.Anything).
-		Panic("CreateList should not have been called")
-	ctrl := &Controller{db: mockObj, mux: new(http.ServeMux)}
+func TestPostList400sOnInvalidObj(t *testing.T) {
+	expectedList := &model.ListRequest{Name: defaultListRequest.Name, Recipients: defaultListRequest.Recipients,
+		Mods: append(defaultListRequest.Mods, 1), ApprovedSenders: defaultListRequest.ApprovedSenders}
+	listMock := service.NewIListManagerMockWithError(util.ErrInvalidObject)
+	listMock.On("CreateList", expectedList).Return(1)
+	authMock := new(service.IAuthManagerMock)
+	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
+	authMock.On("CheckPerms", 1, "CRT_LIST").Return(true)
+	ctrl := &Controller{list: listMock, auth: authMock, mux: new(http.ServeMux)}
 	ctrl.addListHandlers()
 
 	// Mock the request
-	req := createListRequest(t, "POST", "/api/list/", 1)
+	req := test.CreateHttpRequest(t, "POST", "/api/list/", defaultListRequest)
 	rr := httptest.NewRecorder()
 	ctrl.mux.ServeHTTP(rr, req)
 
 	// Check the response is what we expect.
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
-	expected := "Invalid payload\n"
+	expected := "mocked error\n"
 	assert.Equal(t, expected, rr.Body.String())
 }
 
-func TestPostList409sOnDuplicateName(t *testing.T) {
-	t.Cleanup(listsCleanUp)
-	mockObj := db.NewIDbMockWithError(db.ErrDuplicate)
-	mockObj.On("CreateList", defaultList).Return(0)
-	ctrl := &Controller{db: mockObj, mux: new(http.ServeMux)}
+func TestPostList409sOnDuplicateUser(t *testing.T) {
+	expectedList := &model.ListRequest{Name: defaultListRequest.Name, Recipients: defaultListRequest.Recipients,
+		Mods: append(defaultListRequest.Mods, 1), ApprovedSenders: defaultListRequest.ApprovedSenders}
+	listMock := service.NewIListManagerMockWithError(util.ErrListAlreadyExists)
+	listMock.On("CreateList", expectedList).Return(1)
+	authMock := new(service.IAuthManagerMock)
+	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
+	authMock.On("CheckPerms", 1, "CRT_LIST").Return(true)
+	ctrl := &Controller{list: listMock, auth: authMock, mux: new(http.ServeMux)}
 	ctrl.addListHandlers()
 
 	// Mock the request
-	req := createListRequest(t, "POST", "/api/list/", defaultList)
+	req := test.CreateHttpRequest(t, "POST", "/api/list/", defaultListRequest)
 	rr := httptest.NewRecorder()
 	ctrl.mux.ServeHTTP(rr, req)
 
 	// Check the response is what we expect.
 	assert.Equal(t, http.StatusConflict, rr.Code)
-	expected := "A list with this name already exists\n"
+	expected := "mocked error\n"
 	assert.Equal(t, expected, rr.Body.String())
 }
 
 func TestPostList500sOnDbError(t *testing.T) {
-	t.Cleanup(listsCleanUp)
-	mockObj := db.NewIDbMockWithError(db.Unknown)
-	mockObj.On("CreateList", defaultList).Return(0)
-	ctrl := &Controller{db: mockObj, mux: new(http.ServeMux)}
+	expectedList := &model.ListRequest{Name: defaultListRequest.Name, Recipients: defaultListRequest.Recipients,
+		Mods: append(defaultListRequest.Mods, 1), ApprovedSenders: defaultListRequest.ApprovedSenders}
+	listMock := service.NewIListManagerMockWithError(util.Unknown)
+	listMock.On("CreateList", expectedList).Return(1)
+	authMock := new(service.IAuthManagerMock)
+	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
+	authMock.On("CheckPerms", 1, "CRT_LIST").Return(true)
+	ctrl := &Controller{list: listMock, auth: authMock, mux: new(http.ServeMux)}
 	ctrl.addListHandlers()
 
 	// Mock the request
-	req := createListRequest(t, "POST", "/api/list/", defaultList)
+	req := test.CreateHttpRequest(t, "POST", "/api/list/", defaultListRequest)
 	rr := httptest.NewRecorder()
 	ctrl.mux.ServeHTTP(rr, req)
 
 	// Check the response is what we expect.
 	assert.Equal(t, http.StatusInternalServerError, rr.Code)
-	expected := "An error occurred relating to the database\n"
+	expected := "mocked error\n"
 	assert.Equal(t, expected, rr.Body.String())
 }
 
 func TestPatchList(t *testing.T) {
-	t.Cleanup(listsCleanUp)
-	mockObj := new(db.IDbMock)
-	mockObj.On("PatchList", 1, defaultList).Return(1)
-	ctrl := &Controller{db: mockObj, mux: new(http.ServeMux)}
+	listMock := new(service.IListManagerMock)
+	listMock.On("UpdateList", 1, defaultListRequest).Return()
+	authMock := new(service.IAuthManagerMock)
+	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
+	authMock.On("CheckListMods", 1, 1).Return(true)
+	ctrl := &Controller{list: listMock, auth: authMock, mux: new(http.ServeMux)}
 	ctrl.addListHandlers()
 
 	// Mock the request
-	req := createListRequest(t, "PATCH", "/api/list/?id=1", defaultList)
+	req := test.CreateHttpRequest(t, "PATCH", "/api/list/?id=1", defaultListRequest)
 	rr := httptest.NewRecorder()
 	ctrl.mux.ServeHTTP(rr, req)
 
 	// Check db was called with correct args
-	mockObj.AssertExpectations(t)
+	listMock.AssertExpectations(t)
 
 	// Check the response is what we expect.
 	assert.Equal(t, http.StatusOK, rr.Code)
-	expected := getExpectedListResponse(t, "Successfully patched list!", IdObject{Id: 1})
+	expected := test.GetExpectedJsonResponse(t, "Successfully patched list!", IdObject{Id: 1})
 	assert.Equal(t, expected, rr.Body.String())
 }
 
-func TestPatchList404sOnNoParam(t *testing.T) {
-	t.Cleanup(listsCleanUp)
-	mockObj := new(db.IDbMock)
-	mockObj.On("PatchList", mock.Anything, mock.Anything).
-		Panic("PatchList should not have been called")
-	ctrl := &Controller{db: mockObj, mux: new(http.ServeMux)}
+func TestPatchList401sOnInvalidToken(t *testing.T) {
+	authMock := service.NewIAuthManagerMockWithError(util.ErrInvalidToken)
+	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
+	ctrl := &Controller{auth: authMock, mux: new(http.ServeMux)}
 	ctrl.addListHandlers()
 
 	// Mock the request
-	req := createListRequest(t, "PATCH", "/api/list/", defaultList)
+	req := test.CreateHttpRequest(t, "PATCH", "/api/list/?id=1", defaultListRequest)
 	rr := httptest.NewRecorder()
 	ctrl.mux.ServeHTTP(rr, req)
 
 	// Check the response is what we expect.
-	assert.Equal(t, http.StatusNotFound, rr.Code)
-	expected := "List not found\n"
-	assert.Equal(t, expected, rr.Body.String())
+	assert.Equal(t, http.StatusUnauthorized, rr.Code)
+	assert.Equal(t, "mocked error\n", rr.Body.String())
 }
 
-func TestPatchList404sOnInvalidParam(t *testing.T) {
-	t.Cleanup(listsCleanUp)
-	mockObj := new(db.IDbMock)
-	mockObj.On("PatchList", mock.Anything, mock.Anything).
-		Panic("PatchList should not have been called")
-	ctrl := &Controller{db: mockObj, mux: new(http.ServeMux)}
+func TestPatchList400sOnNoParam(t *testing.T) {
+	listMock := new(service.IListManagerMock)
+	listMock.On("UpdateList", mock.Anything, mock.Anything).Panic("UpdateList should not have been called")
+	authMock := new(service.IAuthManagerMock)
+	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
+	ctrl := &Controller{list: listMock, auth: authMock, mux: new(http.ServeMux)}
 	ctrl.addListHandlers()
 
 	// Mock the request
-	req := createListRequest(t, "PATCH", "/api/list/?id=a", defaultList)
-	rr := httptest.NewRecorder()
-	ctrl.mux.ServeHTTP(rr, req)
-
-	// Check the response is what we expect.
-	assert.Equal(t, http.StatusNotFound, rr.Code)
-	expected := "List not found\n"
-	assert.Equal(t, expected, rr.Body.String())
-}
-
-func TestPatchList400sOnInvalidPayload(t *testing.T) {
-	t.Cleanup(listsCleanUp)
-	mockObj := new(db.IDbMock)
-	mockObj.On("PatchList", mock.Anything, mock.Anything).
-		Panic("PatchList should not have been called")
-	ctrl := &Controller{db: mockObj, mux: new(http.ServeMux)}
-	ctrl.addListHandlers()
-
-	// Mock the request
-	req := createListRequest(t, "PATCH", "/api/list/?id=1", 1)
+	req := test.CreateHttpRequest(t, "PATCH", "/api/list/", defaultListRequest)
 	rr := httptest.NewRecorder()
 	ctrl.mux.ServeHTTP(rr, req)
 
 	// Check the response is what we expect.
 	assert.Equal(t, http.StatusBadRequest, rr.Code)
-	expected := "Invalid payload\n"
+	expected := "Invalid object: Invalid id provided\n"
+	assert.Equal(t, expected, rr.Body.String())
+}
+
+func TestPatchList400sOnInvalidParam(t *testing.T) {
+	listMock := new(service.IListManagerMock)
+	listMock.On("UpdateList", mock.Anything, mock.Anything).Panic("UpdateList should not have been called")
+	authMock := new(service.IAuthManagerMock)
+	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
+	ctrl := &Controller{list: listMock, auth: authMock, mux: new(http.ServeMux)}
+	ctrl.addListHandlers()
+
+	// Mock the request
+	req := test.CreateHttpRequest(t, "PATCH", "/api/list/?id=a", defaultListRequest)
+	rr := httptest.NewRecorder()
+	ctrl.mux.ServeHTTP(rr, req)
+
+	// Check the response is what we expect.
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+	expected := "Invalid object: Invalid id provided\n"
+	assert.Equal(t, expected, rr.Body.String())
+}
+
+func TestPatchList400sOnInvalidJson(t *testing.T) {
+	listMock := new(service.IListManagerMock)
+	listMock.On("UpdateList", mock.Anything, mock.Anything).Panic("UpdateList should not have been called")
+	authMock := new(service.IAuthManagerMock)
+	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
+	ctrl := &Controller{list: listMock, auth: authMock, mux: new(http.ServeMux)}
+	ctrl.addListHandlers()
+
+	// Mock the request
+	req := test.CreateHttpRequest(t, "PATCH", "/api/list/?id=1", 1)
+	rr := httptest.NewRecorder()
+	ctrl.mux.ServeHTTP(rr, req)
+
+	// Check the response is what we expect.
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+	expected := "Invalid object: Invalid json provided\n"
+	assert.Equal(t, expected, rr.Body.String())
+}
+
+func TestPatchList400sOnInvalidObj(t *testing.T) {
+	listMock := service.NewIListManagerMockWithError(util.ErrInvalidObject)
+	listMock.On("UpdateList", 1, defaultListRequest).Return()
+	authMock := new(service.IAuthManagerMock)
+	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
+	authMock.On("CheckListMods", 1, 1).Return(true)
+	ctrl := &Controller{list: listMock, auth: authMock, mux: new(http.ServeMux)}
+	ctrl.addListHandlers()
+
+	// Mock the request
+	req := test.CreateHttpRequest(t, "PATCH", "/api/list/?id=1", defaultListRequest)
+	rr := httptest.NewRecorder()
+	ctrl.mux.ServeHTTP(rr, req)
+
+	// Check the response is what we expect.
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+	expected := "mocked error\n"
 	assert.Equal(t, expected, rr.Body.String())
 }
 
 func TestPatchList409sOnDuplicateName(t *testing.T) {
-	t.Cleanup(listsCleanUp)
-	mockObj := db.NewIDbMockWithError(db.ErrDuplicate)
-	mockObj.On("PatchList", 1, defaultList).Return(0)
-	ctrl := &Controller{db: mockObj, mux: new(http.ServeMux)}
+	listMock := service.NewIListManagerMockWithError(util.ErrListAlreadyExists)
+	listMock.On("UpdateList", 1, defaultListRequest).Return()
+	authMock := new(service.IAuthManagerMock)
+	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
+	authMock.On("CheckListMods", 1, 1).Return(true)
+	ctrl := &Controller{list: listMock, auth: authMock, mux: new(http.ServeMux)}
 	ctrl.addListHandlers()
 
 	// Mock the request
-	req := createListRequest(t, "PATCH", "/api/list/?id=1", defaultList)
+	req := test.CreateHttpRequest(t, "PATCH", "/api/list/?id=1", defaultListRequest)
 	rr := httptest.NewRecorder()
 	ctrl.mux.ServeHTTP(rr, req)
 
 	// Check the response is what we expect.
 	assert.Equal(t, http.StatusConflict, rr.Code)
-	expected := "A list with this name already exists\n"
+	expected := "mocked error\n"
 	assert.Equal(t, expected, rr.Body.String())
 }
 
-func TestPatchList404sWhenNoSuchId(t *testing.T) {
-	t.Cleanup(listsCleanUp)
-	mockObj := db.NewIDbMockWithError(db.ErrNoRows)
-	mockObj.On("PatchList", 1, defaultList).Return(0)
-	ctrl := &Controller{db: mockObj, mux: new(http.ServeMux)}
+func TestPatchUser404sWhenNoList(t *testing.T) {
+	listMock := service.NewIListManagerMockWithError(util.ErrNoList)
+	listMock.On("UpdateList", 1, defaultListRequest).Return()
+	authMock := new(service.IAuthManagerMock)
+	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
+	authMock.On("CheckListMods", 1, 1).Return(true)
+	ctrl := &Controller{list: listMock, auth: authMock, mux: new(http.ServeMux)}
 	ctrl.addListHandlers()
 
 	// Mock the request
-	req := createListRequest(t, "PATCH", "/api/list/?id=1", defaultList)
+	req := test.CreateHttpRequest(t, "PATCH", "/api/list/?id=1", defaultListRequest)
 	rr := httptest.NewRecorder()
 	ctrl.mux.ServeHTTP(rr, req)
 
 	// Check the response is what we expect.
 	assert.Equal(t, http.StatusNotFound, rr.Code)
-	expected := "List not found\n"
+	expected := "mocked error\n"
 	assert.Equal(t, expected, rr.Body.String())
 }
 
-func TestPatchList500sOnDbError(t *testing.T) {
-	t.Cleanup(listsCleanUp)
-	mockObj := db.NewIDbMockWithError(db.Unknown)
-	mockObj.On("PatchList", 1, defaultList).Return(0)
-	ctrl := &Controller{db: mockObj, mux: new(http.ServeMux)}
+func TestPatchList500sOnGenericError(t *testing.T) {
+	listMock := service.NewIListManagerMockWithError(util.Unknown)
+	listMock.On("UpdateList", 1, defaultListRequest).Return()
+	authMock := new(service.IAuthManagerMock)
+	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
+	authMock.On("CheckListMods", 1, 1).Return(true)
+	ctrl := &Controller{list: listMock, auth: authMock, mux: new(http.ServeMux)}
 	ctrl.addListHandlers()
 
 	// Mock the request
-	req := createListRequest(t, "PATCH", "/api/list/?id=1", defaultList)
+	req := test.CreateHttpRequest(t, "PATCH", "/api/list/?id=1", defaultListRequest)
 	rr := httptest.NewRecorder()
 	ctrl.mux.ServeHTTP(rr, req)
 
 	// Check the response is what we expect.
 	assert.Equal(t, http.StatusInternalServerError, rr.Code)
-	expected := "An error occurred relating to the database\n"
+	expected := "mocked error\n"
 	assert.Equal(t, expected, rr.Body.String())
 }
 
 func TestDeleteList(t *testing.T) {
-	t.Cleanup(listsCleanUp)
-	mockObj := new(db.IDbMock)
-	mockObj.On("DeleteList", 1).Return()
-	ctrl := &Controller{db: mockObj, mux: new(http.ServeMux)}
+	listMock := new(service.IListManagerMock)
+	listMock.On("DeleteList", 1).Return()
+	authMock := new(service.IAuthManagerMock)
+	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
+	authMock.On("CheckListMods", 1, 1).Return(true)
+	ctrl := &Controller{list: listMock, auth: authMock, mux: new(http.ServeMux)}
 	ctrl.addListHandlers()
 
 	// Mock the request
-	req := createListRequest(t, "DELETE", "/api/list/?id=1", nil)
+	req := test.CreateHttpRequest(t, "DELETE", "/api/list/?id=1", nil)
 	rr := httptest.NewRecorder()
 	ctrl.mux.ServeHTTP(rr, req)
 
 	// Check db was called with correct args
-	mockObj.AssertExpectations(t)
+	listMock.AssertExpectations(t)
 
 	// Check the response is what we expect.
 	assert.Equal(t, http.StatusOK, rr.Code)
-	expected := getExpectedListResponse(t, "Successfully deleted list!", IdObject{Id: 1})
+	expected := test.GetExpectedJsonResponse(t, "Successfully deleted list!", IdObject{Id: 1})
 	assert.Equal(t, expected, rr.Body.String())
 }
 
-func TestDeleteList404sOnNoParam(t *testing.T) {
-	t.Cleanup(listsCleanUp)
-	mockObj := new(db.IDbMock)
-	mockObj.On("DeleteList", mock.Anything).Panic("DeleteList should not have been called")
-	ctrl := &Controller{db: mockObj, mux: new(http.ServeMux)}
+func TestDeleteList401sOnInvalidToken(t *testing.T) {
+	authMock := service.NewIAuthManagerMockWithError(util.ErrInvalidToken)
+	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
+	ctrl := &Controller{auth: authMock, mux: new(http.ServeMux)}
 	ctrl.addListHandlers()
 
 	// Mock the request
-	req := createListRequest(t, "DELETE", "/api/list/", nil)
+	req := test.CreateHttpRequest(t, "DELETE", "/api/list/?id=1", nil)
 	rr := httptest.NewRecorder()
 	ctrl.mux.ServeHTTP(rr, req)
 
 	// Check the response is what we expect.
-	assert.Equal(t, http.StatusNotFound, rr.Code)
-	expected := "List not found\n"
+	assert.Equal(t, http.StatusUnauthorized, rr.Code)
+	assert.Equal(t, "mocked error\n", rr.Body.String())
+}
+
+func TestDeleteList400sOnNoParam(t *testing.T) {
+	listMock := new(service.IListManagerMock)
+	listMock.On("DeleteList", mock.Anything).Panic("DeleteUser should not have been called")
+	authMock := new(service.IAuthManagerMock)
+	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
+	ctrl := &Controller{list: listMock, auth: authMock, mux: new(http.ServeMux)}
+	ctrl.addListHandlers()
+
+	// Mock the request
+	req := test.CreateHttpRequest(t, "DELETE", "/api/list/", nil)
+	rr := httptest.NewRecorder()
+	ctrl.mux.ServeHTTP(rr, req)
+
+	// Check the response is what we expect.
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+	expected := "Invalid object: Invalid id provided\n"
 	assert.Equal(t, expected, rr.Body.String())
 }
 
 func TestDeleteList404sOnInvalidParam(t *testing.T) {
-	t.Cleanup(listsCleanUp)
-	mockObj := new(db.IDbMock)
-	mockObj.On("DeleteList", mock.Anything).Panic("DeleteList should not have been called")
-	ctrl := &Controller{db: mockObj, mux: new(http.ServeMux)}
+	listMock := new(service.IListManagerMock)
+	listMock.On("DeleteList", mock.Anything).Panic("DeleteUser should not have been called")
+	authMock := new(service.IAuthManagerMock)
+	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
+	ctrl := &Controller{list: listMock, auth: authMock, mux: new(http.ServeMux)}
 	ctrl.addListHandlers()
 
 	// Mock the request
-	req := createListRequest(t, "DELETE", "/api/list/?id=a", nil)
+	req := test.CreateHttpRequest(t, "DELETE", "/api/list/?id=a", nil)
+	rr := httptest.NewRecorder()
+	ctrl.mux.ServeHTTP(rr, req)
+
+	// Check the response is what we expect.
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+	expected := "Invalid object: Invalid id provided\n"
+	assert.Equal(t, expected, rr.Body.String())
+}
+
+func TestDeleteList404sWhenNoUser(t *testing.T) {
+	listMock := service.NewIListManagerMockWithError(util.ErrNoList)
+	listMock.On("DeleteList", 1).Return()
+	authMock := new(service.IAuthManagerMock)
+	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
+	authMock.On("CheckListMods", 1, 1).Return(true)
+	ctrl := &Controller{list: listMock, auth: authMock, mux: new(http.ServeMux)}
+	ctrl.addListHandlers()
+
+	// Mock the request
+	req := test.CreateHttpRequest(t, "DELETE", "/api/list/?id=1", nil)
 	rr := httptest.NewRecorder()
 	ctrl.mux.ServeHTTP(rr, req)
 
 	// Check the response is what we expect.
 	assert.Equal(t, http.StatusNotFound, rr.Code)
-	expected := "List not found\n"
+	expected := "mocked error\n"
 	assert.Equal(t, expected, rr.Body.String())
 }
 
-func TestDeleteList404sWhenNoSuchId(t *testing.T) {
-	t.Cleanup(listsCleanUp)
-	mockObj := db.NewIDbMockWithError(db.ErrNoRows)
-	mockObj.On("DeleteList", 1).Return()
-	ctrl := &Controller{db: mockObj, mux: new(http.ServeMux)}
+func TestDeleteList500sOnGenericError(t *testing.T) {
+	listMock := service.NewIListManagerMockWithError(util.Unknown)
+	listMock.On("DeleteList", 1).Return()
+	authMock := new(service.IAuthManagerMock)
+	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
+	authMock.On("CheckListMods", 1, 1).Return(true)
+	ctrl := &Controller{list: listMock, auth: authMock, mux: new(http.ServeMux)}
 	ctrl.addListHandlers()
 
 	// Mock the request
-	req := createListRequest(t, "DELETE", "/api/list/?id=1", nil)
-	rr := httptest.NewRecorder()
-	ctrl.mux.ServeHTTP(rr, req)
-
-	// Check the response is what we expect.
-	assert.Equal(t, http.StatusNotFound, rr.Code)
-	expected := "List not found\n"
-	assert.Equal(t, expected, rr.Body.String())
-}
-
-func TestDeleteList500sOnDbError(t *testing.T) {
-	t.Cleanup(listsCleanUp)
-	mockObj := db.NewIDbMockWithError(db.Unknown)
-	mockObj.On("DeleteList", 1).Return()
-	ctrl := &Controller{db: mockObj, mux: new(http.ServeMux)}
-	ctrl.addListHandlers()
-
-	// Mock the request
-	req := createListRequest(t, "DELETE", "/api/list/?id=1", nil)
+	req := test.CreateHttpRequest(t, "DELETE", "/api/list/?id=1", nil)
 	rr := httptest.NewRecorder()
 	ctrl.mux.ServeHTTP(rr, req)
 
 	// Check the response is what we expect.
 	assert.Equal(t, http.StatusInternalServerError, rr.Code)
-	expected := "An error occurred relating to the database\n"
+	expected := "mocked error\n"
 	assert.Equal(t, expected, rr.Body.String())
 }
 
 func TestGetLists(t *testing.T) {
-	t.Cleanup(listsCleanUp)
-	mockObj := new(db.IDbMock)
-	mockObj.On("GetAllLists").Return(&[]*model.ListWithId{defaultListWithId})
-	ctrl := &Controller{db: mockObj, mux: new(http.ServeMux)}
+	listMock := new(service.IListManagerMock)
+	listMock.On("GetAllLists").Return(&[]*model.ListResponse{defaultListResponse})
+	authMock := new(service.IAuthManagerMock)
+	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
+	ctrl := &Controller{list: listMock, auth: authMock, mux: new(http.ServeMux)}
 	ctrl.addListHandlers()
 
 	// Mock the request
-	req := createListRequest(t, "GET", "/api/lists/", nil)
+	req := test.CreateHttpRequest(t, "GET", "/api/lists/", nil)
 	rr := httptest.NewRecorder()
 	ctrl.mux.ServeHTTP(rr, req)
 
 	// Check db was called with correct args
-	mockObj.AssertExpectations(t)
+	listMock.AssertExpectations(t)
 
 	// Check the response is what we expect.
 	assert.Equal(t, http.StatusOK, rr.Code)
-	expected := getExpectedListResponse(t, "Successfully fetched lists!", []*model.ListWithId{defaultListWithId})
+	expected := test.GetExpectedJsonResponse(t, "Successfully fetched lists!", []*model.ListResponse{defaultListResponse})
 	assert.Equal(t, expected, rr.Body.String())
 }
 
-func TestGetListsList404sWhenNoLists(t *testing.T) {
-	t.Cleanup(listsCleanUp)
-	mockObj := db.NewIDbMockWithError(db.ErrNoRows)
-	mockObj.On("GetAllLists").Return(&[]*model.ListWithId{defaultListWithId})
-	ctrl := &Controller{db: mockObj, mux: new(http.ServeMux)}
+func TestGetLists401sOnInvalidToken(t *testing.T) {
+	authMock := service.NewIAuthManagerMockWithError(util.ErrInvalidToken)
+	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
+	ctrl := &Controller{auth: authMock, mux: new(http.ServeMux)}
 	ctrl.addListHandlers()
 
 	// Mock the request
-	req := createListRequest(t, "GET", "/api/lists/", nil)
+	req := test.CreateHttpRequest(t, "GET", "/api/lists/", nil)
 	rr := httptest.NewRecorder()
 	ctrl.mux.ServeHTTP(rr, req)
 
 	// Check the response is what we expect.
-	assert.Equal(t, http.StatusNotFound, rr.Code)
-	expected := "List not found\n"
-	assert.Equal(t, expected, rr.Body.String())
+	assert.Equal(t, http.StatusUnauthorized, rr.Code)
+	assert.Equal(t, "mocked error\n", rr.Body.String())
 }
 
-func TestGetLists500sOnDbError(t *testing.T) {
-	t.Cleanup(listsCleanUp)
-	mockObj := db.NewIDbMockWithError(db.Unknown)
-	mockObj.On("GetAllLists").Return(&[]*model.ListWithId{defaultListWithId})
-	ctrl := &Controller{db: mockObj, mux: new(http.ServeMux)}
+func TestGetLists500sOnGenericError(t *testing.T) {
+	listMock := service.NewIListManagerMockWithError(util.Unknown)
+	listMock.On("GetAllLists").Return(&[]*model.ListResponse{defaultListResponse})
+	authMock := new(service.IAuthManagerMock)
+	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
+	ctrl := &Controller{list: listMock, auth: authMock, mux: new(http.ServeMux)}
 	ctrl.addListHandlers()
 
 	// Mock the request
-	req := createListRequest(t, "GET", "/api/lists/", nil)
+	req := test.CreateHttpRequest(t, "GET", "/api/lists/", nil)
 	rr := httptest.NewRecorder()
 	ctrl.mux.ServeHTTP(rr, req)
 
 	// Check the response is what we expect.
 	assert.Equal(t, http.StatusInternalServerError, rr.Code)
-	expected := "An error occurred relating to the database\n"
+	expected := "mocked error\n"
 	assert.Equal(t, expected, rr.Body.String())
-}
-
-func createListRequest(t *testing.T, method string, uri string, body interface{}) *http.Request {
-	jsonBody, err := json.Marshal(body)
-	require.NoError(t, err)
-	req, err := http.NewRequest(method, uri, bytes.NewBuffer(jsonBody))
-	require.NoError(t, err)
-	return req
-}
-
-func getExpectedListResponse(t *testing.T, msg string, data interface{}) string {
-	jsonData, err := json.Marshal(data)
-	require.NoError(t, err)
-	return fmt.Sprintf("{\"message\":\"%s\",\"data\":%s}", msg, jsonData)
 }
