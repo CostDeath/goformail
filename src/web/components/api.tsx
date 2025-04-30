@@ -3,5 +3,6 @@ export const api = {
     mailingLists: "/lists",
     list: "/list/",
     users: "/users/",
-    user: "/user/"
+    user: "/user/",
+    login: "/login/"
 }
