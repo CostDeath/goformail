@@ -19,7 +19,7 @@ test("mailing list table is loading", async () => {
 
 test("mailing list table has loaded", async () => {
     useSWR.mockReturnValue({
-        data: {message: "Successfully fetched lists!", data: [{id: 1, list: {name: "test"}}]}
+        data: {message: "Successfully fetched lists!", data: [{id: 1, name: "test"}]}
     })
 
     const wrapper = render(<MailingListTable />)
