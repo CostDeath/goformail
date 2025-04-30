@@ -4,7 +4,6 @@ import useSWR from "swr";
 import {MailingList} from "@/models/list";
 import {api} from "@/components/api";
 import {useEffect, useState} from "react";
-import {handleInvalidSessionToken} from "@/components/sessionToken";
 
 export default function MailingListTable() {
     const [sessionToken, setSessionToken] = useState<string | null>()
@@ -19,9 +18,6 @@ export default function MailingListTable() {
             return await response.json()
         }
         const errorMessage = await response.text()
-        if (errorMessage === "Invalid token provided\n") {
-            alert("You must log back in")
-        }
         return {message: errorMessage}
     }
 
@@ -40,9 +36,7 @@ export default function MailingListTable() {
     }
     if (!data) {
         return <div>Loading</div>
-    } else if (data.message === "Invalid token provided\n") {
-        handleInvalidSessionToken()
-    } else if (data.message !== "Successfully fetched lists!") {
+    }  else if (data.message !== "Successfully fetched lists!") {
         return <div>Error</div>
     }
 
