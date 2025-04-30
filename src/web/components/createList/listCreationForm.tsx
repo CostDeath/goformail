@@ -5,6 +5,7 @@ import {api} from "@/components/api";
 import {redirect} from "next/navigation";
 import {LinkTo} from "@/components/pageEnums";
 import validateEmail from "@/components/validateEmails";
+import {getSessionToken} from "@/components/sessionToken";
 
 export default function ListCreationForm() {
     const [name, setName] = useState("");
@@ -12,6 +13,7 @@ export default function ListCreationForm() {
 
     const createList = async () => {
         const url = `${window.location.origin}/api${api.list}`
+        const token = getSessionToken()
         if (!validateEmail(name)) {
             alert("Please enter a valid mailing list email")
             return;
@@ -25,14 +27,18 @@ export default function ListCreationForm() {
             rcptList.push(recipients[i].value)
         }
 
+        // TODO: update list logic to include the locked and mods fields within the form
         const response = await fetch(url, {
             method: "POST",
             body: JSON.stringify({
                 Name: name,
-                Recipients: rcptList
+                Recipients: rcptList,
+                Locked: false,
+                Mods: []
             }),
             headers: {
-                "Content-Type": "application/json"
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${token}`
             }
         })
 

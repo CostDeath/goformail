@@ -6,11 +6,13 @@ import {api} from "@/components/api";
 import {List} from "@/models/list";
 import validateEmail from "@/components/validateEmails";
 import {LinkTo} from "@/components/pageEnums";
+import {getSessionToken} from "@/components/sessionToken";
 
 export default function ListEditForm() {
     const searchParams = useSearchParams()
     const listId = searchParams.get("id")
     const [recipients, setRecipients] = useState([{value: ""}])
+    const [sessionToken, setSessionToken] = useState<string | null>()
 
 
     const handleChange = (index: number, e: ChangeEvent<HTMLInputElement>) => {
@@ -31,7 +33,12 @@ export default function ListEditForm() {
 
 
     const fetcher = async(url: string) => {
-        const response = await fetch(url)
+        const response = await fetch(url, {
+            method: "GET",
+            headers: {
+                "Authorization": `Bearer ${sessionToken}`
+            }
+        })
         const data = await response.json()
         const rcpts: string[] = data.data.recipients
         const rcptsBuilder: {value: string}[] = []
@@ -47,9 +54,10 @@ export default function ListEditForm() {
     useEffect(() => {
         const url =`${window.location.origin}/api`
         setBaseUrl(url)
+        setSessionToken(getSessionToken())
     }, [])
 
-    const {data, error} = useSWR((baseUrl) ? `${baseUrl}${api.list}?id=${listId}` : null, fetcher)
+    const {data, error} = useSWR((baseUrl && sessionToken) ? `${baseUrl}${api.list}?id=${listId}` : null, fetcher)
 
     if (error) return <div>Error</div>
     if (!data) {
@@ -80,6 +88,7 @@ export default function ListEditForm() {
             }),
             headers: {
                 "Content-Type": "application/json",
+                "Authorization": `Bearer ${sessionToken}`
             }
         })
 
