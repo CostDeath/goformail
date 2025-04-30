@@ -15,7 +15,7 @@ var defaultUserRequest = &model.UserRequest{
 	Email: "example@domain.tld", Password: "pass", Permissions: []string{"ADMIN", "CRT_LIST"},
 }
 var defaultUserRequestUpper = &model.UserRequest{
-	Email: "EXAMPLE@domain.tld", Password: defaultUserRequest.Password, Permissions: defaultUserRequest.Permissions,
+	Email: "EXAMPLE@domain.tld", Password: defaultUserRequest.Password, Permissions: []string{"admin", "crt_list"},
 }
 var defaultUserResponse = &model.UserResponse{
 	Id: 1, Email: defaultUserRequest.Email, Permissions: defaultUserRequest.Permissions,
@@ -121,7 +121,7 @@ func TestCreateUserReturnsGenericError(t *testing.T) {
 
 func TestUpdateUser(t *testing.T) {
 	mockObj := new(db.IDbMock)
-	mockObj.On("UpdateUser", 1, defaultUserRequest).Return()
+	mockObj.On("UpdateUser", 1, defaultUserRequest, true).Return()
 	man := UserManager{db: mockObj}
 	err := man.UpdateUser(1, defaultUserRequestUpper)
 
@@ -129,9 +129,20 @@ func TestUpdateUser(t *testing.T) {
 	require.Nil(t, err)
 }
 
+func TestUpdateUserDoesNotOverridePermsOnNoPerms(t *testing.T) {
+	user := &model.UserRequest{Email: defaultUserRequest.Email}
+	mockObj := new(db.IDbMock)
+	mockObj.On("UpdateUser", 1, user, false).Return()
+	man := UserManager{db: mockObj}
+	err := man.UpdateUser(1, user)
+
+	mockObj.AssertExpectations(t)
+	require.Nil(t, err)
+}
+
 func TestUpdateUserReturnsInvalidObjectErrorOnInvalidEmail(t *testing.T) {
 	mockObj := new(db.IDbMock)
-	mockObj.On("UpdateUser", mock.Anything, defaultUserRequest).
+	mockObj.On("UpdateUser", mock.Anything, mock.Anything, mock.Anything).
 		Panic("UpdateUser should not have been called")
 	man := UserManager{db: mockObj}
 	err := man.UpdateUser(1, &model.UserRequest{Email: "invalid"})
@@ -140,21 +151,9 @@ func TestUpdateUserReturnsInvalidObjectErrorOnInvalidEmail(t *testing.T) {
 	assert.Equal(t, expected, err)
 }
 
-func TestUpdateUserReturnsInvalidObjectErrorOnInvalidPerms(t *testing.T) {
-	mockObj := new(db.IDbMock)
-	mockObj.On("UpdateUser", mock.Anything, defaultUserRequest).
-		Panic("UpdateUser should not have been called")
-	man := UserManager{db: mockObj}
-	err := man.UpdateUser(1, &model.UserRequest{Permissions: []string{"invalid"}})
-
-	msg := "Missing or duplicate permission. Valid permissions- ADMIN, CRT_LIST, MOD_LIST, CRT_USER, MOD_USER"
-	expected := util.NewInvalidObjectError(msg, nil)
-	assert.Equal(t, expected, err)
-}
-
 func TestUpdateUserReturnsUserAlreadyExistsError(t *testing.T) {
 	mockObj := db.NewIDbMockWithError(db.ErrDuplicate)
-	mockObj.On("UpdateUser", 1, defaultUserRequest).Return()
+	mockObj.On("UpdateUser", 1, defaultUserRequest, true).Return()
 	man := UserManager{db: mockObj}
 	err := man.UpdateUser(1, defaultUserRequest)
 
@@ -163,7 +162,7 @@ func TestUpdateUserReturnsUserAlreadyExistsError(t *testing.T) {
 
 func TestUpdateUserReturnsNoUserError(t *testing.T) {
 	mockObj := db.NewIDbMockWithError(db.ErrNoRows)
-	mockObj.On("UpdateUser", 1, defaultUserRequest).Return()
+	mockObj.On("UpdateUser", 1, defaultUserRequest, true).Return()
 	man := UserManager{db: mockObj}
 	err := man.UpdateUser(1, defaultUserRequest)
 
@@ -173,7 +172,7 @@ func TestUpdateUserReturnsNoUserError(t *testing.T) {
 
 func TestUpdateUserReturnsGenericError(t *testing.T) {
 	mockObj := db.NewIDbMockWithError(db.Unknown)
-	mockObj.On("UpdateUser", 1, defaultUserRequest).Return()
+	mockObj.On("UpdateUser", 1, defaultUserRequest, true).Return()
 	man := UserManager{db: mockObj}
 	err := man.UpdateUser(1, defaultUserRequest)
 
@@ -221,7 +220,7 @@ func TestGetAllUsers(t *testing.T) {
 	assert.Equal(t, expected, actual)
 }
 
-func TestGetLists500sOnDbError(t *testing.T) {
+func TestGetUsersReturnsGenericError(t *testing.T) {
 	mockObj := db.NewIDbMockWithError(db.Unknown)
 	mockObj.On("GetAllUsers").Return(&[]*model.UserResponse{defaultUserResponse})
 	man := UserManager{db: mockObj}

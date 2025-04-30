@@ -271,3 +271,58 @@ func TestCheckUserPermsReturnsGenericError(t *testing.T) {
 	assert.Equal(t, util.NewGenericError(nil), err)
 	assert.False(t, valid)
 }
+
+func TestCheckListMods(t *testing.T) {
+	dbMock := new(db.IDbMock)
+	dbMock.On("GetUserPermsAndModStatus", 1, 1).Return([]string{"CRT_USER", "MOD_LIST"}, false)
+	man := AuthManager{db: dbMock}
+
+	valid, err := man.CheckListMods(1, 1)
+
+	require.Nil(t, err)
+	assert.True(t, valid)
+}
+
+func TestCheckListModsOnAdmin(t *testing.T) {
+	dbMock := new(db.IDbMock)
+	dbMock.On("GetUserPermsAndModStatus", 1, 1).Return([]string{"ADMIN"}, false)
+	man := AuthManager{db: dbMock}
+
+	valid, err := man.CheckListMods(1, 1)
+
+	require.Nil(t, err)
+	assert.True(t, valid)
+}
+
+func TestCheckListModsOnMod(t *testing.T) {
+	dbMock := new(db.IDbMock)
+	dbMock.On("GetUserPermsAndModStatus", 1, 1).Return([]string{}, true)
+	man := AuthManager{db: dbMock}
+
+	valid, err := man.CheckListMods(1, 1)
+
+	require.Nil(t, err)
+	assert.True(t, valid)
+}
+
+func TestCheckListModsWhenFalse(t *testing.T) {
+	dbMock := new(db.IDbMock)
+	dbMock.On("GetUserPermsAndModStatus", 1, 1).Return([]string{"CRT_USER"}, false)
+	man := AuthManager{db: dbMock}
+
+	valid, err := man.CheckListMods(1, 1)
+
+	assert.Equal(t, util.NewNoPermissionError("MOD_LIST", nil), err)
+	assert.False(t, valid)
+}
+
+func TestCheckListModsReturnsGenericError(t *testing.T) {
+	dbMock := db.NewIDbMockWithError(db.Unknown)
+	dbMock.On("GetUserPermsAndModStatus", 1, 1).Return([]string{}, false)
+	man := AuthManager{db: dbMock}
+
+	valid, err := man.CheckListMods(1, 1)
+
+	assert.Equal(t, util.NewGenericError(nil), err)
+	assert.False(t, valid)
+}

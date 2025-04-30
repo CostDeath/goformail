@@ -15,6 +15,8 @@ type ErrorCode int
 const (
 	Unknown ErrorCode = iota
 	ErrInvalidObject
+	ErrNoList
+	ErrListAlreadyExists
 	ErrNoUser
 	ErrUserAlreadyExists
 	ErrIncorrectPassword
@@ -34,6 +36,16 @@ func NewGenericError(err error) *Error {
 func NewInvalidObjectError(reason string, err error) *Error {
 	msg := fmt.Sprintf("Invalid object: %s", reason)
 	return &Error{Err: err, Code: ErrInvalidObject, Message: msg}
+}
+
+func NewNoListError(id int, err error) *Error {
+	msg := fmt.Sprintf("Could not find a list with id '%d'", id)
+	return &Error{Err: err, Code: ErrNoList, Message: msg}
+}
+
+func NewListAlreadyExistsError(name string, err error) *Error {
+	msg := fmt.Sprintf("A user with the name '%s' already exists", name)
+	return &Error{Err: err, Code: ErrListAlreadyExists, Message: msg}
 }
 
 func NewNoUserError(id int, err error) *Error {
