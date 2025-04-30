@@ -4,8 +4,10 @@ import (
 	"encoding/json"
 	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal/model"
 	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal/util"
+	"io"
 	"net/http"
 	"strconv"
+	"strings"
 )
 
 func (ctrl Controller) addListHandlers() {
@@ -52,7 +54,7 @@ func (ctrl Controller) getList(w http.ResponseWriter, r *http.Request) {
 
 	id, err := strconv.Atoi(r.FormValue("id"))
 	if err != nil {
-		setErrorResponse(w, r, util.NewInvalidObjectError("Invalid id provided", nil))
+		setErrorResponse(w, r, util.NewInvalidObjectError("Invalid id provided", err))
 		return
 	}
 
@@ -76,7 +78,7 @@ func (ctrl Controller) postList(w http.ResponseWriter, r *http.Request) {
 
 	var list model.ListRequest
 	if err := json.NewDecoder(r.Body).Decode(&list); err != nil {
-		setErrorResponse(w, r, util.NewInvalidObjectError("Invalid json provided", nil))
+		setErrorResponse(w, r, util.NewInvalidObjectError("Invalid json provided", err))
 		return
 	}
 
@@ -105,14 +107,30 @@ func (ctrl Controller) patchList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	// Check if there was a 'locked' property
+	bodyBytes, err := io.ReadAll(r.Body)
+	if err != nil {
+		setErrorResponse(w, r, util.NewInvalidObjectError("Invalid json provided", err))
+		return
+	}
+	var raw map[string]json.RawMessage
+	if err := json.Unmarshal(bodyBytes, &raw); err != nil {
+		setErrorResponse(w, r, util.NewInvalidObjectError("Invalid json provided", err))
+		return
+	}
+
+	_, hasLocked := raw["locked"]
+
+	r.Body = io.NopCloser(strings.NewReader(string(bodyBytes))) // Restore the body for decoding into map
+
 	id, err := strconv.Atoi(r.FormValue("id"))
 	if err != nil {
-		setErrorResponse(w, r, util.NewInvalidObjectError("Invalid id provided", nil))
+		setErrorResponse(w, r, util.NewInvalidObjectError("Invalid id provided", err))
 		return
 	}
 	var list model.ListRequest
 	if err := json.NewDecoder(r.Body).Decode(&list); err != nil {
-		setErrorResponse(w, r, util.NewInvalidObjectError("Invalid json provided", nil))
+		setErrorResponse(w, r, util.NewInvalidObjectError("Invalid json provided", err))
 		return
 	}
 
@@ -122,7 +140,7 @@ func (ctrl Controller) patchList(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	e = ctrl.list.UpdateList(id, &list)
+	e = ctrl.list.UpdateList(id, &list, hasLocked)
 	if e != nil {
 		setErrorResponse(w, r, e)
 		return
@@ -142,7 +160,7 @@ func (ctrl Controller) deleteList(w http.ResponseWriter, r *http.Request) {
 
 	id, err := strconv.Atoi(r.FormValue("id"))
 	if err != nil {
-		setErrorResponse(w, r, util.NewInvalidObjectError("Invalid id provided", nil))
+		setErrorResponse(w, r, util.NewInvalidObjectError("Invalid id provided", err))
 		return
 	}
 

@@ -12,11 +12,19 @@ import (
 	"testing"
 )
 
+type listRequestWithoutLocked struct {
+	Name            string   `json:"name"`
+	Recipients      []string `json:"recipients"`
+	Mods            []int64  `json:"mods"`
+	ApprovedSenders []string `json:"approved_senders"`
+}
+
 var defaultListRequest = &model.ListRequest{
 	Name:            "test",
 	Recipients:      []string{"rcpt1@domain.tld", "rcpt2@domain.tld"},
 	Mods:            []int64{1, 2},
 	ApprovedSenders: []string{"sdr1@domain.tld", "sdr2@domain.tld"},
+	Locked:          true,
 }
 
 var defaultListResponse = &model.ListResponse{
@@ -25,6 +33,7 @@ var defaultListResponse = &model.ListResponse{
 	Recipients:      defaultListRequest.Recipients,
 	Mods:            defaultListRequest.Mods,
 	ApprovedSenders: defaultListRequest.ApprovedSenders,
+	Locked:          defaultListRequest.Locked,
 }
 
 func TestGetList(t *testing.T) {
@@ -143,7 +152,8 @@ func TestGetList500sOnGenericError(t *testing.T) {
 
 func TestPostList(t *testing.T) {
 	expectedList := &model.ListRequest{Name: defaultListRequest.Name, Recipients: defaultListRequest.Recipients,
-		Mods: append(defaultListRequest.Mods, 1), ApprovedSenders: defaultListRequest.ApprovedSenders}
+		Mods: append(defaultListRequest.Mods, 1), ApprovedSenders: defaultListRequest.ApprovedSenders,
+		Locked: defaultListRequest.Locked}
 	listMock := new(service.IListManagerMock)
 	listMock.On("CreateList", expectedList).Return(1)
 	authMock := new(service.IAuthManagerMock)
@@ -203,7 +213,8 @@ func TestPostList400sOnInvalidJson(t *testing.T) {
 
 func TestPostList400sOnInvalidObj(t *testing.T) {
 	expectedList := &model.ListRequest{Name: defaultListRequest.Name, Recipients: defaultListRequest.Recipients,
-		Mods: append(defaultListRequest.Mods, 1), ApprovedSenders: defaultListRequest.ApprovedSenders}
+		Mods: append(defaultListRequest.Mods, 1), ApprovedSenders: defaultListRequest.ApprovedSenders,
+		Locked: defaultListRequest.Locked}
 	listMock := service.NewIListManagerMockWithError(util.ErrInvalidObject)
 	listMock.On("CreateList", expectedList).Return(1)
 	authMock := new(service.IAuthManagerMock)
@@ -225,7 +236,8 @@ func TestPostList400sOnInvalidObj(t *testing.T) {
 
 func TestPostList409sOnDuplicateUser(t *testing.T) {
 	expectedList := &model.ListRequest{Name: defaultListRequest.Name, Recipients: defaultListRequest.Recipients,
-		Mods: append(defaultListRequest.Mods, 1), ApprovedSenders: defaultListRequest.ApprovedSenders}
+		Mods: append(defaultListRequest.Mods, 1), ApprovedSenders: defaultListRequest.ApprovedSenders,
+		Locked: defaultListRequest.Locked}
 	listMock := service.NewIListManagerMockWithError(util.ErrListAlreadyExists)
 	listMock.On("CreateList", expectedList).Return(1)
 	authMock := new(service.IAuthManagerMock)
@@ -247,7 +259,8 @@ func TestPostList409sOnDuplicateUser(t *testing.T) {
 
 func TestPostList500sOnDbError(t *testing.T) {
 	expectedList := &model.ListRequest{Name: defaultListRequest.Name, Recipients: defaultListRequest.Recipients,
-		Mods: append(defaultListRequest.Mods, 1), ApprovedSenders: defaultListRequest.ApprovedSenders}
+		Mods: append(defaultListRequest.Mods, 1), ApprovedSenders: defaultListRequest.ApprovedSenders,
+		Locked: defaultListRequest.Locked}
 	listMock := service.NewIListManagerMockWithError(util.Unknown)
 	listMock.On("CreateList", expectedList).Return(1)
 	authMock := new(service.IAuthManagerMock)
@@ -269,7 +282,7 @@ func TestPostList500sOnDbError(t *testing.T) {
 
 func TestPatchList(t *testing.T) {
 	listMock := new(service.IListManagerMock)
-	listMock.On("UpdateList", 1, defaultListRequest).Return()
+	listMock.On("UpdateList", 1, defaultListRequest, true).Return()
 	authMock := new(service.IAuthManagerMock)
 	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
 	authMock.On("CheckListMods", 1, 1).Return(true)
@@ -278,6 +291,33 @@ func TestPatchList(t *testing.T) {
 
 	// Mock the request
 	req := test.CreateHttpRequest(t, "PATCH", "/api/list/?id=1", defaultListRequest)
+	rr := httptest.NewRecorder()
+	ctrl.mux.ServeHTTP(rr, req)
+
+	// Check db was called with correct args
+	listMock.AssertExpectations(t)
+
+	// Check the response is what we expect.
+	assert.Equal(t, http.StatusOK, rr.Code)
+	expected := test.GetExpectedJsonResponse(t, "Successfully patched list!", IdObject{Id: 1})
+	assert.Equal(t, expected, rr.Body.String())
+}
+
+func TestPatchListCallsNoLocked(t *testing.T) {
+	expectedList := &model.ListRequest{Name: defaultListRequest.Name, Recipients: defaultListRequest.Recipients,
+		Mods: defaultListRequest.Mods, ApprovedSenders: defaultListRequest.ApprovedSenders}
+	listMock := new(service.IListManagerMock)
+	listMock.On("UpdateList", 1, expectedList, false).Return()
+	authMock := new(service.IAuthManagerMock)
+	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
+	authMock.On("CheckListMods", 1, 1).Return(true)
+	ctrl := &Controller{list: listMock, auth: authMock, mux: new(http.ServeMux)}
+	ctrl.addListHandlers()
+
+	// Mock the request
+	request := &listRequestWithoutLocked{Name: defaultListRequest.Name, Recipients: defaultListRequest.Recipients,
+		Mods: defaultListRequest.Mods, ApprovedSenders: defaultListRequest.ApprovedSenders}
+	req := test.CreateHttpRequest(t, "PATCH", "/api/list/?id=1", request)
 	rr := httptest.NewRecorder()
 	ctrl.mux.ServeHTTP(rr, req)
 
@@ -365,7 +405,7 @@ func TestPatchList400sOnInvalidJson(t *testing.T) {
 
 func TestPatchList400sOnInvalidObj(t *testing.T) {
 	listMock := service.NewIListManagerMockWithError(util.ErrInvalidObject)
-	listMock.On("UpdateList", 1, defaultListRequest).Return()
+	listMock.On("UpdateList", 1, defaultListRequest, true).Return()
 	authMock := new(service.IAuthManagerMock)
 	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
 	authMock.On("CheckListMods", 1, 1).Return(true)
@@ -385,7 +425,7 @@ func TestPatchList400sOnInvalidObj(t *testing.T) {
 
 func TestPatchList409sOnDuplicateName(t *testing.T) {
 	listMock := service.NewIListManagerMockWithError(util.ErrListAlreadyExists)
-	listMock.On("UpdateList", 1, defaultListRequest).Return()
+	listMock.On("UpdateList", 1, defaultListRequest, true).Return()
 	authMock := new(service.IAuthManagerMock)
 	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
 	authMock.On("CheckListMods", 1, 1).Return(true)
@@ -405,7 +445,7 @@ func TestPatchList409sOnDuplicateName(t *testing.T) {
 
 func TestPatchUser404sWhenNoList(t *testing.T) {
 	listMock := service.NewIListManagerMockWithError(util.ErrNoList)
-	listMock.On("UpdateList", 1, defaultListRequest).Return()
+	listMock.On("UpdateList", 1, defaultListRequest, true).Return()
 	authMock := new(service.IAuthManagerMock)
 	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
 	authMock.On("CheckListMods", 1, 1).Return(true)
@@ -425,7 +465,7 @@ func TestPatchUser404sWhenNoList(t *testing.T) {
 
 func TestPatchList500sOnGenericError(t *testing.T) {
 	listMock := service.NewIListManagerMockWithError(util.Unknown)
-	listMock.On("UpdateList", 1, defaultListRequest).Return()
+	listMock.On("UpdateList", 1, defaultListRequest, true).Return()
 	authMock := new(service.IAuthManagerMock)
 	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
 	authMock.On("CheckListMods", 1, 1).Return(true)

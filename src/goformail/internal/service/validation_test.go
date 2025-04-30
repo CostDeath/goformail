@@ -80,7 +80,6 @@ func TestValidateListPropsNoneSet(t *testing.T) {
 
 	actual := validateListPropsSet(list)
 	assert.Equal(t, &model.ListOverrides{}, actual)
-
 }
 
 func TestValidateEmail(t *testing.T) {

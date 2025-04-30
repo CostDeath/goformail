@@ -63,7 +63,8 @@ func InitDB(configs map[string]string) *Db {
 		    ADD COLUMN IF NOT EXISTS name TEXT UNIQUE NOT NULL,
 		    ADD COLUMN IF NOT EXISTS recipients TEXT[],
 		    ADD COLUMN IF NOT EXISTS mods INT[],
-		    ADD COLUMN IF NOT EXISTS approved_senders TEXT[];
+		    ADD COLUMN IF NOT EXISTS approved_senders TEXT[],
+		    ADD COLUMN IF NOT EXISTS locked BOOL DEFAULT false;
 
 		CREATE TABLE IF NOT EXISTS users (
         	id SERIAL PRIMARY KEY

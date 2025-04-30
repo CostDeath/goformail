@@ -10,7 +10,8 @@ CREATE TABLE lists (
     name TEXT UNIQUE NOT NULL,
     recipients TEXT[],
     mods INT[],
-    approved_senders TEXT[]
+    approved_senders TEXT[],
+    locked BOOL DEFAULT false
 );
 
 INSERT INTO users (email, permissions, hash)

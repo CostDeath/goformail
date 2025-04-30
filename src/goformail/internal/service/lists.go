@@ -10,7 +10,7 @@ import (
 type IListManager interface {
 	GetList(id int) (*model.ListResponse, *util.Error)
 	CreateList(list *model.ListRequest) (int, *util.Error)
-	UpdateList(id int, list *model.ListRequest) *util.Error
+	UpdateList(id int, list *model.ListRequest, hasLocked bool) *util.Error
 	DeleteList(id int) *util.Error
 	GetAllLists() (*[]*model.ListResponse, *util.Error)
 }
@@ -98,7 +98,7 @@ func (man *ListManager) CreateList(list *model.ListRequest) (int, *util.Error) {
 	return id, nil
 }
 
-func (man *ListManager) UpdateList(id int, list *model.ListRequest) *util.Error {
+func (man *ListManager) UpdateList(id int, list *model.ListRequest, hasLocked bool) *util.Error {
 	list.Name = strings.ToLower(list.Name) // want to store lowercase, to prevent duplicates
 	if !validateEmail(list.Name + "@domain.tld") {
 		return util.NewInvalidObjectError("Invalid list name '"+list.Name+"' (must not include domain)", nil)
@@ -139,7 +139,9 @@ func (man *ListManager) UpdateList(id int, list *model.ListRequest) *util.Error 
 		list.Mods = valid
 	}
 
-	err := man.db.PatchList(id, list, validateListPropsSet(*list))
+	overrides := validateListPropsSet(*list)
+	overrides.Locked = hasLocked
+	err := man.db.PatchList(id, list, overrides)
 	if err != nil {
 		switch err.Code {
 		case db.ErrNoRows:

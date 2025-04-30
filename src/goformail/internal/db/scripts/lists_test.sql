@@ -3,7 +3,8 @@ CREATE TABLE lists (
     name TEXT UNIQUE NOT NULL,
     recipients TEXT[],
     mods INT[],
-    approved_senders TEXT[]
+    approved_senders TEXT[],
+    locked BOOL DEFAULT false
 );
 
 INSERT INTO lists (name, recipients, mods, approved_senders)
@@ -18,8 +19,11 @@ VALUES ('patch-test-1', ARRAY['example@domain.tld'], ARRAY[1], ARRAY['example@do
 INSERT INTO lists (name, recipients, mods, approved_senders)
 VALUES ('patch-test-2', ARRAY['example@domain.tld'], ARRAY[1], ARRAY['example@domain.tld']);  -- ID: 4
 
-INSERT INTO lists (name, recipients, mods, approved_senders)
-VALUES ('patch-test-3', ARRAY['example@domain.tld'], ARRAY[1], ARRAY['example@domain.tld']);  -- ID: 5
+INSERT INTO lists (name, recipients, mods, approved_senders, locked)
+VALUES ('patch-test-3', ARRAY['example@domain.tld'], ARRAY[1], ARRAY['example@domain.tld'], true);  -- ID: 5
 
 INSERT INTO lists (name, recipients, mods, approved_senders)
 VALUES ('delete-test-0', ARRAY['example@domain.tld'], ARRAY[1], ARRAY['example@domain.tld']);  -- ID: 6
+
+INSERT INTO lists (name, recipients, mods, approved_senders, locked)
+VALUES ('patch-test-4', ARRAY['example@domain.tld'], ARRAY[1], ARRAY['example@domain.tld'], true);  -- ID: 7

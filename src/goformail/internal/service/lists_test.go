@@ -15,12 +15,14 @@ var defaultListRequest = &model.ListRequest{
 	Recipients:      []string{"rcpt1@domain.tld", "rcpt2@domain.tld"},
 	Mods:            []int64{1, 2},
 	ApprovedSenders: []string{"sdr1@domain.tld", "sdr2@domain.tld"},
+	Locked:          true,
 }
 var defaultListRequestToFix = &model.ListRequest{
 	Name:            defaultListRequest.Name,
 	Recipients:      []string{"RCPT1@domain.tld", "RCPT1@domain.tld", "RCPT2@domain.tld"},
 	Mods:            []int64{1, 2, 3},
 	ApprovedSenders: []string{"SDR1@domain.tld", "SDR2@domain.tld", "SDR2@domain.tld"},
+	Locked:          true,
 }
 var defaultListResponse = &model.ListResponse{
 	Id:              1,
@@ -28,6 +30,7 @@ var defaultListResponse = &model.ListResponse{
 	Recipients:      defaultListRequest.Recipients,
 	Mods:            defaultListRequest.Mods,
 	ApprovedSenders: defaultListRequest.ApprovedSenders,
+	Locked:          true,
 }
 
 func TestGetList(t *testing.T) {
@@ -85,7 +88,8 @@ func TestCreateListReturnsInvalidObjectErrorOnMissingFields(t *testing.T) {
 
 	id, err := man.CreateList(&model.ListRequest{})
 
-	expected := util.NewInvalidObjectError("Missing field(s) in list: Name, Recipients, Mods, ApprovedSenders", nil)
+	msg := "Missing field(s) in list: Name, Recipients, Mods, ApprovedSenders, Locked"
+	expected := util.NewInvalidObjectError(msg, nil)
 	assert.Equal(t, expected, err)
 	assert.Equal(t, 0, id)
 }
@@ -100,7 +104,9 @@ func TestCreateListReturnsInvalidObjectErrorOnInvalidName(t *testing.T) {
 		Name:            "invalid@",
 		Recipients:      defaultListRequest.Recipients,
 		Mods:            defaultListRequest.Mods,
-		ApprovedSenders: defaultListRequest.ApprovedSenders})
+		ApprovedSenders: defaultListRequest.ApprovedSenders,
+		Locked:          true,
+	})
 
 	expected := util.NewInvalidObjectError("Invalid list name 'invalid@' (must not include domain)", nil)
 	assert.Equal(t, expected, err)
@@ -117,7 +123,9 @@ func TestCreateListReturnsInvalidObjectErrorOnInvalidRecipient(t *testing.T) {
 		Name:            defaultListRequest.Name,
 		Recipients:      []string{"invalid"},
 		Mods:            defaultListRequest.Mods,
-		ApprovedSenders: defaultListRequest.ApprovedSenders})
+		ApprovedSenders: defaultListRequest.ApprovedSenders,
+		Locked:          true,
+	})
 
 	expected := util.NewInvalidObjectError("Invalid recipient email address 'invalid'", nil)
 	assert.Equal(t, expected, err)
@@ -134,7 +142,9 @@ func TestCreateListReturnsInvalidObjectErrorOnInvalidSender(t *testing.T) {
 		Name:            defaultListRequest.Name,
 		Recipients:      defaultListRequest.Recipients,
 		Mods:            defaultListRequest.Mods,
-		ApprovedSenders: []string{"invalid"}})
+		ApprovedSenders: []string{"invalid"},
+		Locked:          true,
+	})
 
 	expected := util.NewInvalidObjectError("Invalid sender email address 'invalid'", nil)
 	assert.Equal(t, expected, err)
@@ -157,11 +167,11 @@ func TestUpdateList(t *testing.T) {
 	dbMock := new(db.IDbMock)
 	dbMock.On("UsersExist", defaultListRequestToFix.Mods).Return(defaultListRequest.Mods)
 	dbMock.On("PatchList", 1, defaultListRequest, &model.ListOverrides{
-		Recipients: true, Mods: true, ApprovedSenders: true,
+		Recipients: true, Mods: true, ApprovedSenders: true, Locked: true,
 	}).Return()
 	man := ListManager{db: dbMock}
 
-	err := man.UpdateList(1, defaultListRequestToFix)
+	err := man.UpdateList(1, defaultListRequestToFix, true)
 
 	dbMock.AssertExpectations(t)
 	require.Nil(t, err)
@@ -169,13 +179,13 @@ func TestUpdateList(t *testing.T) {
 
 func TestUpdateListDoesNotOverrideWhenNullProps(t *testing.T) {
 	dbMock := new(db.IDbMock)
-	var missing []int64
+	var valid []int64
 	list := &model.ListRequest{Name: "name"}
-	dbMock.On("UsersExist", missing).Return(missing)
+	dbMock.On("UsersExist", valid).Return(valid)
 	dbMock.On("PatchList", 1, list, &model.ListOverrides{}).Return()
 	man := ListManager{db: dbMock}
 
-	err := man.UpdateList(1, list)
+	err := man.UpdateList(1, list, false)
 
 	dbMock.AssertExpectations(t)
 	require.Nil(t, err)
@@ -191,7 +201,8 @@ func TestUpdateListReturnsInvalidObjectErrorOnInvalidName(t *testing.T) {
 		Name:            "invalid@",
 		Recipients:      defaultListRequest.Recipients,
 		Mods:            defaultListRequest.Mods,
-		ApprovedSenders: defaultListRequest.ApprovedSenders})
+		ApprovedSenders: defaultListRequest.ApprovedSenders},
+		false)
 
 	expected := util.NewInvalidObjectError("Invalid list name 'invalid@' (must not include domain)", nil)
 	assert.Equal(t, expected, err)
@@ -207,7 +218,8 @@ func TestUpdateListReturnsInvalidObjectErrorOnInvalidRecipient(t *testing.T) {
 		Name:            defaultListRequest.Name,
 		Recipients:      []string{"invalid"},
 		Mods:            defaultListRequest.Mods,
-		ApprovedSenders: defaultListRequest.ApprovedSenders})
+		ApprovedSenders: defaultListRequest.ApprovedSenders},
+		false)
 
 	expected := util.NewInvalidObjectError("Invalid recipient email address 'invalid'", nil)
 	assert.Equal(t, expected, err)
@@ -223,7 +235,8 @@ func TestUpdateListReturnsInvalidObjectErrorOnInvalidSender(t *testing.T) {
 		Name:            defaultListRequest.Name,
 		Recipients:      defaultListRequest.Recipients,
 		Mods:            defaultListRequest.Mods,
-		ApprovedSenders: []string{"invalid"}})
+		ApprovedSenders: []string{"invalid"}},
+		false)
 
 	expected := util.NewInvalidObjectError("Invalid sender email address 'invalid'", nil)
 	assert.Equal(t, expected, err)
@@ -235,7 +248,7 @@ func TestUpdateListReturnsGenericError(t *testing.T) {
 	dbMock.On("PatchList", mock.Anything).Panic("CreateList should not have been called")
 	man := ListManager{db: dbMock}
 
-	err := man.UpdateList(1, defaultListRequest)
+	err := man.UpdateList(1, defaultListRequest, false)
 
 	assert.Equal(t, util.NewGenericError(nil), err)
 }

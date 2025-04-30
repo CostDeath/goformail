@@ -26,8 +26,8 @@ func (mock *IListManagerMock) CreateList(list *model.ListRequest) (int, *util.Er
 	return args.Int(0), mock.error
 }
 
-func (mock *IListManagerMock) UpdateList(id int, list *model.ListRequest) *util.Error {
-	mock.Called(id, list)
+func (mock *IListManagerMock) UpdateList(id int, list *model.ListRequest, hasLocked bool) *util.Error {
+	mock.Called(id, list, hasLocked)
 	return mock.error
 }
 

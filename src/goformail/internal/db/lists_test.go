@@ -88,8 +88,9 @@ func (suite *DbListsSuite) TestCreateList() {
 	// Check list was created properly
 	var actual model.ListRequest
 	err := suite.db.conn.QueryRow(`
-		SELECT name, recipients, mods, approved_senders FROM lists WHERE id = $1
-	`, id).Scan(&actual.Name, pq.Array(&actual.Recipients), pq.Array(&actual.Mods), pq.Array(&actual.ApprovedSenders))
+		SELECT name, recipients, mods, approved_senders, locked FROM lists WHERE id = $1
+	`, id).Scan(&actual.Name, pq.Array(&actual.Recipients), pq.Array(&actual.Mods), pq.Array(&actual.ApprovedSenders),
+		&actual.Locked)
 	suite.Require().NoError(err)
 
 	suite.Equal(expected, &actual)
@@ -111,8 +112,9 @@ func (suite *DbListsSuite) TestPatchList() {
 	// Check list was patched properly
 	var actual model.ListRequest
 	err := suite.db.conn.QueryRow(`
-		SELECT name, recipients, mods, approved_senders FROM lists WHERE id = $1
-	`, 2).Scan(&actual.Name, pq.Array(&actual.Recipients), pq.Array(&actual.Mods), pq.Array(&actual.ApprovedSenders))
+		SELECT name, recipients, mods, approved_senders, locked FROM lists WHERE id = $1
+	`, 2).Scan(&actual.Name, pq.Array(&actual.Recipients), pq.Array(&actual.Mods), pq.Array(&actual.ApprovedSenders),
+		&actual.Locked)
 	suite.Require().NoError(err)
 
 	suite.Equal(expected, &actual)
@@ -136,7 +138,7 @@ func (suite *DbListsSuite) TestPatchListUpdatesPartially() {
 
 func (suite *DbListsSuite) TestPatchListOverrideRecipients() {
 	// Run function
-	expected := &model.ListRequest{Recipients: []string{}}
+	expected := &model.ListRequest{Recipients: []string{}, Locked: true}
 	suite.db.PatchList(4, expected, &model.ListOverrides{Recipients: true})
 
 	// Check list was patched properly
@@ -151,7 +153,7 @@ func (suite *DbListsSuite) TestPatchListOverrideRecipients() {
 
 func (suite *DbListsSuite) TestPatchListOverrideMods() {
 	// Run function
-	expected := &model.ListRequest{Mods: []int64{}}
+	expected := &model.ListRequest{Mods: []int64{}, Locked: true}
 	suite.db.PatchList(4, expected, &model.ListOverrides{Mods: true})
 
 	// Check list was patched properly
@@ -166,7 +168,7 @@ func (suite *DbListsSuite) TestPatchListOverrideMods() {
 
 func (suite *DbListsSuite) TestPatchListOverrideApprovedSenders() {
 	// Run function
-	expected := &model.ListRequest{ApprovedSenders: []string{}}
+	expected := &model.ListRequest{ApprovedSenders: []string{}, Locked: true}
 	suite.db.PatchList(4, expected, &model.ListOverrides{ApprovedSenders: true})
 
 	// Check list was patched properly
@@ -179,21 +181,37 @@ func (suite *DbListsSuite) TestPatchListOverrideApprovedSenders() {
 	suite.Equal(&model.ListRequest{Name: "patch-test-2", ApprovedSenders: expected.ApprovedSenders}, &actual)
 }
 
-func (suite *DbListsSuite) TestPatchListOverrideAll() {
+func (suite *DbListsSuite) TestPatchListIgnoreLockedWhenFalseNoOverrides() {
 	// Run function
-	expected := &model.ListRequest{Recipients: []string{}}
-	suite.db.PatchList(5, expected, &model.ListOverrides{Recipients: true, Mods: true, ApprovedSenders: true})
+	expected := &model.ListRequest{Locked: false}
+	suite.db.PatchList(7, expected, nil)
 
 	// Check list was patched properly
 	var actual model.ListRequest
 	err := suite.db.conn.QueryRow(`
-		SELECT name, recipients, mods, approved_senders FROM lists WHERE id = $1
+		SELECT name, locked FROM lists WHERE id = $1
+	`, 7).Scan(&actual.Name, &actual.Locked)
+	suite.Require().NoError(err)
+
+	suite.Equal(&model.ListRequest{Name: "patch-test-4", Locked: true}, &actual)
+}
+
+func (suite *DbListsSuite) TestPatchListOverrideAll() {
+	// Run function
+	expected := &model.ListRequest{Recipients: []string{}, Locked: true}
+	suite.db.PatchList(5, expected, &model.ListOverrides{Recipients: true, Mods: true, ApprovedSenders: true,
+		Locked: false})
+
+	// Check list was patched properly
+	var actual model.ListRequest
+	err := suite.db.conn.QueryRow(`
+		SELECT name, recipients, mods, approved_senders, locked FROM lists WHERE id = $1
 	`, 5).Scan(&actual.Name, pq.Array(&actual.Recipients), pq.Array(&actual.Mods),
-		pq.Array(&actual.ApprovedSenders))
+		pq.Array(&actual.ApprovedSenders), &actual.Locked)
 	suite.Require().NoError(err)
 
 	suite.Equal(&model.ListRequest{Name: "patch-test-3", Recipients: expected.Recipients, Mods: expected.Mods,
-		ApprovedSenders: expected.ApprovedSenders}, &actual)
+		ApprovedSenders: expected.ApprovedSenders, Locked: expected.Locked}, &actual)
 }
 
 func (suite *DbListsSuite) TestPatchListReturnsNoRowsOnInvalidId() {
@@ -239,7 +257,7 @@ func (suite *DbListsSuite) TestGetAllList() {
 	for rows.Next() {
 		list := model.ListResponse{}
 		err := rows.Scan(&list.Id, &list.Name, pq.Array(&list.Recipients), pq.Array(&list.Mods),
-			pq.Array(&list.ApprovedSenders))
+			pq.Array(&list.ApprovedSenders), &list.Locked)
 		suite.Require().NoError(err)
 
 		expected = append(expected, &list)
@@ -254,5 +272,6 @@ func createList(name string) *model.ListRequest {
 		Recipients:      []string{"example@domain.tld"},
 		Mods:            []int64{1},
 		ApprovedSenders: []string{"example2@domain.tld"},
+		Locked:          true,
 	}
 }
