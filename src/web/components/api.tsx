@@ -4,5 +4,6 @@ export const api = {
     list: "/list/",
     users: "/users/",
     user: "/user/",
-    login: "/login/"
+    login: "/login/",
+    tokenValidation: "/validateToken/"
 }
