@@ -16,18 +16,18 @@ func NewIDbMockWithError(code ErrorCode) *IDbMock {
 	return &IDbMock{error: &Error{Code: code}}
 }
 
-func (mock *IDbMock) GetList(id int) (*model.List, *Error) {
+func (mock *IDbMock) GetList(id int) (*model.ListResponse, *Error) {
 	args := mock.Called(id)
-	return args.Get(0).(*model.List), mock.error
+	return args.Get(0).(*model.ListResponse), mock.error
 }
 
-func (mock *IDbMock) CreateList(list *model.List) (int, *Error) {
+func (mock *IDbMock) CreateList(list *model.ListRequest) (int, *Error) {
 	args := mock.Called(list)
 	return args.Int(0), mock.error
 }
 
-func (mock *IDbMock) PatchList(id int, list *model.List) *Error {
-	mock.Called(id, list)
+func (mock *IDbMock) PatchList(id int, list *model.ListRequest, override *model.ListOverrides) *Error {
+	mock.Called(id, list, override)
 	return mock.error
 }
 
@@ -36,9 +36,9 @@ func (mock *IDbMock) DeleteList(id int) *Error {
 	return mock.error
 }
 
-func (mock *IDbMock) GetAllLists() (*[]*model.ListWithId, *Error) {
+func (mock *IDbMock) GetAllLists() (*[]*model.ListResponse, *Error) {
 	args := mock.Called()
-	return args.Get(0).(*[]*model.ListWithId), mock.error
+	return args.Get(0).(*[]*model.ListResponse), mock.error
 }
 
 func (mock *IDbMock) GetRecipientsFromListName(name string) ([]string, error) {
@@ -59,8 +59,8 @@ func (mock *IDbMock) CreateUser(user *model.UserRequest, hash string) (int, *Err
 	return args.Int(0), mock.error
 }
 
-func (mock *IDbMock) UpdateUser(id int, user *model.UserRequest) *Error {
-	mock.Called(id, user)
+func (mock *IDbMock) UpdateUser(id int, user *model.UserRequest, overridePerms bool) *Error {
+	mock.Called(id, user, overridePerms)
 	return mock.error
 }
 
@@ -84,7 +84,17 @@ func (mock *IDbMock) UserExists(id int) (bool, *Error) {
 	return args.Bool(0), mock.error
 }
 
+func (mock *IDbMock) UsersExist(ids []int64) ([]int64, *Error) {
+	args := mock.Called(ids)
+	return args.Get(0).([]int64), mock.error
+}
+
 func (mock *IDbMock) GetUserPerms(id int) ([]string, *Error) {
 	args := mock.Called(id)
 	return args.Get(0).([]string), mock.error
+}
+
+func (mock *IDbMock) GetUserPermsAndModStatus(id int, listId int) ([]string, bool, *Error) {
+	args := mock.Called(id, listId)
+	return args.Get(0).([]string), args.Bool(1), mock.error
 }

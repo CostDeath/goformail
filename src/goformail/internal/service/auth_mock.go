@@ -35,3 +35,8 @@ func (mock *IAuthManagerMock) CheckUserPerms(id int, action string, required []s
 	args := mock.Called(id, action, required)
 	return args.Bool(0), mock.error
 }
+
+func (mock *IAuthManagerMock) CheckListMods(id int, listId int) (bool, *util.Error) {
+	args := mock.Called(id, listId)
+	return args.Bool(0), mock.error
+}

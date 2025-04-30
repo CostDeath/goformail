@@ -49,6 +49,10 @@ func (man *UserManager) CreateUser(user *model.UserRequest) (int, *util.Error) {
 		return 0, util.NewInvalidObjectError("Invalid email address '"+user.Email+"'", nil)
 	}
 
+	for i, perm := range user.Permissions {
+		user.Permissions[i] = strings.ToUpper(perm)
+	}
+
 	// Create password hash
 	hashBytes, e := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if e != nil {
@@ -76,12 +80,11 @@ func (man *UserManager) UpdateUser(id int, user *model.UserRequest) *util.Error 
 		return util.NewInvalidObjectError("Invalid email address '"+user.Email+"'", nil)
 	}
 
-	if len(user.Permissions) != 0 && !validatePermissions(user.Permissions) {
-		return util.NewInvalidObjectError("Missing or duplicate permission. Valid permissions- "+
-			strings.Join(model.Permissions, ", "), nil)
+	for i, perm := range user.Permissions {
+		user.Permissions[i] = strings.ToUpper(perm)
 	}
 
-	err := man.db.UpdateUser(id, user)
+	err := man.db.UpdateUser(id, user, validatePermissionsSet(*user))
 	if err != nil {
 		switch err.Code {
 		case db.ErrNoRows:

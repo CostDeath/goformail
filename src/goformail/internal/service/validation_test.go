@@ -1,7 +1,10 @@
 package service
 
 import (
+	"encoding/json"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal/model"
 	"testing"
 )
 
@@ -32,6 +35,51 @@ func TestValidateNothingSet(t *testing.T) {
 	valid, missing := validateAllSet(TestStruct{})
 	assert.False(t, valid)
 	assert.Equal(t, &[]string{"String", "Number", "Array"}, missing)
+}
+
+func TestValidatePermissionsSet(t *testing.T) {
+	var user model.UserRequest
+	err := json.Unmarshal([]byte(`{"permissions": []}`), &user)
+	require.NoError(t, err)
+
+	actual := validatePermissionsSet(user)
+	assert.True(t, actual)
+}
+
+func TestValidatePermissionsUnset(t *testing.T) {
+	var user model.UserRequest
+	err := json.Unmarshal([]byte(`{"email": "test@domain.tld"}`), &user)
+	require.NoError(t, err)
+
+	actual := validatePermissionsSet(user)
+	assert.False(t, actual)
+}
+
+func TestValidateListPropsAllSet(t *testing.T) {
+	var list model.ListRequest
+	err := json.Unmarshal([]byte(`{"recipients": [], "mods": [], "approved_senders": []}`), &list)
+	require.NoError(t, err)
+
+	actual := validateListPropsSet(list)
+	assert.Equal(t, &model.ListOverrides{Recipients: true, Mods: true, ApprovedSenders: true}, actual)
+}
+
+func TestValidateListPropsSomeSet(t *testing.T) {
+	var list model.ListRequest
+	err := json.Unmarshal([]byte(`{"recipients": [], "mods": []}`), &list)
+	require.NoError(t, err)
+
+	actual := validateListPropsSet(list)
+	assert.Equal(t, &model.ListOverrides{Recipients: true, Mods: true}, actual)
+}
+
+func TestValidateListPropsNoneSet(t *testing.T) {
+	var list model.ListRequest
+	err := json.Unmarshal([]byte(`{}`), &list)
+	require.NoError(t, err)
+
+	actual := validateListPropsSet(list)
+	assert.Equal(t, &model.ListOverrides{}, actual)
 }
 
 func TestValidateEmail(t *testing.T) {

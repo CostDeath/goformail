@@ -107,7 +107,7 @@ func (suite *DbUsersSuite) TestCreateUserReturnsErrorOnDuplicate() {
 func (suite *DbUsersSuite) TestUpdateUser() {
 	// Run function
 	expected := createUser("update@test-8.tld")
-	suite.db.UpdateUser(2, expected)
+	suite.db.UpdateUser(2, expected, false)
 
 	// Check list was updated properly
 	var actual model.UserRequest
@@ -122,7 +122,7 @@ func (suite *DbUsersSuite) TestUpdateUser() {
 func (suite *DbUsersSuite) TestUpdateUserUpdatesPartially() {
 	// Run function
 	expected := &model.UserRequest{Permissions: []string{"ADMIN", "CRT_LIST"}}
-	suite.db.UpdateUser(3, expected)
+	suite.db.UpdateUser(3, expected, false)
 
 	// Check list was patched properly
 	var actual model.UserResponse
@@ -134,14 +134,29 @@ func (suite *DbUsersSuite) TestUpdateUserUpdatesPartially() {
 	suite.Equal(&model.UserResponse{Email: "update@test-1.tld", Permissions: expected.Permissions}, &actual)
 }
 
+func (suite *DbUsersSuite) TestUpdateOverridePerms() {
+	// Run function
+	expected := &model.UserRequest{Permissions: []string{}}
+	suite.db.UpdateUser(3, expected, true)
+
+	// Check list was updated properly
+	var actual model.UserResponse
+	err := suite.db.conn.QueryRow(`
+		SELECT email, permissions FROM users WHERE id = $1
+	`, 3).Scan(&actual.Email, pq.Array(&actual.Permissions))
+	suite.Require().NoError(err)
+
+	suite.Equal(&model.UserResponse{Email: "update@test-1.tld", Permissions: expected.Permissions}, &actual)
+}
+
 func (suite *DbUsersSuite) TestUpdateUserReturnsNoRowsOnInvalidId() {
-	err := suite.db.UpdateUser(0, createUser("update@test-0.tld"))
+	err := suite.db.UpdateUser(0, createUser("update@test-0.tld"), false)
 
 	suite.Equal(ErrNoRows, err.Code)
 }
 
 func (suite *DbUsersSuite) TestUpdateUserReturnsDuplicateOnExistingList() {
-	err := suite.db.UpdateUser(2, createUser("update@test-1.tld"))
+	err := suite.db.UpdateUser(2, createUser("update@test-1.tld"), false)
 
 	suite.Equal(ErrDuplicate, err.Code)
 }
@@ -213,6 +228,28 @@ func (suite *DbUsersSuite) TestUserExistsReturnsFalseOnInvalidId() {
 	suite.False(actual)
 }
 
+func (suite *DbUsersSuite) TestUsersExist() {
+	expected := []int64{1, 2}
+	actual, err := suite.db.UsersExist(expected)
+
+	suite.Nil(err)
+	suite.Equal(expected, actual)
+}
+
+func (suite *DbUsersSuite) TestUsersExistReturnsMissingOnInvalidId() {
+	actual, err := suite.db.UsersExist([]int64{1, 2, 999})
+
+	suite.Nil(err)
+	suite.Equal([]int64{1, 2}, actual)
+}
+
+func (suite *DbUsersSuite) TestUsersExistReturnsMissingOnAllInvalidId() {
+	actual, err := suite.db.UsersExist([]int64{0, 999})
+
+	suite.Nil(err)
+	suite.Empty(actual)
+}
+
 func (suite *DbUsersSuite) TestGetUserPerms() {
 	// Run function
 	actual, _ := suite.db.GetUserPerms(1)
@@ -229,6 +266,57 @@ func (suite *DbUsersSuite) TestGetUserPerms() {
 
 func (suite *DbUsersSuite) TestGetUserPermsReturnsNoRowsOnInvalidId() {
 	_, err := suite.db.GetUserPerms(0)
+
+	suite.Equal(ErrNoRows, err.Code)
+}
+
+func (suite *DbUsersSuite) TestGetUserPermsAndModStatus() {
+	// Run function
+	actualPerms, actualStatus, _ := suite.db.GetUserPermsAndModStatus(1, 1)
+
+	// Get expected
+	var expected []string
+	err := suite.db.conn.QueryRow(`
+		SELECT permissions FROM users WHERE id = $1
+	`, 1).Scan(pq.Array(&expected))
+	suite.Require().NoError(err)
+
+	suite.Equal(expected, actualPerms)
+	suite.True(actualStatus)
+}
+
+func (suite *DbUsersSuite) TestGetUserPermsAndModStatusWhenNotMod() {
+	// Run function
+	actualPerms, actualStatus, _ := suite.db.GetUserPermsAndModStatus(2, 1)
+
+	// Get expected
+	var expected []string
+	err := suite.db.conn.QueryRow(`
+		SELECT permissions FROM users WHERE id = $1
+	`, 1).Scan(pq.Array(&expected))
+	suite.Require().NoError(err)
+
+	suite.Equal(expected, actualPerms)
+	suite.False(actualStatus)
+}
+
+func (suite *DbUsersSuite) TestGetUserPermsAndModStatusWhenNoList() {
+	// Run function
+	actualPerms, actualStatus, _ := suite.db.GetUserPermsAndModStatus(1, 0)
+
+	// Get expected
+	var expected []string
+	err := suite.db.conn.QueryRow(`
+		SELECT permissions FROM users WHERE id = $1
+	`, 1).Scan(pq.Array(&expected))
+	suite.Require().NoError(err)
+
+	suite.Equal(expected, actualPerms)
+	suite.False(actualStatus)
+}
+
+func (suite *DbUsersSuite) TestTestGetUserPermsAndModStatusReturnsNoRowsOnInvalidId() {
+	_, _, err := suite.db.GetUserPermsAndModStatus(0, 1)
 
 	suite.Equal(ErrNoRows, err.Code)
 }
