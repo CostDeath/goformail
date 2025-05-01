@@ -35,6 +35,7 @@ export default function ModUserTable({listId, listName, userList, modsList}: {
 
         if (response.ok) {
             alert("Successfully added moderator")
+            window.location.reload()
         } else {
             const result = await response.text()
             alert(result)

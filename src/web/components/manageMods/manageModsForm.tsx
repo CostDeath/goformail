@@ -28,11 +28,11 @@ export default function ManageModsForm() {
         const listData = await response.json()
         setListName(listData.data.name)
         const mods = listData.data.mods
-        setModList(mods)
 
         const modBuilder: {id: number; email: string}[] = []
         let user: User
         if (mods) {
+            setModList(mods)
             for (let i = 0; i < mods.length; i++) {
                 response = await fetch(`${baseUrl}${api.user}?id=${mods[i]}`, {
                     method: "GET",

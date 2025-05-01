@@ -32,6 +32,7 @@ export default function ModeratorTable({listId, listName, modsDetails, modsList}
 
         if (response.ok) {
             alert("Successfully removed moderator")
+            window.location.reload()
         } else {
             const result = await response.text()
             alert(result)
@@ -55,7 +56,7 @@ export default function ModeratorTable({listId, listName, modsDetails, modsList}
                     </div>
                     <div data-testid="table-body-moderator" className="table-row-group">
 
-                        {modsDetails && (
+                        {modsDetails.length > 0 && (
                             <>
                                 {modsDetails.map((moderator) => (
                                     <div key={moderator.id}
@@ -81,7 +82,7 @@ export default function ModeratorTable({listId, listName, modsDetails, modsList}
                             </>
                         )}
 
-                        {!modsDetails && (
+                        {modsDetails.length < 1 && (
                             <div className="table-row shadow-inner text-neutral-300">
                                 <div className="table-cell border-black border-b py-3 text-sm">
                                 <div className="whitespace-nowrap py-3 pl-6 pr-3 flex items-center gap-3">
