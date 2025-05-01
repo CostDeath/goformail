@@ -2,14 +2,35 @@
 
 import { redirect } from "next/navigation";
 import {LinkTo} from "@/components/pageEnums";
-import {useState} from "react";
+import {useEffect, useState} from "react";
 import {api} from "@/components/api";
+import {getSessionToken} from "@/components/sessionToken";
 
 
 
 export default function LoginForm() {
     const [email, setEmail] = useState("")
     const [password, setPassword] = useState("")
+
+    const validateToken = async (url: string, token: string) => {
+        const response = await fetch(url, {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${token}`,
+            }
+        })
+        if (response.ok) {
+            redirect(LinkTo.MAILINGLISTS)
+        }
+    }
+
+    useEffect(() => {
+        const sessionToken = getSessionToken()
+        const url = `${window.location.origin}/api${api.tokenValidation}`
+        if (sessionToken) {
+            validateToken(url, sessionToken)
+        }
+    })
 
     const login = async () => {
         const url = `${window.location.origin}/api${api.login}`
