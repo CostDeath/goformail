@@ -1,32 +1,60 @@
-package forwarding
+package mail
 
 import (
 	"errors"
 	"fmt"
+	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal/model"
 	"log"
 	"net"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
-
-type EmailData struct {
-	rcpt          []string
-	from          string
-	data          string
-	remainingAcks []string
-}
 
 type emailCollectionError struct {
 	errorType string
 	Err       error
 }
 
-func sendGoodbye(conn net.Conn, mailForwardSuccess bool, remainingAcks []string) {
+func (e *emailCollectionError) Error() string {
+	return fmt.Sprintf("%s: %s", e.errorType, e.Err.Error())
+}
+
+type IMtpHandler interface {
+	sendGoodbye(conn net.Conn, mailForwardSuccess bool, remainingAcks []string)
+	mailReceiver(conn net.Conn) (model.Email, error)
+	mailSender(sender string, rcpt []string, content string) bool
+}
+
+type MtpHandler struct {
+	IMtpHandler
+	bufferSize      int
+	domain          string
+	postfixAddr     string
+	postfixPort     string
+	timeoutDuration time.Duration
+	debugMode       string
+}
+
+func NewMtpHandler(configs map[string]string) *MtpHandler {
+	bufferSize, _ := strconv.Atoi(configs["BUFFER_SIZE"])
+	timeoutDuration, _ := time.ParseDuration(configs["TIMEOUT_DURATION"] + "s")
+	return &MtpHandler{
+		bufferSize:      bufferSize,
+		domain:          configs["EMAIL_DOMAIN"],
+		postfixAddr:     configs["POSTFIX_ADDRESS"],
+		postfixPort:     configs["POSTFIX_PORT"],
+		timeoutDuration: timeoutDuration,
+		debugMode:       configs["DEBUG_MODE"],
+	}
+}
+
+func (mtp *MtpHandler) sendGoodbye(conn net.Conn, mailForwardSuccess bool, remainingAcks []string) {
 	if mailForwardSuccess {
-		sendResponse("250 OK (Email was successfully forwarded)\n452 temporarily over quota\n", conn)
+		sendResponse("250 OK (Email was successfully queued)\n452 temporarily over quota\n", conn)
 	} else {
-		sendResponse("250 OK (However, email was not forwarded)\n452 temporarily over quota\n", conn)
+		sendResponse("250 OK (However, email was not queued)\n452 temporarily over quota\n", conn)
 	}
 
 	for _, message := range remainingAcks {
@@ -59,17 +87,8 @@ func sendResponse(resp string, conn net.Conn) {
 	fmt.Println(getCurrentTime() + " S: " + resp)
 }
 
-func mailReceiver(conn net.Conn, bufferSize int, configs map[string]string) (EmailData, error) {
-	domainName, exists := configs["EMAIL_DOMAIN"]
-	if !exists {
-		log.Fatal("Missing EMAIL_DOMAIN config")
-	}
-	debugMode, exists := configs["DEBUG_MODE"]
-	if !exists {
-		log.Fatal("Missing DEBUG_MODE config")
-	}
-
-	data := EmailData{}
+func (mtp *MtpHandler) mailReceiver(conn net.Conn) (model.Email, error) {
+	data := model.Email{ReceivedAt: time.Now()}
 
 	if _, err := conn.Write([]byte("220 LMTP Server Ready\n")); err != nil {
 		log.Fatal(err)
@@ -80,7 +99,7 @@ func mailReceiver(conn net.Conn, bufferSize int, configs map[string]string) (Ema
 	var emailMessage string
 	for {
 		var size int
-		buffer := make([]byte, bufferSize)
+		buffer := make([]byte, mtp.bufferSize)
 
 		size, err := conn.Read(buffer)
 		if err != nil {
@@ -90,7 +109,7 @@ func mailReceiver(conn net.Conn, bufferSize int, configs map[string]string) (Ema
 		messages := strings.Lines(string(buffer[:size]))
 
 		for message := range messages {
-			if debugMode == "true" {
+			if mtp.debugMode == "true" {
 				fmt.Print("POSTFIX: " + message)
 			}
 			switch {
@@ -99,8 +118,8 @@ func mailReceiver(conn net.Conn, bufferSize int, configs map[string]string) (Ema
 					fullStopFound = true
 					emailMessage += message
 				} else if strings.TrimSpace(message) == "QUIT" && fullStopFound {
-					data.data = emailMessage
-					data.remainingAcks = append(data.remainingAcks, message)
+					data.Content = emailMessage
+					data.RemainingAcks = append(data.RemainingAcks, message)
 					return data, nil
 				} else {
 					emailMessage += message
@@ -108,7 +127,7 @@ func mailReceiver(conn net.Conn, bufferSize int, configs map[string]string) (Ema
 					fullStopFound = false
 				}
 			case strings.HasPrefix(message, "LHLO"):
-				sendResponse(fmt.Sprintf("250-%s\n250-PIPELINING\n250 SIZE\n", domainName), conn)
+				sendResponse(fmt.Sprintf("250-%s\n250-PIPELINING\n250 SIZE\n", mtp.domain), conn)
 			case strings.HasPrefix(message, "MAIL FROM"):
 				email := strings.Fields(message)[1][6:]
 				email = email[:len(email)-1]
@@ -118,7 +137,7 @@ func mailReceiver(conn net.Conn, bufferSize int, configs map[string]string) (Ema
 				if !matches {
 					sendResponse(fmt.Sprintf("550 5.1.1 <%s> user unknown", email), conn)
 				} else {
-					data.from = email
+					data.Sender = email
 					sendResponse("250 OK\n", conn)
 				}
 			case strings.HasPrefix(message, "RCPT TO"):
@@ -127,7 +146,7 @@ func mailReceiver(conn net.Conn, bufferSize int, configs map[string]string) (Ema
 				if matches := validEmail(email); !matches {
 					sendResponse(fmt.Sprintf("550 5.1.1 <%s> user unknown", email), conn)
 				} else {
-					data.rcpt = append(data.rcpt, email)
+					data.Rcpt = append(data.Rcpt, email)
 					sendResponse("250 OK\n", conn)
 				}
 			case strings.TrimSpace(message) == "DATA":
@@ -143,28 +162,8 @@ func mailReceiver(conn net.Conn, bufferSize int, configs map[string]string) (Ema
 
 }
 
-func mailSender(sender string, rcpt []string, emailData EmailData, bufferSize int, configs map[string]string) bool {
-	addr, exists := configs["POSTFIX_ADDRESS"]
-	if !exists {
-		log.Fatal("Missing POSTFIX_ADDRESS config")
-	}
-	port, exists := configs["POSTFIX_PORT"]
-	if !exists {
-		log.Fatal("Missing POSTFIX_PORT config")
-	}
-	domainName := configs["EMAIL_DOMAIN"] // no need to check this, it would have been checked earlier in mailReceiver
-	debugMode := configs["DEBUG_MODE"]    // same with this
-	timeoutDurationConfig, exists := configs["TIMEOUT_DURATION"]
-	if !exists {
-		log.Fatal("Missing TIMEOUT_DURATION config")
-	}
-	timeoutDuration, err := time.ParseDuration(timeoutDurationConfig + "s")
-	if err != nil {
-		fmt.Println(getCurrentTime() + " ERROR: Could not parse timeout duration: " + err.Error())
-		return false
-	}
-
-	conn, err := connectToSMTPSocket(addr, port)
+func (mtp *MtpHandler) mailSender(sender string, rcpt []string, content string) bool {
+	conn, err := connectToSMTPSocket(mtp.postfixAddr, mtp.postfixPort)
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -181,9 +180,9 @@ func mailSender(sender string, rcpt []string, emailData EmailData, bufferSize in
 
 	for {
 		var size int
-		buffer := make([]byte, bufferSize)
+		buffer := make([]byte, mtp.bufferSize)
 
-		err = conn.SetDeadline(time.Now().Add(timeoutDuration)) // Time out after 5 seconds
+		err = conn.SetDeadline(time.Now().Add(mtp.timeoutDuration)) // Time out after 5 seconds
 
 		size, err = conn.Read(buffer)
 
@@ -197,12 +196,12 @@ func mailSender(sender string, rcpt []string, emailData EmailData, bufferSize in
 		messages := strings.Lines(string(buffer[:size]))
 
 		for message := range messages {
-			if debugMode == "true" {
+			if mtp.debugMode == "true" {
 				fmt.Print("POSTFIX: " + message)
 			}
 			switch {
 			case initial:
-				sendResponse(fmt.Sprintf("EHLO %s\n", domainName), conn)
+				sendResponse(fmt.Sprintf("EHLO %s\n", mtp.domain), conn)
 
 				size, err = conn.Read(buffer)
 				if err != nil {
@@ -236,7 +235,7 @@ func mailSender(sender string, rcpt []string, emailData EmailData, bufferSize in
 				sendResponse("QUIT\n", conn)
 				fmt.Println(getCurrentTime() + " ERROR: No valid recipients found!")
 			case strings.HasPrefix(message, "354"):
-				sendResponse(emailData.data, conn)
+				sendResponse(content, conn)
 				sendResponse("QUIT\n", conn)
 				return true
 			default:

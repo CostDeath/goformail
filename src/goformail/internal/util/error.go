@@ -19,6 +19,7 @@ const (
 	ErrListAlreadyExists
 	ErrNoUser
 	ErrUserAlreadyExists
+	ErrNoEmail
 	ErrIncorrectPassword
 	ErrInvalidToken
 	ErrNoPermission
@@ -44,7 +45,7 @@ func NewNoListError(id int, err error) *Error {
 }
 
 func NewListAlreadyExistsError(name string, err error) *Error {
-	msg := fmt.Sprintf("A user with the name '%s' already exists", name)
+	msg := fmt.Sprintf("A list with the name '%s' already exists", name)
 	return &Error{Err: err, Code: ErrListAlreadyExists, Message: msg}
 }
 
@@ -61,6 +62,11 @@ func NewNoUserEmailError(email string, err error) *Error {
 func NewUserAlreadyExistsError(email string, err error) *Error {
 	msg := fmt.Sprintf("A user with the email '%s' already exists", email)
 	return &Error{Err: err, Code: ErrUserAlreadyExists, Message: msg}
+}
+
+func NewNoEmailError(id int, err error) *Error {
+	msg := fmt.Sprintf("Could not find a email with id '%d'", id)
+	return &Error{Err: err, Code: ErrNoEmail, Message: msg}
 }
 
 func NewIncorrectPasswordError(email string, err error) *Error {

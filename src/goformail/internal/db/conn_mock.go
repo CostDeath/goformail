@@ -1,7 +1,6 @@
 package db
 
 import (
-	"errors"
 	"github.com/stretchr/testify/mock"
 	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal/model"
 )
@@ -41,12 +40,9 @@ func (mock *IDbMock) GetAllLists() (*[]*model.ListResponse, *Error) {
 	return args.Get(0).(*[]*model.ListResponse), mock.error
 }
 
-func (mock *IDbMock) GetRecipientsFromListName(name string) ([]string, error) {
-	args := mock.Called(name)
-	if mock.error != nil {
-		return nil, errors.New("mocked error")
-	}
-	return args.Get(0).([]string), nil
+func (mock *IDbMock) GetApprovalFromListName(sender string, name string) (int, bool, *Error) {
+	args := mock.Called(sender, name)
+	return args.Int(0), args.Bool(1), mock.error
 }
 
 func (mock *IDbMock) GetUser(id int) (*model.UserResponse, *Error) {
@@ -97,4 +93,39 @@ func (mock *IDbMock) GetUserPerms(id int) ([]string, *Error) {
 func (mock *IDbMock) GetUserPermsAndModStatus(id int, listId int) ([]string, bool, *Error) {
 	args := mock.Called(id, listId)
 	return args.Get(0).([]string), args.Bool(1), mock.error
+}
+
+func (mock *IDbMock) GetAllReadyEmails() (*[]model.Email, *Error) {
+	args := mock.Called()
+	return args.Get(0).(*[]model.Email), mock.error
+}
+
+func (mock *IDbMock) AddEmail(email *model.Email) *Error {
+	mock.Called(email)
+	return mock.error
+}
+
+func (mock *IDbMock) SetEmailAsSent(id int) *Error {
+	mock.Called(id)
+	return mock.error
+}
+
+func (mock *IDbMock) SetEmailRetry(email *model.Email) *Error {
+	mock.Called(email)
+	return mock.error
+}
+
+func (mock *IDbMock) SetEmailAsApproved(id int) *Error {
+	mock.Called(id)
+	return mock.error
+}
+
+func (mock *IDbMock) GetAllEmails(reqs *model.EmailReqs) (*model.EmailResponse, *Error) {
+	args := mock.Called(reqs)
+	return args.Get(0).(*model.EmailResponse), mock.error
+}
+
+func (mock *IDbMock) GetEmailList(id int) (int, *Error) {
+	args := mock.Called(id)
+	return args.Int(0), mock.error
 }

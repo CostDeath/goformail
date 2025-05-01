@@ -74,7 +74,7 @@ func (db *Db) DeleteUser(id int) *Error {
 }
 
 func (db *Db) GetAllUsers() (*[]*model.UserResponse, *Error) {
-	var users []*model.UserResponse
+	users := []*model.UserResponse{}
 	rows, err := db.conn.Query(`
 		SELECT id, email, permissions FROM users
 	`)

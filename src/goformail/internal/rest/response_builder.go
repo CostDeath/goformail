@@ -17,6 +17,11 @@ type IdObject struct {
 	Id int `json:"id"`
 }
 
+type LoginObject struct {
+	Token string `json:"token"`
+	User  int    `json:"user"`
+}
+
 type TokenObject struct {
 	Token string `json:"token"`
 }
@@ -47,6 +52,8 @@ func setErrorResponse(w http.ResponseWriter, r *http.Request, err *util.Error) {
 	case util.ErrListAlreadyExists:
 		http.Error(w, err.Message, http.StatusConflict)
 	case util.ErrNoList:
+		http.Error(w, err.Message, http.StatusNotFound)
+	case util.ErrNoEmail:
 		http.Error(w, err.Message, http.StatusNotFound)
 	case util.ErrIncorrectPassword:
 		http.Error(w, err.Message, http.StatusUnauthorized)

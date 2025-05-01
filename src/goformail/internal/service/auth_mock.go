@@ -16,9 +16,9 @@ func NewIAuthManagerMockWithError(code util.ErrorCode) *IAuthManagerMock {
 	return &IAuthManagerMock{error: &util.Error{Code: code, Message: "mocked error"}}
 }
 
-func (mock *IAuthManagerMock) Login(creds *model.LoginRequest) (string, *util.Error) {
+func (mock *IAuthManagerMock) Login(creds *model.LoginRequest) (string, int, *util.Error) {
 	args := mock.Called(creds)
-	return args.String(0), mock.error
+	return args.String(0), args.Int(1), mock.error
 }
 
 func (mock *IAuthManagerMock) CheckTokenValidity(tokenStr string) (int, *util.Error) {

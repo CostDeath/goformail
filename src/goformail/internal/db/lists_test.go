@@ -266,6 +266,27 @@ func (suite *DbListsSuite) TestGetAllList() {
 	suite.Equal(&expected, actual)
 }
 
+func (suite *DbListsSuite) TestGetApprovalFromListNameOnApprovedSenders() {
+	actualId, actualApproved, err := suite.db.GetApprovalFromListName("example@domain.tld", "get-test-0")
+
+	suite.Nil(err)
+	suite.Equal(1, actualId)
+	suite.True(actualApproved)
+}
+
+func (suite *DbListsSuite) TestGetApprovalFromListNameOnUnapprovedSenders() {
+	actualId, actualApproved, err := suite.db.GetApprovalFromListName("random@domain.tld", "get-test-0")
+
+	suite.Nil(err)
+	suite.Equal(1, actualId)
+	suite.False(actualApproved)
+}
+
+func (suite *DbListsSuite) TestGetApprovalFromListNameReturnsNoRowsOnInvalidName() {
+	_, _, err := suite.db.GetApprovalFromListName("", "invalid")
+	suite.Equal(ErrNoRows, err.Code)
+}
+
 func createList(name string) *model.ListRequest {
 	return &model.ListRequest{
 		Name:            name,

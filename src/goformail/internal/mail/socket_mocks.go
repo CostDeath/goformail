@@ -1,4 +1,4 @@
-package forwarding
+package mail
 
 import (
 	"errors"
@@ -8,6 +8,11 @@ import (
 	"sync"
 	"time"
 )
+
+func callFunctionWithWait(fun func(), waiter *sync.WaitGroup) {
+	fun()
+	waiter.Done()
+}
 
 func ConnectSMTPSocketMock(waitGroup *sync.WaitGroup) {
 	tcpSocket, err := net.Listen("tcp", "127.0.0.1:8025")

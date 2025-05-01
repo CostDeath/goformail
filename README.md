@@ -34,6 +34,7 @@ implemented.
 - [ ] Audit Logging
 - [ ] Feedback Emails
 - [ ] Email Scheduling
+- [ ] Email Archiving
 - [ ] CLI interface
 
 The project is still in early development. Please be patient as we develop it.
@@ -44,7 +45,7 @@ This project is currently maintained by @fonseca3 and @dagohos2 (GitLab) or @Cos
 
 ## Additional resources
 
-- [Postfix](https://www.postfix.org/download.html) (Recommended MTA)
-- [PostgreSQL](https://www.postgresql.org/download/) (Recommended DB)
+- [Postfix](https://www.postfix.org/download.html) (Supported MTA)
+- [PostgreSQL](https://www.postgresql.org/download/) (Supported DB)
 - [Project Logo Source](https://mailtrap.io/blog/golang-send-email/)
 
