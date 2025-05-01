@@ -3,7 +3,7 @@ import {ChangeEvent, useEffect, useState} from "react";
 import useSWR from "swr";
 import DeleteList from "@/components/editList/deleteList";
 import {api} from "@/components/api";
-import {List} from "@/models/list";
+import {MailingList} from "@/models/list";
 import validateEmail from "@/components/validateEmails";
 import {getSessionToken} from "@/components/sessionToken";
 
@@ -70,7 +70,7 @@ export default function ListEditForm() {
         return <div>Error</div>
     }
 
-    const result: List = data.data
+    const result: MailingList = data.data
 
 
     const editList = async () => {

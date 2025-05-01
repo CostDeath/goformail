@@ -37,7 +37,7 @@ export default function ListEmailsTable() {
 
                     <div>
                     <a href={`/ui/mailingLists/list/edit.html?id=${id}`}
-                       className="bg-cyan-600 text-white py-3 px-2 hover:bg-cyan-500 rounded-md">Manage Senders</a>
+                       className="bg-cyan-600 text-white py-3 px-2 hover:bg-cyan-500 rounded-md">Manage List</a>
                     </div>
                 </div>
             </div>
