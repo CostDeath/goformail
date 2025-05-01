@@ -10,17 +10,16 @@ import {getSessionToken} from "@/components/sessionToken";
 export default function ListCreationForm() {
     const [name, setName] = useState("");
     const [recipients, setRecipients] = useState([{value: ""}])
+    const [locked, setLocked] = useState(false)
 
     const createList = async () => {
         const url = `${window.location.origin}/api${api.list}`
         const token = getSessionToken()
-        if (!validateEmail(name)) {
-            alert("Please enter a valid mailing list email")
-            return;
-        }
         const rcptList: string[] = []
         for (let i = 0; i < recipients.length; i++) {
-            if (!validateEmail(recipients[i].value)) {
+            if (!recipients[i].value) {
+                alert("Cannot leave recipient input blank, either remove the recipient or fill in a valid email")
+            } else if (!validateEmail(recipients[i].value)) {
                 alert(`${recipients[i].value} is not a valid email`)
                 return;
             }
@@ -33,8 +32,9 @@ export default function ListCreationForm() {
             body: JSON.stringify({
                 Name: name,
                 Recipients: rcptList,
-                Locked: false,
-                Mods: []
+                Locked: locked,
+                Mods: [],
+                approved_senders: []
             }),
             headers: {
                 "Content-Type": "application/json",
@@ -71,7 +71,7 @@ export default function ListCreationForm() {
     return (
         <>
             <div className="grid grid-cols-2 py-10">
-                <label htmlFor="listName" className="px-5 text-xl">Mailing List Email</label>
+                <label htmlFor="listName" className="px-5 text-xl">Mailing List Name</label>
                 <input
                     className="
                 bg-neutral-700
@@ -90,11 +90,38 @@ export default function ListCreationForm() {
                     type="email"
                     name="listName"
                     value={name}
-                    placeholder="Mailing List Email"
+                    placeholder="Mailing List Email Name"
                     onChange={e => setName(e.target.value)}
                     required
                 />
             </div>
+
+            <div className="grid grid-cols-2 py-5">
+                <label htmlFor="locked" className="px-5 text-xl">Mailing List Locked?</label>
+                <input
+                    className="
+                bg-neutral-700
+                peer
+                block
+                w-full
+                h-10
+                px-3
+                border
+                border-neutral-500
+                rounded-md
+                outline-2
+                placeholder:text-neutral-500
+                "
+                    checked={locked}
+                    id="locked"
+                    type="checkbox"
+                    name="locked"
+                    value=""
+                    onChange={e => setLocked(e.target.checked)}
+                    required
+                />
+            </div>
+
             <br/>
             <hr/>
             <br/>
@@ -126,7 +153,8 @@ export default function ListCreationForm() {
                             required
                         />
                         <div className="px-7">
-                            <button aria-label={`delete${index}`} className="bg-red-600 hover:bg-red-700 py-2 px-3 rounded-md"
+                            <button aria-label={`delete${index}`}
+                                    className="bg-red-600 hover:bg-red-700 py-2 px-3 rounded-md"
                                     onClick={() => handleRemove(index)}>
                                 Remove
                             </button>

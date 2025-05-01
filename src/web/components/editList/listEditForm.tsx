@@ -11,6 +11,7 @@ import {getSessionToken} from "@/components/sessionToken";
 export default function ListEditForm() {
     const searchParams = useSearchParams()
     const listId = searchParams.get("id")
+    const [locked, setLocked] = useState(false)
     const [recipients, setRecipients] = useState([{value: ""}])
     const [sessionToken, setSessionToken] = useState<string | null>()
 
@@ -40,12 +41,16 @@ export default function ListEditForm() {
             }
         })
         const data = await response.json()
-        const rcpts: string[] = data.data.recipients
-        const rcptsBuilder: {value: string}[] = []
-        for (let i = 0; i < rcpts.length; i++) {
-            rcptsBuilder.push({value: rcpts[i]})
+        const rcptsBuilder: { value: string }[] = []
+        if (data.data.recipients) {
+            const rcpts: string[] = data.data.recipients
+            for (let i = 0; i < rcpts.length; i++) {
+                rcptsBuilder.push({value: rcpts[i]})
+            }
         }
+
         setRecipients(rcptsBuilder)
+        setLocked(data.data.locked)
         return data
     }
 
@@ -85,6 +90,7 @@ export default function ListEditForm() {
             body: JSON.stringify({
                 Name: result.name,
                 Recipients: rcptList,
+                Locked: locked
             }),
             headers: {
                 "Content-Type": "application/json",
@@ -104,7 +110,7 @@ export default function ListEditForm() {
 
     return (
         <>
-            <DeleteList id={listId} />
+            <DeleteList id={listId}/>
             <div className="grid grid-cols-2 py-10">
                 <label htmlFor="listName" className="px-5 text-xl">Mailing List Name</label>
                 <input
@@ -128,6 +134,33 @@ export default function ListEditForm() {
                     disabled
                 />
             </div>
+
+            <div className="grid grid-cols-2 py-5">
+                <label htmlFor="locked" className="px-5 text-xl">Mailing List Locked?</label>
+                <input
+                    className="
+                bg-neutral-700
+                peer
+                block
+                w-full
+                h-10
+                px-3
+                border
+                border-neutral-500
+                rounded-md
+                outline-2
+                placeholder:text-neutral-500
+                "
+                    checked={locked}
+                    id="locked"
+                    type="checkbox"
+                    name="locked"
+                    value=""
+                    onChange={e => setLocked(e.target.checked)}
+                    required
+                />
+            </div>
+
             <br/>
             <hr/>
             <br/>
@@ -159,7 +192,8 @@ export default function ListEditForm() {
                             required
                         />
                         <div className="px-7">
-                            <button aria-label={`delete${index}`} className="bg-red-600 hover:bg-red-700 py-2 px-3 rounded-md"
+                            <button aria-label={`delete${index}`}
+                                    className="bg-red-600 hover:bg-red-700 py-2 px-3 rounded-md"
                                     onClick={() => handleRemove(index)}>
                                 Remove
                             </button>

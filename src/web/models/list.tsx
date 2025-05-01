@@ -10,4 +10,5 @@ export interface MailingList {
     locked: boolean,
     recipients: string[]
     mods: number[]
+    approvedSenders: string[]
 }
