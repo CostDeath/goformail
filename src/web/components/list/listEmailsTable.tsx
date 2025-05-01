@@ -12,18 +12,12 @@ export default function ListEmailsTable() {
 
     const {data, error} = useSWR(`https://jsonplaceholder.typicode.com/posts/${id}`, fetcher)
 
-    if (error) return <div>Error</div>
+    if (error) return <div>Error loading emails list</div>
     if (!data) {
         return <div>Loading...</div>
     } else if (!data.id) {
-        return <div>Error</div>
+        return <div>Error loading emails list</div>
     }
-
-
-
-
-    // const [oldId, setId] = useState("")
-
 
     return (
         <>
@@ -43,7 +37,7 @@ export default function ListEmailsTable() {
             </div>
             <div className="min-w-full table text-gray-900 shadow-[0_3px_10px_-1px_rgba(0,0,0,1)]">
                 <div className="table-header-group text-left text-sm font-normal">
-                    <div data-testid="table-head" className="table-row bg-neutral-800/45 text-neutral-300">
+                    <div data-testid="table-head-emails" className="table-row bg-neutral-800/45 text-neutral-300">
                         <div className="table-cell border-b border-black text-left px-4 py-5 font-bold sm:pl-6">
                             From
                         </div>
@@ -55,7 +49,7 @@ export default function ListEmailsTable() {
                         </div>
                     </div>
                 </div>
-                <div data-testid="table-body" className="table-row-group">
+                <div data-testid="table-body-emails" className="table-row-group">
                     <a href={`/ui/mailingLists/list/email.html?listId=${1}?id=${1}`}
                           className="table-row shadow-inner text-neutral-300 hover:bg-neutral-600/75  hover:cursor-pointer">
                         <div className="table-cell border-black border-b py-3 text-sm">

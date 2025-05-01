@@ -42,8 +42,8 @@ test("List Email Table component has loaded and is rendered", async () => {
     vitest.useFakeTimers()
     vitest.runAllTimers()
 
-    expect(screen.getByTestId("table-head")).toBeDefined();
-    expect(screen.getByTestId("table-body")).toBeDefined();
+    expect(screen.getByTestId("table-head-emails")).toBeDefined();
+    expect(screen.getByTestId("table-body-emails")).toBeDefined();
     wrapper.unmount()
 })
 
@@ -55,6 +55,6 @@ test("List Email Table component has loaded but given data was invalid", async (
 
     vitest.useFakeTimers()
     vitest.runAllTimers()
-    expect(wrapper.getByText("Error")).toBeDefined();
+    expect(wrapper.getByText("Error loading emails list")).toBeDefined();
     wrapper.unmount()
 })

@@ -45,21 +45,21 @@ test("Edit List page has loaded and is rendered", async () => {
     EmailChecker("Mailing List Name")
     expect(wrapper.getByRole("button", {name: "Delete Mailing List"})).toBeDefined();
 
-    const noRecipientCheck = (name: string) => {
+    const noSenderCheck = (name: string) => {
         expect(screen.queryByRole("textbox", {name: name})).toBeNull();
     }
 
-    noRecipientCheck("recipient1")
+    noSenderCheck("sender1")
     const delete1 = screen.getByRole("button", {name: /delete0/i})
     expect(delete1).toBeDefined();
 
     fireEvent.click(delete1)
-    noRecipientCheck("recipient0")
+    noSenderCheck("sender0")
 
-    const addRecipient = screen.getByRole("button", {name: "+ Add recipient"})
-    expect(addRecipient).toBeDefined();
-    fireEvent.click(addRecipient);
-    EmailChecker("recipient0")
+    const addSender = screen.getByRole("button", {name: "+ Add Another Sender"})
+    expect(addSender).toBeDefined();
+    fireEvent.click(addSender);
+    EmailChecker("sender0")
 
     expect(wrapper.getByRole("button", {name: "Submit"})).toBeDefined();
     wrapper.unmount()
