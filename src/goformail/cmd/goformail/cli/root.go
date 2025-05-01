@@ -30,7 +30,7 @@ func (r *Router) RouteCommand(args []string, dbObj *db.Db) {
 	case "approve":
 		r.RouteApproveCommand(args[1:], dbObj)
 	default:
-		fmt.Println("Unknown command. Try 'help' for help!")
+		fmt.Println("Unknown command. Try 'goformail help' for help!")
 	}
 }
 

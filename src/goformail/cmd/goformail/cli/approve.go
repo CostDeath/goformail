@@ -6,18 +6,20 @@ import (
 	"log"
 )
 
+var unknownApproveCommand = "Unknown command. Try 'goformail help approve' for help!"
+
 func (r *Router) RouteApproveCommand(args []string, dbObj *db.Db) {
 	switch args[0] {
 	case "email":
 		r.getEmails(args[1:], dbObj)
 	default:
-		fmt.Println(unknownGetCommand)
+		fmt.Println(unknownApproveCommand)
 	}
 }
 
 func approveEmail(args []string, dbObj *db.Db) {
 	if len(args) != 1 {
-		fmt.Println(unknownGetCommand)
+		fmt.Println(unknownApproveCommand)
 		return
 	}
 

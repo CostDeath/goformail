@@ -9,7 +9,7 @@ import (
 	"log"
 )
 
-var unknownGetCommand = "Unknown command. Try 'help get' for help!"
+var unknownGetCommand = "Unknown command. Try 'goformail help get' for help!"
 
 func (r *Router) RouteGetCommand(args []string, dbObj *db.Db) {
 	switch args[0] {
