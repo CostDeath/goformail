@@ -6,6 +6,7 @@ import {api} from "@/components/api";
 import validateEmail from "@/components/validateEmails";
 import {redirect} from "next/navigation";
 import {LinkTo} from "@/components/pageEnums";
+import {getSessionToken} from "@/components/sessionToken";
 
 export default function AddUserForm() {
     const [email, setEmail] = useState("")
@@ -20,6 +21,7 @@ export default function AddUserForm() {
 
     const createUser = async () => {
         const url = `${window.location.origin}/api${api.user}`
+        const sessionToken = getSessionToken()
         if (!validateEmail(email)) {
             alert(`${email} is not a valid email!`)
             return
@@ -40,6 +42,7 @@ export default function AddUserForm() {
             }),
             headers: {
                 "Content-Type": "application/json",
+                "Authorization": `Bearer ${sessionToken}`
             }
         })
 

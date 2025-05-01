@@ -2,16 +2,61 @@
 
 import { redirect } from "next/navigation";
 import {LinkTo} from "@/components/pageEnums";
+import {useEffect, useState} from "react";
+import {api} from "@/components/api";
+import {getSessionToken} from "@/components/sessionToken";
 
-const placeholder = () => {
-    console.log("login placeholder");
-    redirect(LinkTo.MAILINGLISTS)
-}
+
 
 export default function LoginForm() {
-    // TODO: need to add logic where it validates email and password before changing page to mailing list page
+    const [email, setEmail] = useState("")
+    const [password, setPassword] = useState("")
+
+    const validateToken = async (url: string, token: string) => {
+        const response = await fetch(url, {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${token}`,
+            }
+        })
+        if (response.ok) {
+            redirect(LinkTo.MAILINGLISTS)
+        }
+    }
+
+    useEffect(() => {
+        const sessionToken = getSessionToken()
+        const url = `${window.location.origin}/api${api.tokenValidation}`
+        if (sessionToken) {
+            validateToken(url, sessionToken)
+        }
+    })
+
+    const login = async () => {
+        const url = `${window.location.origin}/api${api.login}`
+        const response = await fetch(url, {
+            method: "POST",
+            body: JSON.stringify({
+                Email: email,
+                Password: password,
+            }),
+            headers: {
+                "Content-Type": "application/json"
+            }
+        })
+
+        if (response.ok) {
+            const result = await response.json()
+            localStorage.setItem("sessionToken", result.data.token)
+            redirect(LinkTo.MAILINGLISTS)
+        } else {
+            const result = await response.text()
+            alert(result)
+        }
+    }
+
     return (
-        <form className="space-y-3" action={placeholder}>
+        <form className="space-y-3" action={login}>
             <h1 className="text-xl font-bold">
                 Log In
             </h1>
@@ -41,6 +86,8 @@ export default function LoginForm() {
                             type="email"
                             name="email"
                             placeholder="Enter your email"
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
                             required
                             />
                     </div>
@@ -70,6 +117,8 @@ export default function LoginForm() {
                             type="password"
                             name="password"
                             placeholder="Enter your password"
+                            value={password}
+                            onChange={(e) => setPassword(e.target.value)}
                             required
                             />
                     </div>

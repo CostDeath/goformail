@@ -35,15 +35,17 @@ vitest.mock("swr")
 
 test("List Email page has loaded and is rendered", async () => {
     useSWR.mockReturnValue({
-        data: {id: "1"}
+        data: {id: "1", message: "Successfully fetched list!", data: {recipients: ["test@example.com"]}}
     })
     const wrapper = render(<Page />)
 
     vitest.useFakeTimers()
     vitest.runAllTimers()
 
-    expect(screen.getByTestId("table-head")).toBeDefined();
-    expect(screen.getByTestId("table-body")).toBeDefined();
+    expect(screen.getByTestId("table-head-emails")).toBeDefined();
+    expect(screen.getByTestId("table-body-emails")).toBeDefined();
+    expect(screen.getByTestId("table-head-recipients")).toBeDefined();
+    expect(screen.getByTestId("table-body-recipients")).toBeDefined();
     wrapper.unmount()
 })
 
@@ -55,6 +57,7 @@ test("List Email page has loaded but given data was invalid", async () => {
 
     vitest.useFakeTimers()
     vitest.runAllTimers()
-    expect(wrapper.getByText("Error")).toBeDefined();
+    expect(wrapper.getByText("Error loading emails list")).toBeDefined();
+    expect(wrapper.getByText("Error loading recipients list")).toBeDefined();
     wrapper.unmount()
 })

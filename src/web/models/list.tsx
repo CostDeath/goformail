@@ -4,7 +4,11 @@ export interface List {
     recipients: string[]
 }
 
-export interface MailingLists {
+export interface MailingList {
     id: number,
-    list: List
+    name: string,
+    locked: boolean,
+    recipients: string[]
+    mods: number[]
+    approvedSenders: string[]
 }

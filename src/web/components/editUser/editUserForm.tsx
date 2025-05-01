@@ -9,9 +9,11 @@ import DeleteUser from "@/components/editUser/deleteUser";
 import {api} from "@/components/api";
 import {User} from "@/models/user";
 import {LinkTo} from "@/components/pageEnums";
+import {getSessionToken} from "@/components/sessionToken";
 
 export default function EditUserForm() {
     const [permissions, setPermissions] = useState(permissionsList)
+    const [sessionToken, setSessionToken] = useState<string | null>()
     const search = useSearchParams()
     const userId = search.get("id")
 
@@ -23,7 +25,12 @@ export default function EditUserForm() {
 
 
     const fetcher = async(url: string) => {
-        const response = await fetch(url)
+        const response = await fetch(url, {
+            method: "GET",
+            headers: {
+                "Authorization": `Bearer ${sessionToken}`
+            }
+        })
         const data = await response.json()
         const dataPerms: string[] = data.data.permissions
         let perms = 0
@@ -41,9 +48,10 @@ export default function EditUserForm() {
     useEffect(() => {
         const url = `${window.location.origin}/api`
         setBaseUrl(url)
+        setSessionToken(getSessionToken())
     }, [])
 
-    const {data, error} = useSWR((baseUrl) ? `${baseUrl}${api.user}?id=${userId}` : null, fetcher)
+    const {data, error} = useSWR((baseUrl && sessionToken) ? `${baseUrl}${api.user}?id=${userId}` : null, fetcher)
 
     if (error) return <div>Error</div>
     if (!data) {
@@ -72,6 +80,7 @@ export default function EditUserForm() {
             }),
             headers: {
                 "Content-Type": "application/json",
+                "Authorization": `Bearer ${sessionToken}`
             }
         })
 

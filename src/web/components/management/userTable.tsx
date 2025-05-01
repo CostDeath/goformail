@@ -4,10 +4,17 @@ import {useEffect, useState} from "react";
 import useSWR from "swr";
 import {api} from "@/components/api";
 import {User} from "@/models/user";
+import {getSessionToken} from "@/components/sessionToken";
 
 export default function UserTable() {
+    const [sessionToken, setSessionToken] = useState<string | null>();
     const fetcher = async(url: string) => {
-        const response = await fetch(url)
+        const response = await fetch(url, {
+            method: "GET",
+            headers: {
+                "Authorization": `Bearer ${sessionToken}`
+            }
+        })
         return await response.json()
     }
 
@@ -16,6 +23,7 @@ export default function UserTable() {
     useEffect(() => {
         const url = `${window.location.origin}/api`
         setBaseUrl(url)
+        setSessionToken(getSessionToken())
     }, [])
 
     const {data, error} = useSWR((baseUrl) ? `${baseUrl}${api.users}` : null, fetcher)
