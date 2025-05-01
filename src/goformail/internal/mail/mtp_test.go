@@ -1,4 +1,4 @@
-package forwarding
+package mail
 
 import (
 	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal/util"
@@ -57,7 +57,7 @@ func TestSendSuccessfulGoodBye(t *testing.T) {
 			case strings.TrimSpace(message) == "452 temporarily over quota":
 				linesReceived += 1
 				t.Log("452 temporarily over quota - Response passed")
-			case strings.TrimSpace(message) == "250 OK (Email was successfully forwarded)":
+			case strings.TrimSpace(message) == "250 OK (Email was successfully queued)":
 				linesReceived += 1
 				t.Log("250 OK (Email was successfully forwarded)")
 			case strings.TrimSpace(message) == "221 closing connection":
@@ -88,7 +88,8 @@ func TestSendSuccessfulGoodBye(t *testing.T) {
 		}
 	}(conn)
 
-	sendGoodbye(conn, true, []string{"QUIT"})
+	handler := NewMtpHandler(util.MockConfigs)
+	handler.sendGoodbye(conn, true, []string{"QUIT"})
 }
 
 func TestSendFailGoodBye(t *testing.T) {
@@ -106,7 +107,7 @@ func TestSendFailGoodBye(t *testing.T) {
 			case strings.TrimSpace(message) == "452 temporarily over quota":
 				passedTests += 1
 				t.Log("452 temporarily over quota - Response passed")
-			case strings.TrimSpace(message) == "250 OK (Email was successfully forwarded)":
+			case strings.TrimSpace(message) == "250 OK (Email was successfully queued)":
 				passedTests += 1
 				t.Log("250 OK (However, email was not forwarded)")
 			case strings.TrimSpace(message) == "221 closing connection":
@@ -135,7 +136,8 @@ func TestSendFailGoodBye(t *testing.T) {
 		}
 	}(conn)
 
-	sendGoodbye(conn, true, []string{"QUIT"})
+	handler := NewMtpHandler(util.MockConfigs)
+	handler.sendGoodbye(conn, true, []string{"QUIT"})
 }
 
 func TestSuccessfulMailReceiver(t *testing.T) {
@@ -143,7 +145,6 @@ func TestSuccessfulMailReceiver(t *testing.T) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	configs := util.MockConfigs
 	waitGroup := new(sync.WaitGroup)
 
 	defer func(tcpSocket net.Listener) {
@@ -170,15 +171,16 @@ func TestSuccessfulMailReceiver(t *testing.T) {
 		log.Fatal(err)
 	}
 
-	data, err := mailReceiver(conn, 4096, configs)
+	handler := NewMtpHandler(util.MockConfigs)
+	data, err := handler.mailReceiver(conn)
 
 	waitGroup.Wait()
 
 	if err != nil {
 		t.Errorf("Error was thrown: %s", err.Error())
-	} else if data.data != "hello\n.\nmultiple full stops\n.\n" {
+	} else if data.Content != "hello\n.\nmultiple full stops\n.\n" {
 		msg := "The email data was received incorrectly\nExpected:\n hello\n.\nmultiple full stops\n.\n Received: %s\n"
-		t.Errorf(msg, data.data)
+		t.Errorf(msg, data.Content)
 	}
 }
 
@@ -187,7 +189,6 @@ func TestFailedMailReceiver(t *testing.T) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	configs := util.MockConfigs
 	waitGroup := new(sync.WaitGroup)
 
 	defer func(tcpSocket net.Listener) {
@@ -214,7 +215,8 @@ func TestFailedMailReceiver(t *testing.T) {
 		log.Fatal(err)
 	}
 
-	_, mailError := mailReceiver(conn, 4096, configs)
+	handler := NewMtpHandler(util.MockConfigs)
+	_, mailError := handler.mailReceiver(conn)
 
 	waitGroup.Wait()
 
@@ -240,13 +242,9 @@ func TestMailSenderSuccess(t *testing.T) {
 	waitGroup.Wait()
 	waitGroup.Add(1)
 
-	emailData := EmailData{
-		rcpt: []string{"rcpt@example.domain"},
-		from: "example@example.domain",
-		data: "hello\n.\nQUIT\n",
-	}
-
-	hasSent := mailSender("example@example.domain", []string{"example@example.domain"}, emailData, 4096, configs)
+	data := "hello\n.\nQUIT\n"
+	handler := NewMtpHandler(util.MockConfigs)
+	hasSent := handler.mailSender("example@example.domain", []string{"example@example.domain"}, data)
 
 	if !hasSent {
 		t.Error("The expected response result was not given")
@@ -255,7 +253,6 @@ func TestMailSenderSuccess(t *testing.T) {
 }
 
 func TestMailSenderFailure(t *testing.T) {
-	configs := util.MockConfigs
 	waitGroup := new(sync.WaitGroup)
 	waitGroup.Add(1)
 
@@ -270,13 +267,9 @@ func TestMailSenderFailure(t *testing.T) {
 	waitGroup.Wait()
 	waitGroup.Add(1)
 
-	emailData := EmailData{
-		rcpt: []string{"rcpt@example.domain"},
-		from: "example@example.domain",
-		data: "hello\n.\nQUIT\n",
-	}
-
-	hasSent := mailSender("example@example.domain", []string{"example@example.domain"}, emailData, 4096, configs)
+	data := "hello\n.\nQUIT\n"
+	handler := NewMtpHandler(util.MockConfigs)
+	hasSent := handler.mailSender("example@example.domain", []string{"example@example.domain"}, data)
 
 	if hasSent {
 		t.Error("Function believes the email should have went through")

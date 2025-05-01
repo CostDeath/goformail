@@ -1,4 +1,4 @@
-package forwarding
+package mail
 
 import (
 	"errors"

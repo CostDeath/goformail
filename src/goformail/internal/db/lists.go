@@ -102,14 +102,16 @@ func (db *Db) GetAllLists() (*[]*model.ListResponse, *Error) {
 	return &lists, nil
 }
 
-func (db *Db) GetRecipientsFromListName(name string) ([]string, error) {
-	var recipients []string
+func (db *Db) GetApprovalFromListName(sender string, name string) (int, bool, *Error) {
+	id := 0
+	approved := false
 	if err := db.conn.QueryRow(`
-		SELECT recipients FROM lists WHERE name = $1
-	`, name,
-	).Scan(&recipients); err != nil {
-		return nil, err
+		SELECT id, $1 = ANY(approved_senders)
+		FROM lists WHERE name = $2;
+	`, sender, name,
+	).Scan(&id, &approved); err != nil {
+		return 0, false, getError(err)
 	}
 
-	return recipients, nil
+	return id, approved, nil
 }

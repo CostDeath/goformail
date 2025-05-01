@@ -40,6 +40,19 @@ var expectedUserColumns = []column{
 	{name: "permissions", ctype: "ARRAY", nullable: "YES", dflt: sql.NullString{String: "", Valid: false}},
 }
 
+var expectedEmailColumns = []column{
+	{name: "approved", ctype: "boolean", nullable: "YES", dflt: sql.NullString{String: "false", Valid: true}},
+	{name: "sent", ctype: "boolean", nullable: "YES", dflt: sql.NullString{String: "false", Valid: true}},
+	{name: "list", ctype: "integer", nullable: "YES", dflt: sql.NullString{String: "", Valid: false}},
+	{"id", "integer", "NO", sql.NullString{String: "nextval('emails_id_seq'::regclass)", Valid: true}},
+	{"received_at", "timestamp without time zone", "NO", sql.NullString{String: "", Valid: false}},
+	{"next_retry", "timestamp without time zone", "YES", sql.NullString{String: "", Valid: false}},
+	{name: "exhausted", ctype: "integer", nullable: "YES", dflt: sql.NullString{String: "3", Valid: true}},
+	{name: "rcpt", ctype: "ARRAY", nullable: "NO", dflt: sql.NullString{String: "", Valid: false}},
+	{name: "sender", ctype: "text", nullable: "NO", dflt: sql.NullString{String: "", Valid: false}},
+	{name: "content", ctype: "text", nullable: "NO", dflt: sql.NullString{String: "", Valid: false}},
+}
+
 func TestInitDBCreatesTablesAndJWTCreatesThenFetchesSecret(t *testing.T) {
 	// Define the postgres container config
 	ctx := context.Background()
@@ -111,7 +124,7 @@ func TestInitDBCreatesTablesAndJWTCreatesThenFetchesSecret(t *testing.T) {
 
 	assert.Equal(t, expectedListColumns, columns)
 
-	// Check correct lists columns are present
+	// Check correct users columns are present
 	rows, err = db.conn.Query(`
 		SELECT column_name, data_type, is_nullable, column_default
 		FROM information_schema.columns
@@ -128,6 +141,24 @@ func TestInitDBCreatesTablesAndJWTCreatesThenFetchesSecret(t *testing.T) {
 	}
 
 	assert.Equal(t, expectedUserColumns, columns)
+
+	// Check correct users columns are present
+	rows, err = db.conn.Query(`
+		SELECT column_name, data_type, is_nullable, column_default
+		FROM information_schema.columns
+		WHERE table_name = 'emails';
+	`)
+	require.NoError(t, err)
+	columns = []column{}
+	for rows.Next() {
+		column := column{}
+		err := rows.Scan(&column.name, &column.ctype, &column.nullable, &column.dflt)
+		require.NoError(t, err)
+
+		columns = append(columns, column)
+	}
+
+	assert.Equal(t, expectedEmailColumns, columns)
 
 	secretInDb := make([]byte, 32)
 	err = db.conn.QueryRow("SELECT jwt_secret FROM props LIMIT 1;").Scan(&secretInDb)

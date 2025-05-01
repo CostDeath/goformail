@@ -17,7 +17,7 @@ type IDb interface {
 	PatchList(id int, list *model.ListRequest, override *model.ListOverrides) *Error
 	DeleteList(id int) *Error
 	GetAllLists() (*[]*model.ListResponse, *Error)
-	GetRecipientsFromListName(name string) ([]string, error)
+	GetApprovalFromListName(sender string, name string) (int, bool, *Error)
 	GetUser(id int) (*model.UserResponse, *Error)
 	CreateUser(user *model.UserRequest, hash string) (int, *Error)
 	UpdateUser(id int, user *model.UserRequest, overridePerms bool) *Error
@@ -28,6 +28,10 @@ type IDb interface {
 	UsersExist(ids []int64) ([]int64, *Error)
 	GetUserPerms(id int) ([]string, *Error)
 	GetUserPermsAndModStatus(id int, listId int) ([]string, bool, *Error)
+	GetAllReadyEmails() (*[]model.Email, *Error)
+	AddEmail(email *model.Email) *Error
+	SetEmailAsSent(id int) *Error
+	SetEmailRetry(email *model.Email) *Error
 }
 
 type Db struct {
@@ -73,6 +77,20 @@ func InitDB(configs map[string]string) *Db {
 		    ADD COLUMN IF NOT EXISTS email TEXT UNIQUE NOT NULL,
 		    ADD COLUMN IF NOT EXISTS hash TEXT NOT NULL,
 		    ADD COLUMN IF NOT EXISTS permissions TEXT[];
+
+		CREATE TABLE IF NOT EXISTS emails (
+        	id SERIAL PRIMARY KEY
+    	);
+		ALTER TABLE emails
+		    ADD COLUMN IF NOT EXISTS rcpt TEXT[] NOT NULL,
+		    ADD COLUMN IF NOT EXISTS sender TEXT NOT NULL,
+		    ADD COLUMN IF NOT EXISTS content TEXT NOT NULL,
+		    ADD COLUMN IF NOT EXISTS received_at TIMESTAMP NOT NULL,
+		    ADD COLUMN IF NOT EXISTS next_retry TIMESTAMP,
+		    ADD COLUMN IF NOT EXISTS exhausted INT DEFAULT 3,
+		    ADD COLUMN IF NOT EXISTS sent BOOL DEFAULT false,
+		    ADD COLUMN IF NOT EXISTS list INT,
+		    ADD COLUMN IF NOT EXISTS approved BOOL DEFAULT false;
 	`); err != nil {
 		log.Fatal(err)
 	}

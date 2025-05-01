@@ -131,4 +131,5 @@ type TestStruct struct {
 	String string
 	Number int
 	Array  []string
+	Bool   bool
 }
