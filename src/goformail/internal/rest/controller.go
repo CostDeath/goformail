@@ -36,6 +36,7 @@ func (ctrl Controller) Serve(portStr string) {
 	ctrl.addListHandlers()
 	ctrl.addUserHandlers()
 	ctrl.addAuthHandlers()
+	ctrl.addEmailHandlers()
 	ctrl.addUiHandler()
 
 	// Start the server on port 8080

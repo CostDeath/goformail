@@ -105,7 +105,7 @@ func (db *Db) GetAllEmails(reqs *model.EmailReqs) (*model.EmailResponse, *Error)
 		return nil, getError(err)
 	}
 
-	var emails []model.Email
+	emails := []model.Email{}
 	for rows.Next() {
 		email := model.Email{}
 		if err := rows.Scan(&email.Id, pq.Array(&email.Rcpt), &email.Sender, &email.Content, &email.ReceivedAt,

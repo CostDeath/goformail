@@ -172,6 +172,26 @@ func TestApproveEmail400sOnInvalidParam(t *testing.T) {
 	assert.Equal(t, expected, rr.Body.String())
 }
 
+func TestApproveEmail404sOnNoEmailError(t *testing.T) {
+	dbMock := db.NewIDbMockWithError(db.ErrNoRows)
+	dbMock.On("GetEmailList", 1).Return(0)
+	authMock := new(service.IAuthManagerMock)
+	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
+	authMock.On("CheckListMods", 1, 1).Return(true)
+	ctrl := &Controller{db: dbMock, auth: authMock, mux: new(http.ServeMux)}
+	ctrl.addEmailHandlers()
+
+	// Mock the request
+	req := test.CreateHttpRequest(t, "POST", "/api/emails/approve/?id=1", nil)
+	rr := httptest.NewRecorder()
+	ctrl.mux.ServeHTTP(rr, req)
+
+	// Check the response is what we expect.
+	assert.Equal(t, http.StatusNotFound, rr.Code)
+	expected := "Could not find a email with id '1'\n"
+	assert.Equal(t, expected, rr.Body.String())
+}
+
 func TestApproveEmail500sOnGenericError(t *testing.T) {
 	dbMock := db.NewIDbMockWithError(db.Unknown)
 	dbMock.On("GetEmailList", 1).Return(0)

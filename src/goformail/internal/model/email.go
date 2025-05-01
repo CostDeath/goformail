@@ -19,11 +19,11 @@ type Email struct {
 }
 
 type EmailReqs struct {
-	Offset          int
-	List            *int
-	Archived        bool
-	Exhausted       bool
-	PendingApproval bool
+	Offset          int  `json:"offset"`
+	List            *int `json:"list"`
+	Archived        bool `json:"archived"`
+	Exhausted       bool `json:"exhausted"`
+	PendingApproval bool `json:"pending_approval"`
 }
 
 type EmailResponse struct {

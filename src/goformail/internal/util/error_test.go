@@ -63,6 +63,13 @@ func TestNewUserAlreadyExistsError(t *testing.T) {
 	assert.Equal(t, expected, actual)
 }
 
+func TestNewNoEmailError(t *testing.T) {
+	err := errors.New("some error")
+	expected := &Error{Err: err, Code: ErrNoEmail, Message: "Could not find a email with id '1'"}
+	actual := NewNoEmailError(1, err)
+	assert.Equal(t, expected, actual)
+}
+
 func TestNewIncorrectPasswordError(t *testing.T) {
 	err := errors.New("some error")
 	expected := &Error{Err: err, Code: ErrIncorrectPassword,

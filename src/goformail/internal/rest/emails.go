@@ -2,6 +2,7 @@ package rest
 
 import (
 	"encoding/json"
+	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal/db"
 	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal/model"
 	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal/util"
 	"net/http"
@@ -76,7 +77,11 @@ func (ctrl Controller) approveEmail(w http.ResponseWriter, r *http.Request) {
 
 	listId, dbErr := ctrl.db.GetEmailList(id)
 	if dbErr != nil {
-		setErrorResponse(w, r, util.NewGenericError(dbErr.Err))
+		if dbErr.Code == db.ErrNoRows {
+			setErrorResponse(w, r, util.NewNoEmailError(id, dbErr.Err))
+		} else {
+			setErrorResponse(w, r, util.NewGenericError(dbErr.Err))
+		}
 		return
 	}
 
@@ -88,7 +93,11 @@ func (ctrl Controller) approveEmail(w http.ResponseWriter, r *http.Request) {
 
 	dbErr = ctrl.db.SetEmailAsApproved(id)
 	if dbErr != nil {
-		setErrorResponse(w, r, util.NewGenericError(dbErr.Err))
+		if dbErr.Code == db.ErrNoRows {
+			setErrorResponse(w, r, util.NewNoEmailError(id, dbErr.Err))
+		} else {
+			setErrorResponse(w, r, util.NewGenericError(dbErr.Err))
+		}
 		return
 	}
 

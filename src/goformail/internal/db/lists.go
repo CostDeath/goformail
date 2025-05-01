@@ -81,7 +81,7 @@ func (db *Db) DeleteList(id int) *Error {
 }
 
 func (db *Db) GetAllLists() (*[]*model.ListResponse, *Error) {
-	var lists []*model.ListResponse
+	lists := []*model.ListResponse{}
 	rows, err := db.conn.Query(`
 		SELECT id, name, recipients, mods, approved_senders, locked FROM lists
 	`)
