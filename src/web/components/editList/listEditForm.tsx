@@ -89,7 +89,7 @@ export default function ListEditForm() {
             body: JSON.stringify({
                 Name: result.name,
                 approved_senders: sendersList,
-                Locked: locked
+                locked: locked
             }),
             headers: {
                 "Content-Type": "application/json",

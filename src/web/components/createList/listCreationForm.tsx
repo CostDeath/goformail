@@ -30,7 +30,7 @@ export default function ListCreationForm() {
             body: JSON.stringify({
                 Name: name,
                 Recipients: [],
-                Locked: locked,
+                locked: locked,
                 Mods: [],
                 approved_senders: senderList
             }),
