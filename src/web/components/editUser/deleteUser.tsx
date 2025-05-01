@@ -3,6 +3,7 @@ import Modal from "@/components/modal";
 import {api} from "@/components/api";
 import {redirect} from "next/navigation";
 import {LinkTo} from "@/components/pageEnums";
+import {getSessionToken} from "@/components/sessionToken";
 
 
 export default function DeleteUser({id}: {id: number | null}) {
@@ -10,8 +11,12 @@ export default function DeleteUser({id}: {id: number | null}) {
     const toggleModal = useModal((state) => state.toggleModal)
 
     const deleteUser = async () => {
+        const sessionToken = getSessionToken();
         const response = await fetch(`${window.location.origin}/api${api.user}?id=${id}`, {
-            method: "DELETE"
+            method: "DELETE",
+            headers: {
+                "Authorization": `Bearer ${sessionToken}`
+            }
         })
 
         if (response.ok) {

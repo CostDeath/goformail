@@ -3,7 +3,7 @@
 import clsx from "clsx";
 import {LinkTo, PageName} from "@/components/pageEnums";
 import {togglePagination} from "@/states/paginationStateHandler";
-import {usePathname} from "next/navigation";
+import {redirect, usePathname} from "next/navigation";
 
 
 export default function Navbar() {
@@ -15,6 +15,11 @@ export default function Navbar() {
         {name: PageName.MAILINGLISTS, href: LinkTo.MAILINGLISTS},
         {name: PageName.APPROVALREQUESTS, href: LinkTo.APPROVALREQUESTS},
     ];
+
+    const handleLogout = () => {
+        localStorage.removeItem("sessionToken");
+        redirect(LinkTo.LOGIN);
+    }
 
     return (
         <div className="
@@ -35,13 +40,12 @@ export default function Navbar() {
                 )
             )}
 
-            <a
-                href={`/ui${LinkTo.LOGIN}`}
+            <button
+                onClick={handleLogout}
                 data-testid={PageName.LOGIN}
                 className="flex h-[60px] shadow-[0_3px_10px_-1px_rgba(0,0,0,0.3)] grow items-center justify-center gap-2 rounded-md p-3 text-sm font-medium hover:bg-red-700 hover:text-gray-200 hover:cursor-pointer md:flex-none md:justify-start w-full">
-                {/* For now we'll use Link to sign out as there is no logic for users yet */}
                 Sign Out
-            </a>
+            </button>
         </div>
     )
 }

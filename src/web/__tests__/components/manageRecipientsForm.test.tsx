@@ -1,8 +1,8 @@
 import {expect, test, vitest} from "vitest";
 import {fireEvent, render, screen} from "@testing-library/react";
-import Page from "@/app/(dashboards)/mailingLists/list/edit/page";
 import useSWR from "swr";
 import {EmailChecker} from "@/__tests__/util/formCheckers";
+import ManageRecipientsForm from "@/components/manageRecipients/manageRecipientsForm";
 
 vitest.mock("next/navigation", () => {
     const actual = vitest.importActual("next/navigation");
@@ -17,12 +17,13 @@ vitest.mock("next/navigation", () => {
     }
 })
 
+vitest.mock("swr")
 
-test("Edit List page is loading", async () => {
+test("recipient form is loading", async () => {
     useSWR.mockReturnValue({
         data: undefined
     })
-    const wrapper = render(<Page />);
+    const wrapper = render(<ManageRecipientsForm/>);
 
     expect(wrapper.getByText("Loading")).toBeDefined();
 
@@ -32,44 +33,41 @@ test("Edit List page is loading", async () => {
     wrapper.unmount()
 })
 
-vitest.mock("swr")
 
-test("Edit List page has loaded and is rendered", async () => {
+test("recipient form component has loaded and is rendered", async () => {
     useSWR.mockReturnValue({
-        data: {message: "Successfully fetched list!", data: {name: "someEmail@example.com"}}
+        data: {message: "Successfully fetched list!", data: {recipients: ["someEmail@example.com"]}}
     })
-    const wrapper = render(<Page />)
+    const wrapper = render(<ManageRecipientsForm />)
 
     vitest.useFakeTimers()
     vitest.runAllTimers()
-    EmailChecker("Mailing List Name")
-    expect(wrapper.getByRole("button", {name: "Delete Mailing List"})).toBeDefined();
 
-    const noSenderCheck = (name: string) => {
+    const noRecipientCheck = (name: string) => {
         expect(screen.queryByRole("textbox", {name: name})).toBeNull();
     }
 
-    noSenderCheck("sender1")
+    noRecipientCheck("recipient1")
     const delete1 = screen.getByRole("button", {name: /delete0/i})
     expect(delete1).toBeDefined();
 
     fireEvent.click(delete1)
-    noSenderCheck("sender0")
+    noRecipientCheck("recipient0")
 
-    const addSender = screen.getByRole("button", {name: "+ Add Another Sender"})
-    expect(addSender).toBeDefined();
-    fireEvent.click(addSender);
-    EmailChecker("sender0")
+    const addRecipient = screen.getByRole("button", {name: "+ Add Another Recipient"})
+    expect(addRecipient).toBeDefined();
+    fireEvent.click(addRecipient);
+    EmailChecker("recipient0")
 
     expect(wrapper.getByRole("button", {name: "Submit"})).toBeDefined();
     wrapper.unmount()
 })
 
-test("Edit List page has loaded but given data was invalid", async () => {
+test("recipient form component has loaded but given data was invalid", async () => {
     useSWR.mockReturnValue({
         data: {}
     })
-    const wrapper = render(<Page />)
+    const wrapper = render(<ManageRecipientsForm />)
 
     vitest.useFakeTimers()
     vitest.runAllTimers()

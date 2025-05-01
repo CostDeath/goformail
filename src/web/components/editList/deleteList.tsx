@@ -3,6 +3,7 @@ import Modal from "@/components/modal";
 import {api} from "@/components/api";
 import {redirect} from "next/navigation";
 import {LinkTo} from "@/components/pageEnums";
+import {getSessionToken} from "@/components/sessionToken";
 
 
 export default function DeleteList({id}: {id: string | null}) {
@@ -10,8 +11,12 @@ export default function DeleteList({id}: {id: string | null}) {
     const toggleModal = useModal((state) => state.toggleModal)
 
     const deleteList = async () => {
+        const token = getSessionToken();
         const response = await fetch(`${window.location.origin}/api${api.list}?id=${id}`, {
             method: "DELETE",
+            headers: {
+                "Authorization": `Bearer ${token}`
+            }
         })
 
         if (response.ok) {
