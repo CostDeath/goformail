@@ -21,7 +21,14 @@ func (e *emailCollectionError) Error() string {
 	return fmt.Sprintf("%s: %s", e.errorType, e.Err.Error())
 }
 
+type IMtpHandler interface {
+	sendGoodbye(conn net.Conn, mailForwardSuccess bool, remainingAcks []string)
+	mailReceiver(conn net.Conn) (model.Email, error)
+	mailSender(sender string, rcpt []string, content string) bool
+}
+
 type MtpHandler struct {
+	IMtpHandler
 	bufferSize      int
 	domain          string
 	postfixAddr     string

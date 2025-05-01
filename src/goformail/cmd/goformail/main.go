@@ -24,6 +24,6 @@ func main() {
 
 	// Start
 	go sender.Loop()
-	go mail.NewEmailReceiver(mtp, sender, configs).Loop()
+	go mail.NewEmailReceiver(mtp, sender, dbObj, configs).Loop()
 	rest.NewController(list, user, auth).Serve(configs["HTTP_PORT"])
 }

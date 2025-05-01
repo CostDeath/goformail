@@ -2,6 +2,7 @@ package mail
 
 import (
 	"fmt"
+	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal/db"
 	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal/model"
 	"log"
 	"net"
@@ -10,17 +11,21 @@ import (
 )
 
 type EmailReceiver struct {
-	mtp      *MtpHandler
-	sender   *EmailSender
+	mtp      IMtpHandler
+	sender   IEmailSender
+	db       db.IDb
 	socket   net.Listener
 	lmtpPort string
+	domain   string
 }
 
-func NewEmailReceiver(mtp *MtpHandler, sender *EmailSender, configs map[string]string) *EmailReceiver {
+func NewEmailReceiver(mtp IMtpHandler, sender IEmailSender, db db.IDb, configs map[string]string) *EmailReceiver {
 	return &EmailReceiver{
 		mtp:      mtp,
 		sender:   sender,
+		db:       db,
 		lmtpPort: configs["LMTP_PORT"],
+		domain:   configs["EMAIL_DOMAIN"],
 	}
 }
 
@@ -50,6 +55,7 @@ func (receiver *EmailReceiver) receiveMail() {
 		if err = conn.Close(); err != nil {
 			log.Fatal(err)
 		}
+		receiver.mtp.sendGoodbye(conn, false, email.RemainingAcks)
 		return
 	}
 
@@ -57,27 +63,34 @@ func (receiver *EmailReceiver) receiveMail() {
 	mailForwardSuccess := false
 	if email.Content != "" {
 		for _, list := range email.Rcpt {
-			id, approved, err := receiver.sender.db.GetApprovalFromListName(email.Sender, strings.Split(list, "@")[0])
+			emailSplit := strings.Split(list, "@")
+			if len(emailSplit) < 2 || emailSplit[1] != receiver.domain {
+				continue
+			}
+
+			id, approved, err := receiver.db.GetApprovalFromListName(email.Sender, emailSplit[0])
 			if err != nil {
-				log.Println("Error getting list information: " + err.Err.Error())
+				log.Println("Error getting list information: ", err)
+				continue
+			}
+
+			emailPerList := model.Email{
+				Rcpt:       []string{list},
+				Sender:     email.Sender,
+				Content:    email.Content,
+				ReceivedAt: email.ReceivedAt,
+				NextRetry:  time.Now(),
+				Exhausted:  3,
+				Sent:       false,
+				Approved:   approved,
+				List:       id,
+			}
+
+			err = receiver.db.AddEmail(&emailPerList)
+			if err != nil {
+				log.Println("Error adding email to db: ", err)
 			} else {
-				emailPerList := model.Email{
-					Rcpt:       []string{list},
-					Sender:     email.Sender,
-					Content:    email.Content,
-					ReceivedAt: email.ReceivedAt,
-					NextRetry:  time.Now(),
-					Exhausted:  3,
-					Sent:       false,
-					Approved:   approved,
-					List:       id,
-				}
-				err := receiver.sender.db.AddEmail(&emailPerList)
-				if err != nil {
-					log.Println(err.Err.Error())
-				} else {
-					mailForwardSuccess = true
-				}
+				mailForwardSuccess = true
 			}
 		}
 

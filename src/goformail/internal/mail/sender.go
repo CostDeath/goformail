@@ -9,8 +9,14 @@ import (
 	"time"
 )
 
+type IEmailSender interface {
+	CheckMail()
+	SendMail()
+}
+
 type EmailSender struct {
-	mtp            *MtpHandler
+	IEmailSender
+	mtp            IMtpHandler
 	db             db.IDb
 	queue          []model.Email
 	checkLock      sync.Mutex
@@ -20,7 +26,7 @@ type EmailSender struct {
 	checkFrequency time.Duration
 }
 
-func NewEmailSender(mtp *MtpHandler, db *db.Db, configs map[string]string) *EmailSender {
+func NewEmailSender(mtp IMtpHandler, db db.IDb, configs map[string]string) *EmailSender {
 	originalSender, _ := strconv.ParseBool(configs["ORIGINAL_SENDER"])
 	checkFrequency, _ := time.ParseDuration(configs["CHECK_FREQUENCY"] + "m")
 	return &EmailSender{
@@ -80,16 +86,22 @@ func (sender *EmailSender) SendMail() {
 			if success {
 				err := sender.db.SetEmailAsSent(email.Id)
 				if err != nil {
-					log.Println(err.Err.Error())
+					log.Println("Error setting email as sent: ", err, email)
 				}
 			} else if email.Exhausted > 0 {
 				email.NextRetry = time.Now().Add(sender.checkFrequency * time.Duration(4-email.Exhausted))
 				email.Exhausted--
-				sender.db.SetEmailRetry(&email)
+				err := sender.db.SetEmailRetry(&email)
+				if err != nil {
+					log.Println("Error setting email retry: ", err, email)
+				}
 			} else {
 				email.NextRetry = time.Time{}
 				email.Exhausted = 0
-				sender.db.SetEmailRetry(&email)
+				err := sender.db.SetEmailRetry(&email)
+				if err != nil {
+					log.Println("Error setting email retry: ", err, email)
+				}
 			}
 
 			sender.queueLock.Lock()
