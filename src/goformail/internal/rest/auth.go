@@ -43,14 +43,14 @@ func (ctrl Controller) login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := ctrl.auth.Login(&creds)
+	token, id, err := ctrl.auth.Login(&creds)
 	if err != nil {
 		setErrorResponse(w, r, err)
 		return
 	}
 
 	w.WriteHeader(http.StatusOK)
-	setResponse("Successfully logged in!", TokenObject{Token: token}, w, r)
+	setResponse("Successfully logged in!", LoginObject{Token: token, User: id}, w, r)
 }
 
 func (ctrl Controller) validate(w http.ResponseWriter, r *http.Request) {

@@ -36,7 +36,7 @@ func TestNewNoListError(t *testing.T) {
 func TestNewListAlreadyExistsError(t *testing.T) {
 	err := errors.New("some error")
 	expected := &Error{Err: err, Code: ErrListAlreadyExists,
-		Message: "A user with the name 'test' already exists"}
+		Message: "A list with the name 'test' already exists"}
 	actual := NewListAlreadyExistsError("test", err)
 	assert.Equal(t, expected, actual)
 }

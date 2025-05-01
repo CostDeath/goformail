@@ -44,7 +44,7 @@ func NewNoListError(id int, err error) *Error {
 }
 
 func NewListAlreadyExistsError(name string, err error) *Error {
-	msg := fmt.Sprintf("A user with the name '%s' already exists", name)
+	msg := fmt.Sprintf("A list with the name '%s' already exists", name)
 	return &Error{Err: err, Code: ErrListAlreadyExists, Message: msg}
 }
 

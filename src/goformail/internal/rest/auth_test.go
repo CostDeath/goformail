@@ -21,7 +21,7 @@ func authCleanUp() {
 func TestLogin(t *testing.T) {
 	t.Cleanup(authCleanUp)
 	mockObj := new(service.IAuthManagerMock)
-	mockObj.On("Login", defaultLoginRequest).Return("token")
+	mockObj.On("Login", defaultLoginRequest).Return("token", 1)
 	ctrl := &Controller{auth: mockObj, mux: new(http.ServeMux)}
 	ctrl.addAuthHandlers()
 
@@ -35,7 +35,7 @@ func TestLogin(t *testing.T) {
 
 	// Check the response is what we expect.
 	assert.Equal(t, http.StatusOK, rr.Code)
-	expected := test.GetExpectedJsonResponse(t, "Successfully logged in!", TokenObject{Token: "token"})
+	expected := test.GetExpectedJsonResponse(t, "Successfully logged in!", LoginObject{Token: "token", User: 1})
 	assert.Equal(t, expected, rr.Body.String())
 }
 
@@ -60,7 +60,7 @@ func TestLogin400sOnInvalidJson(t *testing.T) {
 func TestLogin404sOnNoUser(t *testing.T) {
 	t.Cleanup(authCleanUp)
 	mockObj := service.NewIAuthManagerMockWithError(util.ErrNoUser)
-	mockObj.On("Login", defaultLoginRequest).Return("")
+	mockObj.On("Login", defaultLoginRequest).Return("", 0)
 	ctrl := &Controller{auth: mockObj, mux: new(http.ServeMux)}
 	ctrl.addAuthHandlers()
 
@@ -78,7 +78,7 @@ func TestLogin404sOnNoUser(t *testing.T) {
 func TestLogin401sOnIncorrectPassword(t *testing.T) {
 	t.Cleanup(authCleanUp)
 	mockObj := service.NewIAuthManagerMockWithError(util.ErrIncorrectPassword)
-	mockObj.On("Login", defaultLoginRequest).Return("")
+	mockObj.On("Login", defaultLoginRequest).Return("", 0)
 	ctrl := &Controller{auth: mockObj, mux: new(http.ServeMux)}
 	ctrl.addAuthHandlers()
 
@@ -96,7 +96,7 @@ func TestLogin401sOnIncorrectPassword(t *testing.T) {
 func TestLogin500sOnGenericError(t *testing.T) {
 	t.Cleanup(authCleanUp)
 	mockObj := service.NewIAuthManagerMockWithError(util.Unknown)
-	mockObj.On("Login", defaultLoginRequest).Return("")
+	mockObj.On("Login", defaultLoginRequest).Return("", 0)
 	ctrl := &Controller{auth: mockObj, mux: new(http.ServeMux)}
 	ctrl.addAuthHandlers()
 

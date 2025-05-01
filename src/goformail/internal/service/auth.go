@@ -13,7 +13,7 @@ import (
 )
 
 type IAuthManager interface {
-	Login(creds *model.LoginRequest) (string, *util.Error)
+	Login(creds *model.LoginRequest) (string, int, *util.Error)
 	CheckTokenValidity(tokenStr string) (int, *util.Error)
 	CheckPerms(id int, required string) (bool, *util.Error)
 	CheckUserPerms(id int, action string, required []string) (bool, *util.Error)
@@ -30,15 +30,15 @@ func NewAuthManager(db db.IDb, jwtSecret *[]byte) *AuthManager {
 	return &AuthManager{db: db, jwtSecret: *jwtSecret}
 }
 
-func (man *AuthManager) Login(creds *model.LoginRequest) (string, *util.Error) {
+func (man *AuthManager) Login(creds *model.LoginRequest) (string, int, *util.Error) {
 	// Get hash from db
 	id, hash, dbErr := man.db.GetUserPassword(creds.Email)
 	if dbErr != nil {
 		switch dbErr.Code {
 		case db.ErrNoRows:
-			return "", util.NewNoUserEmailError(creds.Email, dbErr.Err)
+			return "", 0, util.NewNoUserEmailError(creds.Email, dbErr.Err)
 		default:
-			return "", util.NewGenericError(dbErr.Err)
+			return "", 0, util.NewGenericError(dbErr.Err)
 		}
 	}
 
@@ -46,9 +46,9 @@ func (man *AuthManager) Login(creds *model.LoginRequest) (string, *util.Error) {
 	err := bcrypt.CompareHashAndPassword([]byte(hash), []byte(creds.Password))
 	if err != nil {
 		if errors.Is(err, bcrypt.ErrMismatchedHashAndPassword) {
-			return "", util.NewIncorrectPasswordError(creds.Email, err)
+			return "", 0, util.NewIncorrectPasswordError(creds.Email, err)
 		}
-		return "", util.NewEncryptionError(err)
+		return "", 0, util.NewEncryptionError(err)
 	}
 
 	// Generate signed JWT token
@@ -59,10 +59,10 @@ func (man *AuthManager) Login(creds *model.LoginRequest) (string, *util.Error) {
 
 	signedToken, err := token.SignedString(man.jwtSecret)
 	if err != nil {
-		return "", util.NewEncryptionError(err)
+		return "", 0, util.NewEncryptionError(err)
 	}
 
-	return signedToken, nil
+	return signedToken, id, nil
 }
 
 func (man *AuthManager) CheckTokenValidity(tokenStr string) (int, *util.Error) {

@@ -17,6 +17,11 @@ type IdObject struct {
 	Id int `json:"id"`
 }
 
+type LoginObject struct {
+	Token string `json:"token"`
+	User  int    `json:"user"`
+}
+
 type TokenObject struct {
 	Token string `json:"token"`
 }

@@ -104,6 +104,9 @@ func (man *ListManager) UpdateList(id int, list *model.ListRequest, hasLocked bo
 		return util.NewInvalidObjectError("Invalid list name '"+list.Name+"' (must not include domain)", nil)
 	}
 
+	overrides := validateListPropsSet(*list)
+	overrides.Locked = hasLocked
+
 	seen := make(map[string]bool)
 	var newRcptList []string
 	for _, recipient := range list.Recipients {
@@ -139,8 +142,6 @@ func (man *ListManager) UpdateList(id int, list *model.ListRequest, hasLocked bo
 		list.Mods = valid
 	}
 
-	overrides := validateListPropsSet(*list)
-	overrides.Locked = hasLocked
 	err := man.db.PatchList(id, list, overrides)
 	if err != nil {
 		switch err.Code {
