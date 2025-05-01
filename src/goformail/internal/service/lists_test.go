@@ -88,7 +88,7 @@ func TestCreateListReturnsInvalidObjectErrorOnMissingFields(t *testing.T) {
 
 	id, err := man.CreateList(&model.ListRequest{})
 
-	msg := "Missing field(s) in list: Name, Recipients, Mods, ApprovedSenders, Locked"
+	msg := "Missing field(s) in list: Name, Recipients, Mods, ApprovedSenders"
 	expected := util.NewInvalidObjectError(msg, nil)
 	assert.Equal(t, expected, err)
 	assert.Equal(t, 0, id)

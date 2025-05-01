@@ -20,7 +20,7 @@ func validateAllSet(object interface{}) (bool, *[]string) {
 	for i := 0; i < objValue.NumField(); i++ {
 		field := objValue.Field(i)
 		set := field.IsValid() && !field.IsZero()
-		if !set {
+		if !set && field.Kind() != reflect.Bool {
 			allSet = false
 			missing = append(missing, objType.Field(i).Name)
 		}

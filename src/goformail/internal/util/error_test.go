@@ -36,7 +36,7 @@ func TestNewNoListError(t *testing.T) {
 func TestNewListAlreadyExistsError(t *testing.T) {
 	err := errors.New("some error")
 	expected := &Error{Err: err, Code: ErrListAlreadyExists,
-		Message: "A user with the name 'test' already exists"}
+		Message: "A list with the name 'test' already exists"}
 	actual := NewListAlreadyExistsError("test", err)
 	assert.Equal(t, expected, actual)
 }
@@ -60,6 +60,13 @@ func TestNewUserAlreadyExistsError(t *testing.T) {
 	expected := &Error{Err: err, Code: ErrUserAlreadyExists,
 		Message: "A user with the email 'test@domain.tld' already exists"}
 	actual := NewUserAlreadyExistsError("test@domain.tld", err)
+	assert.Equal(t, expected, actual)
+}
+
+func TestNewNoEmailError(t *testing.T) {
+	err := errors.New("some error")
+	expected := &Error{Err: err, Code: ErrNoEmail, Message: "Could not find a email with id '1'"}
+	actual := NewNoEmailError(1, err)
 	assert.Equal(t, expected, actual)
 }
 

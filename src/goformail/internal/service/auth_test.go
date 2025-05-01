@@ -23,12 +23,12 @@ func TestLogin(t *testing.T) {
 	dbMock.On("GetUserPassword", creds.Email).Return(1, hash)
 	man := AuthManager{db: dbMock}
 
-	actual, err := man.Login(creds)
+	actualToken, actualId, err := man.Login(creds)
 
 	dbMock.AssertExpectations(t)
 	require.Nil(t, err)
 
-	token, e := jwt.Parse(actual, func(token *jwt.Token) (interface{}, error) {
+	token, e := jwt.Parse(actualToken, func(token *jwt.Token) (interface{}, error) {
 		// Ensure the signing method is HMAC and not something else
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
@@ -37,6 +37,7 @@ func TestLogin(t *testing.T) {
 	})
 	require.NoError(t, e)
 	assert.True(t, token.Valid)
+	assert.Equal(t, 1, actualId)
 	assert.Equal(t, 1, int(token.Claims.(jwt.MapClaims)["sub"].(float64)))
 }
 
@@ -44,20 +45,22 @@ func TestLoginReturnsNoUserError(t *testing.T) {
 	dbMock := db.NewIDbMockWithError(db.ErrNoRows)
 	dbMock.On("GetUserPassword", defaultUserRequest.Email).Return(1, hash)
 	man := AuthManager{db: dbMock}
-	actual, err := man.Login(creds)
+	actualToken, actualId, err := man.Login(creds)
 
 	assert.Equal(t, util.NewNoUserEmailError(defaultUserRequest.Email, nil), err)
-	assert.Empty(t, actual)
+	assert.Empty(t, actualToken)
+	assert.Empty(t, actualId)
 }
 
 func TestLoginReturnsGenericError(t *testing.T) {
 	dbMock := db.NewIDbMockWithError(db.Unknown)
 	dbMock.On("GetUserPassword", defaultUserRequest.Email).Return(1, hash)
 	man := AuthManager{db: dbMock}
-	actual, err := man.Login(creds)
+	actualToken, actualId, err := man.Login(creds)
 
 	assert.Equal(t, util.NewGenericError(nil), err)
-	assert.Empty(t, actual)
+	assert.Empty(t, actualToken)
+	assert.Empty(t, actualId)
 }
 
 func TestLoginReturnsErrorFromIncorrectPassword(t *testing.T) {
@@ -65,7 +68,7 @@ func TestLoginReturnsErrorFromIncorrectPassword(t *testing.T) {
 	dbMock := new(db.IDbMock)
 	dbMock.On("GetUserPassword", creds.Email).Return(1, hash)
 	man := AuthManager{db: dbMock}
-	_, err := man.Login(creds)
+	_, _, err := man.Login(creds)
 
 	assert.Equal(t, util.ErrIncorrectPassword, err.Code)
 	assert.Equal(t, "Incorrect password for user 'example@domain.tld'", err.Message)
