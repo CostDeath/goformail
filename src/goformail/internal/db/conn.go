@@ -32,14 +32,19 @@ type IDb interface {
 	AddEmail(email *model.Email) *Error
 	SetEmailAsSent(id int) *Error
 	SetEmailRetry(email *model.Email) *Error
+	SetEmailAsApproved(id int) *Error
+	GetAllEmails(reqs *model.EmailReqs) (*model.EmailResponse, *Error)
+	GetEmailList(id int) (int, *Error)
 }
 
 type Db struct {
 	IDb
-	conn *sql.DB
+	conn      *sql.DB
+	batchSize int
 }
 
 func InitDB(configs map[string]string) *Db {
+	batchSize, _ := strconv.Atoi(configs["SQL_BATCH_SIZE"])
 	port, _ := strconv.Atoi(configs["SQL_PORT"])
 	info := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable",
 		configs["SQL_ADDRESS"], port, configs["SQL_USER"], configs["SQL_PASSWORD"], configs["SQL_DB_NAME"])
@@ -95,7 +100,7 @@ func InitDB(configs map[string]string) *Db {
 		log.Fatal(err)
 	}
 
-	return &Db{conn: db}
+	return &Db{conn: db, batchSize: batchSize}
 }
 
 func (db *Db) GetJwtSecret() *[]byte {

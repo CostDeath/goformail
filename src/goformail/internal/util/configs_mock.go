@@ -15,5 +15,6 @@ var MockConfigs = map[string]string{
 	"SQL_USER":         "goformail",
 	"SQL_PASSWORD":     "password",
 	"SQL_DB_NAME":      "goformail",
+	"SQL_BATCH_SIZE":   "1000",
 	"HTTP_PORT":        "8000",
 }

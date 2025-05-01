@@ -17,3 +17,16 @@ type Email struct {
 	List          int
 	ListMembers   []string
 }
+
+type EmailReqs struct {
+	Offset          int
+	List            *int
+	Archived        bool
+	Exhausted       bool
+	PendingApproval bool
+}
+
+type EmailResponse struct {
+	Offset int     `json:"offset"`
+	Emails []Email `json:"emails"`
+}

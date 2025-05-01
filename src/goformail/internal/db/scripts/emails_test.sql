@@ -25,9 +25,9 @@ VALUES (ARRAY['test-1@test.tld'], 'sender@test-0.tld', 'content', '2025-04-30 15
 INSERT INTO emails (rcpt, sender, content, received_at, next_retry, exhausted, sent, list, approved)
 VALUES (ARRAY['test-2@test.tld'], 'sender@test-0.tld', 'content', '2025-04-30 15:00:00', '2025-04-30 15:00:00', 2, false, 1, false);    -- ID: 2
 INSERT INTO emails (rcpt, sender, content, received_at, next_retry, exhausted, sent, list, approved)
-VALUES (ARRAY['test-3@test.tld'], 'sender@test-0.tld', 'content', '2025-04-30 15:00:00', '2025-04-30 15:00:00', 0, false, 1, true);    -- ID: 3
+VALUES (ARRAY['test-3@test.tld'], 'sender@test-0.tld', 'content', '2025-04-30 15:00:00', '2025-04-30 15:00:00', 0, true, 1, true);    -- ID: 3
 INSERT INTO emails (rcpt, sender, content, received_at, next_retry, exhausted, sent, list, approved)
-VALUES (ARRAY['test-4@test.tld'], 'sender@test-0.tld', 'content', '2025-04-30 15:00:00', '3025-04-30 15:00:00', 3, false, 2, true);    -- ID: 4
+VALUES (ARRAY['test-4@test.tld'], 'sender@test-0.tld', 'content', '2025-04-30 15:00:00', '3025-04-30 15:00:00', 3, false, 2, false);    -- ID: 4
 INSERT INTO emails (rcpt, sender, content, received_at, next_retry, exhausted, sent, list, approved)
 VALUES (ARRAY['test-5@test.tld'], 'sender@test-0.tld', 'content', '2025-04-30 15:00:00', '3025-04-30 15:00:00', 3, false, 2, true);    -- ID: 5
 

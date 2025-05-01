@@ -114,3 +114,18 @@ func (mock *IDbMock) SetEmailRetry(email *model.Email) *Error {
 	mock.Called(email)
 	return mock.error
 }
+
+func (mock *IDbMock) SetEmailAsApproved(id int) *Error {
+	mock.Called(id)
+	return mock.error
+}
+
+func (mock *IDbMock) GetAllEmails(reqs *model.EmailReqs) (*model.EmailResponse, *Error) {
+	args := mock.Called(reqs)
+	return args.Get(0).(*model.EmailResponse), mock.error
+}
+
+func (mock *IDbMock) GetEmailList(id int) (int, *Error) {
+	args := mock.Called(id)
+	return args.Int(0), mock.error
+}
