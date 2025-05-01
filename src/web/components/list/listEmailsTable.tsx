@@ -20,7 +20,6 @@ export default function ListEmailsTable() {
     }
 
 
-    console.log(data)
 
 
     // const [oldId, setId] = useState("")
