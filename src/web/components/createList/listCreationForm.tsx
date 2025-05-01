@@ -3,38 +3,36 @@
 import {ChangeEvent, useState} from "react";
 import {api} from "@/components/api";
 import {redirect} from "next/navigation";
-import {LinkTo} from "@/components/pageEnums";
 import validateEmail from "@/components/validateEmails";
 import {getSessionToken} from "@/components/sessionToken";
 
 export default function ListCreationForm() {
     const [name, setName] = useState("");
-    const [recipients, setRecipients] = useState([{value: ""}])
+    const [senders, setSenders] = useState([{value: ""}])
     const [locked, setLocked] = useState(false)
 
     const createList = async () => {
         const url = `${window.location.origin}/api${api.list}`
         const token = getSessionToken()
-        const rcptList: string[] = []
-        for (let i = 0; i < recipients.length; i++) {
-            if (!recipients[i].value) {
-                alert("Cannot leave recipient input blank, either remove the recipient or fill in a valid email")
-            } else if (!validateEmail(recipients[i].value)) {
-                alert(`${recipients[i].value} is not a valid email`)
+        const senderList: string[] = []
+        for (let i = 0; i < senders.length; i++) {
+            if (!senders[i].value) {
+                alert("Cannot leave sender input blank, either remove the sender or fill in a valid email")
+            } else if (!validateEmail(senders[i].value)) {
+                alert(`${senders[i].value} is not a valid email`)
                 return;
             }
-            rcptList.push(recipients[i].value)
+            senderList.push(senders[i].value)
         }
 
-        // TODO: update list logic to include the locked and mods fields within the form
         const response = await fetch(url, {
             method: "POST",
             body: JSON.stringify({
                 Name: name,
-                Recipients: rcptList,
+                Recipients: [],
                 Locked: locked,
                 Mods: [],
-                approved_senders: []
+                approved_senders: senderList
             }),
             headers: {
                 "Content-Type": "application/json",
@@ -45,7 +43,7 @@ export default function ListCreationForm() {
         if (response.ok) {
             const result = await response.json()
             alert(result.message)
-            redirect(LinkTo.MAILINGLISTS)
+            redirect(`/mailingLists/list/?id=${result.data.id}`)
         } else {
             const result = await response.text()
             alert(result)
@@ -53,19 +51,19 @@ export default function ListCreationForm() {
     }
 
     const handleChange = (index: number, e: ChangeEvent<HTMLInputElement>) => {
-        const values = [...recipients]
+        const values = [...senders]
         values[index].value = e.target.value
-        setRecipients(values)
+        setSenders(values)
     }
 
     const handleAdd = () => {
-        setRecipients([...recipients, {value: ""}])
+        setSenders([...senders, {value: ""}])
     }
 
     const handleRemove = (index: number) => {
-        const values = [...recipients]
+        const values = [...senders]
         values.splice(index, 1)
-        setRecipients(values)
+        setSenders(values)
     }
 
     return (
@@ -125,9 +123,9 @@ export default function ListCreationForm() {
             <br/>
             <hr/>
             <br/>
-            <h1 className="px-2 text-2xl underline">Add recipients</h1>
+            <h1 className="px-2 text-2xl underline">Add Approved Senders</h1>
             <div className="py-10">
-                {recipients.map((recipient, index) => (
+                {senders.map((sender, index) => (
                     <div className="grid grid-cols-3 px-2 py-4" key={index}>
                         <input
                             className="
@@ -143,11 +141,11 @@ export default function ListCreationForm() {
                 outline-2
                 placeholder:text-neutral-500
                 "
-                            id={`recipient${index}`}
+                            id={`sender${index}`}
                             type="email"
-                            name={`recipient${index}`}
-                            aria-label={`recipient${index}`}
-                            value={recipient.value}
+                            name={`sender${index}`}
+                            aria-label={`sender${index}`}
+                            value={sender.value}
                             onChange={e => handleChange(index, e)}
                             placeholder="Email Address"
                             required
@@ -163,7 +161,7 @@ export default function ListCreationForm() {
 
                 ))}
                 <button className="bg-cyan-600 text-white hover:bg-cyan-500 py-2 px-3 rounded-md font-bold"
-                        onClick={handleAdd}>+ Add recipient
+                        onClick={handleAdd}>+ Add Another Sender
                 </button>
             </div>
 

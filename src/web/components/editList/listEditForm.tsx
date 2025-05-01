@@ -5,31 +5,30 @@ import DeleteList from "@/components/editList/deleteList";
 import {api} from "@/components/api";
 import {List} from "@/models/list";
 import validateEmail from "@/components/validateEmails";
-import {LinkTo} from "@/components/pageEnums";
 import {getSessionToken} from "@/components/sessionToken";
 
 export default function ListEditForm() {
     const searchParams = useSearchParams()
     const listId = searchParams.get("id")
     const [locked, setLocked] = useState(false)
-    const [recipients, setRecipients] = useState([{value: ""}])
+    const [senders, setSenders] = useState([{value: ""}])
     const [sessionToken, setSessionToken] = useState<string | null>()
 
 
     const handleChange = (index: number, e: ChangeEvent<HTMLInputElement>) => {
-        const values = [...recipients]
+        const values = [...senders]
         values[index].value = e.target.value
-        setRecipients(values)
+        setSenders(values)
     }
 
     const handleAdd = () => {
-        setRecipients([...recipients, {value: ""}])
+        setSenders([...senders, {value: ""}])
     }
 
     const handleRemove = (index: number) => {
-        const values = [...recipients]
+        const values = [...senders]
         values.splice(index, 1)
-        setRecipients(values)
+        setSenders(values)
     }
 
 
@@ -41,15 +40,15 @@ export default function ListEditForm() {
             }
         })
         const data = await response.json()
-        const rcptsBuilder: { value: string }[] = []
-        if (data.data.recipients) {
-            const rcpts: string[] = data.data.recipients
-            for (let i = 0; i < rcpts.length; i++) {
-                rcptsBuilder.push({value: rcpts[i]})
+        const sendersBuilder: { value: string }[] = []
+        if (data.data.approved_senders) {
+            const senders: string[] = data.data.approved_senders
+            for (let i = 0; i < senders.length; i++) {
+                sendersBuilder.push({value: senders[i]})
             }
         }
 
-        setRecipients(rcptsBuilder)
+        setSenders(sendersBuilder)
         setLocked(data.data.locked)
         return data
     }
@@ -76,20 +75,20 @@ export default function ListEditForm() {
 
     const editList = async () => {
         const url = `${window.location.origin}/api${api.list}?id=${listId}`
-        const rcptList: string[]  = []
-        for (let i = 0; i < recipients.length; i++) {
-            if (!validateEmail(recipients[i].value)) {
-                alert(`${recipients[i].value} is not a valid email`)
+        const sendersList: string[]  = []
+        for (let i = 0; i < senders.length; i++) {
+            if (!validateEmail(senders[i].value)) {
+                alert(`${senders[i].value} is not a valid email`)
                 return;
             }
-            rcptList.push(recipients[i].value)
+            sendersList.push(senders[i].value)
         }
 
         const response = await fetch(url, {
             method: "PATCH",
             body: JSON.stringify({
                 Name: result.name,
-                Recipients: rcptList,
+                approved_senders: sendersList,
                 Locked: locked
             }),
             headers: {
@@ -101,7 +100,7 @@ export default function ListEditForm() {
         if (response.ok) {
             const result = await response.json()
             alert(result.message)
-            redirect(LinkTo.MAILINGLISTS)
+            redirect(`/mailingLists/list.html?id=${listId}`)
         } else {
             const result = await response.text()
             alert(result)
@@ -164,9 +163,9 @@ export default function ListEditForm() {
             <br/>
             <hr/>
             <br/>
-            <h1 className="px-2 text-2xl underline">Add recipients</h1>
+            <h1 className="px-2 text-2xl underline">Approved Senders</h1>
             <div className="py-10">
-                {recipients.map((recipient, index) => (
+                {senders.map((sender, index) => (
                     <div className="grid grid-cols-3 px-2 py-4" key={index}>
                         <input
                             className="
@@ -182,11 +181,11 @@ export default function ListEditForm() {
                 outline-2
                 placeholder:text-neutral-500
                 "
-                            id={`recipient${index}`}
+                            id={`sender${index}`}
                             type="email"
-                            name={`recipient${index}`}
-                            aria-label={`recipient${index}`}
-                            value={recipient.value}
+                            name={`sender${index}`}
+                            aria-label={`sender${index}`}
+                            value={sender.value}
                             onChange={e => handleChange(index, e)}
                             placeholder="Email Address"
                             required
@@ -202,7 +201,7 @@ export default function ListEditForm() {
 
                 ))}
                 <button className="bg-cyan-600 text-white hover:bg-cyan-500 py-2 px-3 rounded-md font-bold"
-                        onClick={handleAdd}>+ Add recipient
+                        onClick={handleAdd}>+ Add Another Sender
                 </button>
             </div>
 

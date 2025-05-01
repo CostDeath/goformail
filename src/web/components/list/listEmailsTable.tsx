@@ -30,7 +30,15 @@ export default function ListEmailsTable() {
             <div className="grid grid-cols-3">
                 <h1 className="col-span-2 font-bold py-5 px-2 text-2xl">{data.title}</h1>
                 <div className="py-5 px-2 flex flex-row justify-end">
-                    <a href={`/ui/mailingLists/list/edit.html?id=${id}`} className="bg-cyan-600 text-white py-3 px-2 hover:bg-cyan-500 rounded-md">Edit Mailing List</a>
+                    <div className="px-3">
+                    <a href={`/ui/mailingLists/list/manageMods.html?id=${id}`}
+                       className="bg-cyan-600 text-white py-3 px-2 hover:bg-cyan-500 rounded-md">Manage Moderators</a>
+                    </div>
+
+                    <div>
+                    <a href={`/ui/mailingLists/list/edit.html?id=${id}`}
+                       className="bg-cyan-600 text-white py-3 px-2 hover:bg-cyan-500 rounded-md">Manage Senders</a>
+                    </div>
                 </div>
             </div>
             <div className="min-w-full table text-gray-900 shadow-[0_3px_10px_-1px_rgba(0,0,0,1)]">
