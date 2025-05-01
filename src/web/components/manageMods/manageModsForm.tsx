@@ -65,7 +65,6 @@ export default function ManageModsForm() {
     }, [])
 
     const {data, error} = useSWR((baseUrl && sessionToken) ? `${baseUrl}${api.list}?id=${listId}` : null, fetcher)
-    console.log(error)
 
     if (error) return <div>Error</div>
     if (!data) {
