@@ -12,8 +12,7 @@ It can be managed through a web UI or CLI, for convenience.
 
 ## Usage
 
-Currently, this project remains unfinished. Some basic instructions on usage will be found here once the project is
-nearing completion.
+Usage instructions can be found on the docs pdf
 
 You can find additional information on how to use the [docs](docs) directory.
 
@@ -21,21 +20,22 @@ You can find additional information on how to use the [docs](docs) directory.
 
 <h3 style="color:#d4514e">GoForMail requires a separate MTA and DB to be running! It will not function standalone.</h3>
 
-The pipeline for this project has not yet been constructed. More information will be added here once it has been
-implemented.
+1. Install Postfix on your machine
+2. Clone this repo
+3. Go into /deploy
+4. Feel free to use the configs provided! (adapt them to your domain)
+5. docker compose up -d
 
 ## To do
 
 - [X] Email Forwarding
 - [X] List Management
-- [ ] List Locking
-- [ ] Web UI
+- [X] List Locking
+- [X] Web UI
 - [X] User Management
-- [ ] Audit Logging
-- [ ] Feedback Emails
-- [ ] Email Scheduling
-- [ ] Email Archiving
-- [ ] CLI interface
+- [X] Email Scheduling
+- [X] Email Archiving
+- [X] CLI interface
 
 The project is still in early development. Please be patient as we develop it.
 

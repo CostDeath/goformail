@@ -24,9 +24,15 @@ func (r *Router) RouteUpdateCommand(args []string, dbObj *db.Db) {
 }
 
 func updateList(args []string, dbObj db.IDb, newManager func(db.IDb) service.IListManager) {
-	recipients := stringSlice{}
-	mods := intSlice{}
-	approvedSenders := stringSlice{}
+	if len(args) < 1 {
+		fmt.Println(unknownUpdateCommand)
+		return
+	}
+	args = append(args[1:], args[0])
+
+	var recipients stringSlice
+	var mods intSlice
+	var approvedSenders stringSlice
 	cmd := flag.NewFlagSet("list", flag.ExitOnError)
 	name := cmd.String("name", "", "name of mailing list (without the domain)")
 	cmd.Var(&recipients, "recipient", "recipients for the mailing list (can be repeated or comma-separated)")
@@ -40,6 +46,16 @@ func updateList(args []string, dbObj db.IDb, newManager func(db.IDb) service.ILi
 		return
 	}
 
+	if len(recipients) == 1 && recipients[0] == "" {
+		recipients = stringSlice{}
+	}
+	if len(mods) == 1 && mods[0] == 0 {
+		mods = intSlice{}
+	}
+	if len(approvedSenders) == 1 && approvedSenders[0] == "" {
+		approvedSenders = stringSlice{}
+	}
+
 	lockedSet := false
 	lockedBool := false
 	if *locked != "" {
@@ -51,7 +67,7 @@ func updateList(args []string, dbObj db.IDb, newManager func(db.IDb) service.ILi
 		lockedBool = value
 	}
 
-	id := convertId(args[0])
+	id := convertId(args[len(args)-1])
 
 	err := newManager(dbObj).UpdateList(id, &model.ListRequest{
 		Name:            *name,
@@ -74,7 +90,7 @@ func updateUser(args []string, dbObj db.IDb, newManager func(db.IDb) service.IUs
 	}
 	args = append(args[1:], args[0])
 
-	perms := stringSlice{}
+	var perms stringSlice
 	cmd := flag.NewFlagSet("user", flag.ExitOnError)
 	email := cmd.String("email", "", "email of user (with the domain)")
 	password := cmd.String("password", "", "password for the user")
@@ -87,6 +103,10 @@ func updateUser(args []string, dbObj db.IDb, newManager func(db.IDb) service.IUs
 	}
 
 	id := convertId(args[len(args)-1])
+
+	if len(perms) == 1 && perms[0] == "" {
+		perms = stringSlice{}
+	}
 
 	err := newManager(dbObj).UpdateUser(id, &model.UserRequest{
 		Email:       *email,

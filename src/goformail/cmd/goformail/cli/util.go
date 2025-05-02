@@ -36,6 +36,10 @@ func (s *intSlice) String() string {
 func (s *intSlice) Set(value string) error {
 	parts := strings.Split(value, ",")
 	for _, part := range parts {
+		if part == "" {
+			*s = append(*s, 0)
+			continue
+		}
 		if num, err := strconv.Atoi(strings.TrimSpace(part)); err == nil {
 			*s = append(*s, int64(num))
 		} else {
