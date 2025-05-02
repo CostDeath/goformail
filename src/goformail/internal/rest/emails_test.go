@@ -15,6 +15,121 @@ import (
 
 var list = 1
 var defaultReqs = &model.EmailReqs{Offset: 10, List: &list, Archived: true, Exhausted: true, PendingApproval: true}
+var defaultEmail = &model.Email{Id: 1, Content: "content"}
+
+func TestGetEmail(t *testing.T) {
+	dbMock := new(db.IDbMock)
+	dbMock.On("GetEmail", 1).Return(defaultEmail)
+	authMock := new(service.IAuthManagerMock)
+	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
+	ctrl := &Controller{db: dbMock, auth: authMock, mux: new(http.ServeMux)}
+	ctrl.addEmailHandlers()
+
+	// Mock the request
+	req := test.CreateHttpRequest(t, "GET", "/api/email/?id=1", nil)
+	rr := httptest.NewRecorder()
+	ctrl.mux.ServeHTTP(rr, req)
+
+	// Check db was called with correct args
+	dbMock.AssertExpectations(t)
+
+	// Check the response is what we expect.
+	assert.Equal(t, http.StatusOK, rr.Code)
+	expected := test.GetExpectedJsonResponse(t, "Successfully fetched email!", defaultEmail)
+	assert.Equal(t, expected, rr.Body.String())
+}
+
+func TestGetEmail401sOnInvalidToken(t *testing.T) {
+	authMock := service.NewIAuthManagerMockWithError(util.ErrInvalidToken)
+	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
+	ctrl := &Controller{auth: authMock, mux: new(http.ServeMux)}
+	ctrl.addEmailHandlers()
+
+	// Mock the request
+	req := test.CreateHttpRequest(t, "GET", "/api/email/?id=1", nil)
+	rr := httptest.NewRecorder()
+	ctrl.mux.ServeHTTP(rr, req)
+
+	// Check the response is what we expect.
+	assert.Equal(t, http.StatusUnauthorized, rr.Code)
+	assert.Equal(t, "mocked error\n", rr.Body.String())
+}
+
+func TestGetEmail400sOnNoParam(t *testing.T) {
+	dbMock := new(db.IDbMock)
+	dbMock.On("GetEmail", mock.Anything).Panic("GetEmail should not have been called")
+	authMock := new(service.IAuthManagerMock)
+	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
+	ctrl := &Controller{db: dbMock, auth: authMock, mux: new(http.ServeMux)}
+	ctrl.addEmailHandlers()
+
+	// Mock the request
+	req := test.CreateHttpRequest(t, "GET", "/api/email/", nil)
+	rr := httptest.NewRecorder()
+	ctrl.mux.ServeHTTP(rr, req)
+
+	// Check the response is what we expect.
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+	expected := "Invalid object: Invalid id provided\n"
+	assert.Equal(t, expected, rr.Body.String())
+}
+
+func TestGetEmail400sOnInvalidParam(t *testing.T) {
+	dbMock := new(db.IDbMock)
+	dbMock.On("GetEmail", mock.Anything).Panic("GetEmail should not have been called")
+	authMock := new(service.IAuthManagerMock)
+	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
+	ctrl := &Controller{db: dbMock, auth: authMock, mux: new(http.ServeMux)}
+	ctrl.addEmailHandlers()
+
+	// Mock the request
+	req := test.CreateHttpRequest(t, "GET", "/api/email/?id=a", nil)
+	rr := httptest.NewRecorder()
+	ctrl.mux.ServeHTTP(rr, req)
+
+	// Check the response is what we expect.
+	assert.Equal(t, http.StatusBadRequest, rr.Code)
+	expected := "Invalid object: Invalid id provided\n"
+	assert.Equal(t, expected, rr.Body.String())
+}
+
+func TestGetList404sWhenNoEmail(t *testing.T) {
+	dbMock := db.NewIDbMockWithError(db.ErrNoRows)
+	dbMock.On("GetEmail", 1).Return(defaultEmail)
+	authMock := new(service.IAuthManagerMock)
+	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
+	ctrl := &Controller{db: dbMock, auth: authMock, mux: new(http.ServeMux)}
+	ctrl.addEmailHandlers()
+
+	// Mock the request
+	req := test.CreateHttpRequest(t, "GET", "/api/email/?id=1", nil)
+	rr := httptest.NewRecorder()
+	ctrl.mux.ServeHTTP(rr, req)
+
+	// Check the response is what we expect.
+	assert.Equal(t, http.StatusNotFound, rr.Code)
+	expected := "Could not find a email with id '1'\n"
+	assert.Equal(t, expected, rr.Body.String())
+}
+
+func TestGetEmail500sOnGenericError(t *testing.T) {
+	dbMock := db.NewIDbMockWithError(db.Unknown)
+	dbMock.On("GetEmail", 1).Return(defaultEmail)
+	authMock := new(service.IAuthManagerMock)
+	authMock.On("CheckTokenValidity", "Bearer token").Return(1)
+	ctrl := &Controller{db: dbMock, auth: authMock, mux: new(http.ServeMux)}
+	ctrl.addEmailHandlers()
+
+	// Mock the request
+	req := test.CreateHttpRequest(t, "GET", "/api/email/?id=1", nil)
+	rr := httptest.NewRecorder()
+	ctrl.mux.ServeHTTP(rr, req)
+
+	// Check the response is what we expect.
+	assert.Equal(t, http.StatusInternalServerError, rr.Code)
+	expected := "Unknown error occurred\n"
+	assert.Equal(t, expected, rr.Body.String())
+}
 
 func TestGetEmails(t *testing.T) {
 	resp := &model.EmailResponse{Offset: 20, Emails: []model.Email{{Id: 1, Content: "content"}}}

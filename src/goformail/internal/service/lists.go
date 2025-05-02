@@ -20,7 +20,7 @@ type ListManager struct {
 	db db.IDb
 }
 
-func NewListManager(db *db.Db) *ListManager {
+func NewListManager(db db.IDb) *ListManager {
 	return &ListManager{db: db}
 }
 

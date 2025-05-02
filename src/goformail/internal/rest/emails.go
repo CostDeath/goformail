@@ -10,6 +10,19 @@ import (
 )
 
 func (ctrl Controller) addEmailHandlers() {
+	ctrl.mux.HandleFunc("/api/email/", func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/email/" {
+			handleUnknownMethod(w, r)
+			return
+		}
+		switch r.Method {
+		case "GET":
+			ctrl.getEmail(w, r)
+		default:
+			handleUnknownMethod(w, r)
+		}
+	})
+
 	ctrl.mux.HandleFunc("/api/emails/", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/api/emails/" {
 			handleUnknownMethod(w, r)
@@ -35,6 +48,34 @@ func (ctrl Controller) addEmailHandlers() {
 			handleUnknownMethod(w, r)
 		}
 	})
+}
+
+func (ctrl Controller) getEmail(w http.ResponseWriter, r *http.Request) {
+	token := r.Header.Get("Authorization")
+	_, e := ctrl.auth.CheckTokenValidity(token)
+	if e != nil {
+		setErrorResponse(w, r, e)
+		return
+	}
+
+	id, err := strconv.Atoi(r.FormValue("id"))
+	if err != nil {
+		setErrorResponse(w, r, util.NewInvalidObjectError("Invalid id provided", err))
+		return
+	}
+
+	resp, dbErr := ctrl.db.GetEmail(id)
+	if dbErr != nil {
+		if dbErr.Code == db.ErrNoRows {
+			setErrorResponse(w, r, util.NewNoEmailError(id, dbErr.Err))
+		} else {
+			setErrorResponse(w, r, util.NewGenericError(dbErr.Err))
+		}
+		return
+	}
+
+	w.WriteHeader(http.StatusOK)
+	setResponse("Successfully fetched email!", resp, w, r)
 }
 
 func (ctrl Controller) getEmails(w http.ResponseWriter, r *http.Request) {

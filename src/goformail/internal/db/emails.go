@@ -119,6 +119,21 @@ func (db *Db) GetAllEmails(reqs *model.EmailReqs) (*model.EmailResponse, *Error)
 	return &model.EmailResponse{Emails: emails, Offset: reqs.Offset + len(emails)}, nil
 }
 
+func (db *Db) GetEmail(id int) (*model.Email, *Error) {
+	email := model.Email{Id: id}
+	if err := db.conn.QueryRow(`
+		SELECT emails.id, emails.rcpt, emails.sender, emails.content, emails.received_at, emails.next_retry,
+		       emails.exhausted, emails.sent, emails.approved, COALESCE(lists.name, '')
+		FROM emails LEFT JOIN lists ON emails.list = lists.id WHERE emails.id = $1
+	`, id,
+	).Scan(&email.Id, pq.Array(&email.Rcpt), &email.Sender, &email.Content, &email.ReceivedAt,
+		&email.NextRetry, &email.Exhausted, &email.Sent, &email.Approved, &email.ListName); err != nil {
+		return nil, getError(err)
+	}
+
+	return &email, nil
+}
+
 func (db *Db) GetEmailList(id int) (int, *Error) {
 	var list int
 	if err := db.conn.QueryRow(`
