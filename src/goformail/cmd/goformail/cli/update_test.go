@@ -8,10 +8,12 @@ import (
 )
 
 func TestUpdateList(t *testing.T) {
+	var nilStrList []string
+	var nilIntList []int64
 	getMock := func(db db.IDb) service.IListManager {
 		mockList := new(service.IListManagerMock)
 		mockList.On("UpdateList", 1, &model.ListRequest{
-			Name: "", Recipients: []string{}, ApprovedSenders: []string{}, Mods: []int64{}, Locked: false}, false,
+			Name: "", Recipients: nilStrList, ApprovedSenders: nilStrList, Mods: nilIntList, Locked: false}, false,
 		).Return(nil)
 		return mockList
 	}
@@ -29,15 +31,16 @@ func TestUpdateListAllSet(t *testing.T) {
 		return mockList
 	}
 
-	updateList([]string{"1", "--name=list", "--recipients=rcpt@domain.tld,rcpt2@domain.tld", "approved=s@domain.tld",
+	updateList([]string{"1", "--name=list", "--recipient=rcpt@domain.tld,rcpt2@domain.tld", "approved=s@domain.tld",
 		"mod=1", "mod=2", "locked=false"}, &db.Db{}, getMock)
 }
 
 func TestUpdateUser(t *testing.T) {
 	getMock := func(db db.IDb) service.IUserManager {
+		var nilPerms []string
 		mockUser := new(service.IUserManagerMock)
 		mockUser.On("UpdateUser", 1, &model.UserRequest{
-			Email: "", Permissions: []string{},
+			Email: "", Permissions: nilPerms,
 		}).Return(nil)
 		return mockUser
 	}

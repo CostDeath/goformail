@@ -53,6 +53,8 @@ func (man *UserManager) CreateUser(user *model.UserRequest) (int, *util.Error) {
 		user.Permissions[i] = strings.ToUpper(perm)
 	}
 
+	validatePermissions(user.Permissions)
+
 	// Create password hash
 	hashBytes, e := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
 	if e != nil {
@@ -83,6 +85,8 @@ func (man *UserManager) UpdateUser(id int, user *model.UserRequest) *util.Error 
 	for i, perm := range user.Permissions {
 		user.Permissions[i] = strings.ToUpper(perm)
 	}
+
+	validatePermissions(user.Permissions)
 
 	err := man.db.UpdateUser(id, user, validatePermissionsSet(*user))
 	if err != nil {
