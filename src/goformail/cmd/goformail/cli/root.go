@@ -1,24 +1,43 @@
 package cli
 
 import (
-	"encoding/json"
 	"fmt"
 	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal/db"
-	"log"
-	"strconv"
+	"gitlab.computing.dcu.ie/fonseca3/2025-csc1097-fonseca3-dagohos2/internal/service"
 )
 
-type getEmailsFunc func([]string, *db.Db)
-type approveEmailFunc func(args []string, dbObj *db.Db)
+type cmdFunc func([]string, db.IDb)
+type listFunc func([]string, db.IDb, func(db.IDb) service.IListManager)
+type userFunc func([]string, db.IDb, func(db.IDb) service.IUserManager)
 
 type Router struct {
-	getEmails    getEmailsFunc
-	approveEmail approveEmailFunc
+	getEmails    cmdFunc
+	getList      listFunc
+	getLists     listFunc
+	getUser      userFunc
+	getUsers     userFunc
+	createList   listFunc
+	createUser   userFunc
+	updateList   listFunc
+	updateUser   userFunc
+	deleteList   listFunc
+	deleteUser   userFunc
+	approveEmail cmdFunc
 }
 
 func NewRouter() *Router {
 	return &Router{
 		getEmails:    getEmails,
+		getList:      getList,
+		getLists:     getLists,
+		getUser:      getUser,
+		getUsers:     getUsers,
+		createList:   createList,
+		createUser:   createUser,
+		updateList:   updateList,
+		updateUser:   updateUser,
+		deleteList:   deleteList,
+		deleteUser:   deleteUser,
 		approveEmail: approveEmail,
 	}
 }
@@ -27,25 +46,15 @@ func (r *Router) RouteCommand(args []string, dbObj *db.Db) {
 	switch args[0] {
 	case "get":
 		r.RouteGetCommand(args[1:], dbObj)
+	case "create":
+		r.RouteCreateCommand(args[1:], dbObj)
+	case "update":
+		r.RouteUpdateCommand(args[1:], dbObj)
+	case "delete":
+		r.RouteDeleteCommand(args[1:], dbObj)
 	case "approve":
 		r.RouteApproveCommand(args[1:], dbObj)
 	default:
 		fmt.Println("Unknown command. Try 'goformail help' for help!")
 	}
-}
-
-func convertId(id string) int {
-	idInt, err := strconv.Atoi(id)
-	if err != nil {
-		log.Fatalf("Invalid id '%s'\n'", id)
-	}
-	return idInt
-}
-
-func printObject(object interface{}) {
-	marshal, err := json.MarshalIndent(object, "", "\t")
-	if err != nil {
-		log.Fatal("Error printing payload:", err)
-	}
-	fmt.Println(string(marshal))
 }

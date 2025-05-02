@@ -16,30 +16,31 @@ func (r *Router) RouteGetCommand(args []string, dbObj *db.Db) {
 	case "emails":
 		r.getEmails(args[1:], dbObj)
 	case "list":
-		r.getEmails(args[1:], dbObj)
+		r.getList(args[1:], dbObj, getListManager)
 	case "lists":
-		r.getEmails(args[1:], dbObj)
+		r.getLists(args[1:], dbObj, getListManager)
 	case "user":
-		r.getEmails(args[1:], dbObj)
+		r.getUser(args[1:], dbObj, getUserManager)
 	case "users":
-		r.getEmails(args[1:], dbObj)
+		r.getUsers(args[1:], dbObj, getUserManager)
 	default:
 		fmt.Println(unknownGetCommand)
 	}
 }
 
-func getEmails(args []string, dbObj *db.Db) {
-	if len(args) != 0 {
+func getEmails(args []string, dbObj db.IDb) {
+	cmd := flag.NewFlagSet("emails", flag.ExitOnError)
+	offset := cmd.Int("offset", 0, "offset for emails")
+	list := cmd.Int("list", 0, "filter by list id")
+	exhausted := cmd.Bool("exhausted", false, "show only exhausted emails")
+	archived := cmd.Bool("archived", false, "show only sent emails")
+	pending := cmd.Bool("pending", false, "show only emails pending approval")
+	parseArgs(cmd, args)
+
+	if cmd.NArg() != 0 {
 		fmt.Println(unknownGetCommand)
 		return
 	}
-
-	offset := flag.Int("offset", 0, "offset of emails")
-	list := flag.Int("list", 0, "offset of emails")
-	exhausted := flag.Bool("exhausted", false, "")
-	archived := flag.Bool("archived", false, "")
-	pending := flag.Bool("pendingApproval", false, "")
-	flag.Parse()
 
 	if *list == 0 {
 		list = nil
@@ -61,15 +62,17 @@ func getEmails(args []string, dbObj *db.Db) {
 	printObject(resp)
 }
 
-func getList(args []string, dbObj *db.Db) {
-	if len(args) != 1 {
+func getList(args []string, dbObj db.IDb, newManager func(db.IDb) service.IListManager) {
+	cmd := flag.NewFlagSet("list", flag.ExitOnError)
+	parseArgs(cmd, args)
+	if cmd.NArg() != 1 {
 		fmt.Println(unknownGetCommand)
 		return
 	}
 
 	id := convertId(args[0])
 
-	list, err := service.NewListManager(dbObj).GetList(id)
+	list, err := newManager(dbObj).GetList(id)
 	if err != nil {
 		log.Fatal(err.Message)
 	}
@@ -77,13 +80,49 @@ func getList(args []string, dbObj *db.Db) {
 	printObject(list)
 }
 
-func getLists(args []string, dbObj *db.Db) {
-	if len(args) != 0 {
+func getLists(args []string, dbObj db.IDb, newManager func(db.IDb) service.IListManager) {
+	cmd := flag.NewFlagSet("list", flag.ExitOnError)
+	parseArgs(cmd, args)
+	if cmd.NArg() != 0 {
 		fmt.Println(unknownGetCommand)
 		return
 	}
 
-	list, err := service.NewListManager(dbObj).GetAllLists()
+	list, err := newManager(dbObj).GetAllLists()
+	if err != nil {
+		log.Fatal(err.Message)
+	}
+
+	printObject(list)
+}
+
+func getUser(args []string, dbObj db.IDb, newManager func(db.IDb) service.IUserManager) {
+	cmd := flag.NewFlagSet("user", flag.ExitOnError)
+	parseArgs(cmd, args)
+	if cmd.NArg() != 1 {
+		fmt.Println(unknownGetCommand)
+		return
+	}
+
+	id := convertId(args[0])
+
+	list, err := newManager(dbObj).GetUser(id)
+	if err != nil {
+		log.Fatal(err.Message)
+	}
+
+	printObject(list)
+}
+
+func getUsers(args []string, dbObj db.IDb, newManager func(db.IDb) service.IUserManager) {
+	cmd := flag.NewFlagSet("user", flag.ExitOnError)
+	parseArgs(cmd, args)
+	if cmd.NArg() != 0 {
+		fmt.Println(unknownGetCommand)
+		return
+	}
+
+	list, err := newManager(dbObj).GetAllUsers()
 	if err != nil {
 		log.Fatal(err.Message)
 	}
