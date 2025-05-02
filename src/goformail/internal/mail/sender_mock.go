@@ -2,7 +2,6 @@ package mail
 
 import (
 	"github.com/stretchr/testify/mock"
-	"log"
 )
 
 type IEmailSenderMock struct {
@@ -15,6 +14,5 @@ func (mock *IEmailSenderMock) CheckMail() {
 }
 
 func (mock *IEmailSenderMock) SendMail() {
-	args := mock.Called()
-	log.Print(args) // force mock to acknowledge the call
+	mock.Called()
 }
