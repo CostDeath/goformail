@@ -26,9 +26,9 @@ var defaultEmailReceived = model.Email{
 func TestReceiveMail(t *testing.T) {
 	mockMtp := new(IMtpHandlerMock)
 	mockMtp.On("mailReceiver", mock.Anything).Return(defaultEmailReceived, nil)
-	//mockMtp.On("sendGoodbye", mock.Anything, true, defaultEmailReceived.RemainingAcks).Return(nil)
+	mockMtp.On("sendGoodbye", mock.Anything, true, defaultEmailReceived.RemainingAcks).Return(nil)
 	mockSender := new(IEmailSenderMock)
-	//mockSender.On("SendMail").Return(nil)
+	mockSender.On("SendMail").Return(nil)
 	mockDb := new(db.IDbMock)
 	mockDb.On("GetApprovalFromListName", "sender@domain.tld", "list1").Return(1, true)
 	mockDb.On("GetApprovalFromListName", "sender@domain.tld", "list2").Return(2, false)
