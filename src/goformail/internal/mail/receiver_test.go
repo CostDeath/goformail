@@ -66,9 +66,11 @@ func TestReceiveMail(t *testing.T) {
 	}(conn)
 
 	waitGroup.Wait()
-	mockMtp.AssertExpectations(t)
-	mockSender.AssertExpectations(t)
-	mockDb.AssertExpectations(t)
+	mockMtp.AssertNumberOfCalls(t, "mailReceiver", 1)
+	mockMtp.AssertNumberOfCalls(t, "sendGoodbye", 1)
+	mockSender.AssertNumberOfCalls(t, "SendMail", 1)
+	mockDb.AssertNumberOfCalls(t, "AddEmail", 2)
+	mockDb.AssertNumberOfCalls(t, "GetApprovalFromListName", 2)
 	mockDb.AssertNotCalled(t, "GetApprovalFromListName", "sender@domain.tld", "user")
 }
 
