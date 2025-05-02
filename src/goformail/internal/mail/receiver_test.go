@@ -30,8 +30,8 @@ func TestReceiveMail(t *testing.T) {
 	mockSender := new(IEmailSenderMock)
 	//mockSender.On("SendMail").Return(nil)
 	mockDb := new(db.IDbMock)
-	//mockDb.On("GetApprovalFromListName", "sender@domain.tld", "list1").Return(1, true)
-	//mockDb.On("GetApprovalFromListName", "sender@domain.tld", "list2").Return(2, false)
+	mockDb.On("GetApprovalFromListName", "sender@domain.tld", "list1").Return(1, true)
+	mockDb.On("GetApprovalFromListName", "sender@domain.tld", "list2").Return(2, false)
 	//mockDb.On("AddEmail", mock.MatchedBy(func(e *model.Email) bool {
 	//	expected := createEmail("list1@example.domain", 1, true)
 	//	return e.Rcpt[0] == expected.Rcpt[0] && e.Sender == expected.Sender && e.Content == expected.Content &&
