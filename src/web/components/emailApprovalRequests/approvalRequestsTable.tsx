@@ -74,7 +74,7 @@ export default function ApprovalRequestsTable() {
                                         </div>
                                         <div className="table-cell border-black border-b py-3 text-sm">
                                             <div className="whitespace-nowrap py-3 pl-6 pr-3 flex items-center gap-3">
-                                                {email.received_at.getFullYear()}-{email.received_at.getMonth() + 1}-{email.received_at.getDate()}.
+                                                {email.received_at}
                                             </div>
                                         </div>
                                     </a>
