@@ -125,6 +125,11 @@ func (mock *IDbMock) GetAllEmails(reqs *model.EmailReqs) (*model.EmailResponse, 
 	return args.Get(0).(*model.EmailResponse), mock.error
 }
 
+func (mock *IDbMock) GetEmail(id int) (*model.Email, *Error) {
+	args := mock.Called(id)
+	return args.Get(0).(*model.Email), mock.error
+}
+
 func (mock *IDbMock) GetEmailList(id int) (int, *Error) {
 	args := mock.Called(id)
 	return args.Int(0), mock.error

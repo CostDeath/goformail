@@ -21,7 +21,7 @@ type UserManager struct {
 	db db.IDb
 }
 
-func NewUserManager(db *db.Db) *UserManager {
+func NewUserManager(db db.IDb) *UserManager {
 	return &UserManager{db: db}
 }
 
