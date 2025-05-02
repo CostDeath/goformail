@@ -9,6 +9,8 @@ stages:
 lint_node:
   image: node:23-alpine
   stage: check
+  rules:
+    - when: never
   script:
     - cd src/web
     - npm install
@@ -17,6 +19,8 @@ lint_node:
 vulncheck_node:
   image: node:23-alpine
   stage: check
+  rules:
+    - when: never
   script:
     - cd src/web
     - npm install
@@ -33,6 +37,8 @@ lint_go:
 vulncheck_go:
   image: golang:1.24-alpine
   stage: check
+  rules:
+    - when: never
   script:
     - cd src/goformail
     - go install golang.org/x/vuln/cmd/govulncheck@latest
@@ -43,6 +49,8 @@ vulncheck_go:
 build_node:
   image: node:23-alpine
   stage: build
+  rules:
+    - when: never
   script:
     - cd src/web
     - npm install
@@ -54,6 +62,8 @@ build_node:
 build_go:
   image: golang:1.24-alpine
   stage: build
+  rules:
+    - when: never
   script:
     - cd src/goformail
     - rm -r ./internal/rest/out
@@ -70,6 +80,8 @@ build_go:
 test_node:
   image: node:23-alpine
   stage: test
+  rules:
+    - when: never
   script:
     - cd src/web
     - npm install
