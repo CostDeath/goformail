@@ -1,11 +1,14 @@
 "use client"
 
 import EmailApprovalForm from "@/components/emailApprovalRequests/emailApprovalForm";
+import {Suspense} from "react";
 
 export default function Page() {
     return (
         <>
-            <EmailApprovalForm id={"1"} />
+            <Suspense>
+                <EmailApprovalForm />
+            </Suspense>
         </>
     )
 }
