@@ -1,27 +1,47 @@
-import {expect, test, vitest} from "vitest";
-import {render, screen} from "@testing-library/react";
 import ApprovalRequestsTable from "@/components/emailApprovalRequests/approvalRequestsTable";
+import {expect, test, vitest} from "vitest";
+import {render} from "@testing-library/react";
+import useSWR from "swr";
 
+vitest.mock("swr")
 
-vitest.mock("next/navigation", () => {
-    const actual = vitest.importActual("next/navigation");
-    return {
-        ...actual,
-        useRouter: vitest.fn(() => ({
-            push: vitest.fn(),
-        })),
-        useSearchParams: vitest.fn(() => ({
-            get: vitest.fn()
-        })),
-        usePathname: vitest.fn(() => ({
-            usePathname: vitest.fn()
-        }))
-    }
+test("Approval Requests table is Loading", async () => {
+    useSWR.mockReturnValue({
+        data: undefined
+    })
+    const wrapper = render(<ApprovalRequestsTable />);
+
+    vitest.useFakeTimers()
+    vitest.runAllTimers()
+
+    expect(wrapper.getByText("Loading")).toBeDefined();
+
+    wrapper.unmount()
 })
 
-test("approval request table is rendered", () => {
-    render(<ApprovalRequestsTable api="dummyString" />);
+test("Approval Requests table has rendered", async () => {
+    useSWR.mockReturnValue({
+        data: {message: "Successfully fetched emails!", data: {offset: 0, emails: []}}
+    })
+    const wrapper = render(<ApprovalRequestsTable />);
 
-    expect(screen.getByTestId("table-head")).toBeDefined();
-    expect(screen.getByTestId("table-body")).toBeDefined();
+
+    expect(wrapper.getByTestId("table-head")).toBeDefined();
+    expect(wrapper.getByTestId("table-body")).toBeDefined();
+
+    wrapper.unmount()
+})
+
+test("Approval Requests table has loaded but given data was invalid", async () => {
+    useSWR.mockReturnValue({
+        data: {}
+    })
+    const wrapper = render(<ApprovalRequestsTable />);
+
+    vitest.useFakeTimers()
+    vitest.runAllTimers()
+
+    expect(wrapper.getByText("Error")).toBeDefined();
+
+    wrapper.unmount()
 })

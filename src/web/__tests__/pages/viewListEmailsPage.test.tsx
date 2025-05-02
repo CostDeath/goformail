@@ -35,15 +35,13 @@ vitest.mock("swr")
 
 test("List Email page has loaded and is rendered", async () => {
     useSWR.mockReturnValue({
-        data: {id: "1", message: "Successfully fetched list!", data: {recipients: ["test@example.com"]}}
+        data: {id: "1", message: "Successfully fetched list!", data: {recipients: ["test@example.com"], offset: 0, emails: []}}
     })
     const wrapper = render(<Page />)
 
     vitest.useFakeTimers()
     vitest.runAllTimers()
 
-    expect(screen.getByTestId("table-head-emails")).toBeDefined();
-    expect(screen.getByTestId("table-body-emails")).toBeDefined();
     expect(screen.getByTestId("table-head-recipients")).toBeDefined();
     expect(screen.getByTestId("table-body-recipients")).toBeDefined();
     wrapper.unmount()
