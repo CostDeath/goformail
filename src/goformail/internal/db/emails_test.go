@@ -367,6 +367,30 @@ func (suite *DbEmailsSuite) TestGetAllEmailsWherePendingApproval() {
 	suite.Subset(actual.Emails, expected)
 }
 
+func (suite *DbEmailsSuite) TestGetEmail() {
+	// Run function
+	actual, _ := suite.db.GetEmail(1)
+
+	// Get expected
+	expected := &model.Email{}
+	err := suite.db.conn.QueryRow(`
+		SELECT emails.id, emails.rcpt, emails.sender, emails.content, emails.received_at, emails.next_retry,
+		       emails.exhausted, emails.sent, emails.approved, COALESCE(lists.name, '')
+		FROM emails LEFT JOIN lists ON emails.list = lists.id WHERE emails.id = $1
+	`, 1,
+	).Scan(&expected.Id, pq.Array(&expected.Rcpt), &expected.Sender, &expected.Content, &expected.ReceivedAt,
+		&expected.NextRetry, &expected.Exhausted, &expected.Sent, &expected.Approved, &expected.ListName)
+	suite.Require().NoError(err)
+
+	suite.Equal(expected, actual)
+}
+
+func (suite *DbEmailsSuite) TestGetEmailReturnsNoRowsOnInvalidId() {
+	_, err := suite.db.GetList(0)
+
+	suite.Equal(ErrNoRows, err.Code)
+}
+
 func (suite *DbEmailsSuite) TestGetEmailList() {
 	// Run function
 	actual, _ := suite.db.GetEmailList(1)

@@ -34,6 +34,7 @@ type IDb interface {
 	SetEmailRetry(email *model.Email) *Error
 	SetEmailAsApproved(id int) *Error
 	GetAllEmails(reqs *model.EmailReqs) (*model.EmailResponse, *Error)
+	GetEmail(id int) (*model.Email, *Error)
 	GetEmailList(id int) (int, *Error)
 }
 

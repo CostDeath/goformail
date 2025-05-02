@@ -37,13 +37,13 @@ func TestReceiveMail(t *testing.T) {
 		return e.Rcpt[0] == expected.Rcpt[0] && e.Sender == expected.Sender && e.Content == expected.Content &&
 			e.ReceivedAt.Equal(expected.ReceivedAt) && e.Exhausted == expected.Exhausted && e.Sent == expected.Sent &&
 			e.List == expected.List && e.ReceivedAt.Before(e.NextRetry)
-	})).Return()
+	})).Return(nil)
 	mockDb.On("AddEmail", mock.MatchedBy(func(e *model.Email) bool {
 		expected := createEmail("list2@example.domain", 2, false)
 		return e.Rcpt[0] == expected.Rcpt[0] && e.Sender == expected.Sender && e.Content == expected.Content &&
 			e.ReceivedAt.Equal(expected.ReceivedAt) && e.Exhausted == expected.Exhausted && e.Sent == expected.Sent &&
 			e.List == expected.List && e.ReceivedAt.Before(e.NextRetry)
-	})).Return()
+	})).Return(nil)
 
 	receiver := NewEmailReceiver(mockMtp, mockSender, mockDb, util.MockConfigs)
 	listener, err := net.Listen("tcp", ":0")
@@ -66,9 +66,10 @@ func TestReceiveMail(t *testing.T) {
 	}(conn)
 
 	waitGroup.Wait()
-	mockMtp.AssertExpectations(t)
-	mockSender.AssertExpectations(t)
-	mockDb.AssertExpectations(t)
+	mockMtp.AssertNumberOfCalls(t, "mailReceiver", 1)
+	mockMtp.AssertNumberOfCalls(t, "sendGoodbye", 1)
+	mockDb.AssertNumberOfCalls(t, "AddEmail", 2)
+	mockDb.AssertNumberOfCalls(t, "GetApprovalFromListName", 2)
 	mockDb.AssertNotCalled(t, "GetApprovalFromListName", "sender@domain.tld", "user")
 }
 
