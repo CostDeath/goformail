@@ -2,7 +2,7 @@ import EmailView from "@/components/emailView";
 // import {useState} from "react";
 
 
-export default function EmailApprovalForm({id}: {id: string}) {
+export default function EmailApprovalForm() {
     /*
     //TODO: Remove this post example once doing fetching ticket
     const [title, setTitle] = useState("");
@@ -28,7 +28,7 @@ export default function EmailApprovalForm({id}: {id: string}) {
      */
     return (
         <>
-            <EmailView id={id}/>
+            <EmailView />
             <div className="flex flex-row justify-end py-6 px-3">
                 <div className="p-2">
                     <button className="bg-green-600 text-white p-2 rounded-xl hover:bg-green-700">Approve</button>

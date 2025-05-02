@@ -5,7 +5,7 @@ import EmailApprovalForm from "@/components/emailApprovalRequests/emailApprovalF
 export default function Page() {
     return (
         <>
-            <EmailApprovalForm id={"1"} />
+            <EmailApprovalForm />
         </>
     )
 }
