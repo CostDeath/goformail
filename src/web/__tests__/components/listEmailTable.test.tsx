@@ -35,7 +35,7 @@ vitest.mock("swr")
 
 test("List Email Table component has loaded and is rendered", async () => {
     useSWR.mockReturnValue({
-        data: {id: "1"}
+        data: {message: "Successfully fetched emails!", data: {offset: 0, emails: []}}
     })
     const wrapper = render(<ListEmailsTable />)
 
