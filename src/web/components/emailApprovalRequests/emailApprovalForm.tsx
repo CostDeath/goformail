@@ -1,47 +1,25 @@
 "use client"
 
-import EmailView from "@/components/emailView";
 import {redirect, useSearchParams} from "next/navigation";
 import {api} from "@/components/api";
 import {getSessionToken} from "@/components/sessionToken";
 import {LinkTo} from "@/components/pageEnums";
-// import {useState} from "react";
+import {useEffect, useState} from "react";
+import useSWR from "swr";
+import {Email} from "@/models/email";
 
 
 export default function EmailApprovalForm() {
-    /*
-    //TODO: Remove this post example once doing fetching ticket
-    const [title, setTitle] = useState("");
-    const [body, setBody] = useState("");
-
-    const submitApproval = async () => {
-        let response = await fetch('https://jsonplaceholder.typicode.com/posts', {
-            method: 'POST',
-            body: JSON.stringify({
-                title: title,
-                body: body,
-                userId: 1
-            }),
-            headers: {
-                "Content-Type": "application/json"
-            }
-        })
-
-        response = await response.json();
-        alert(JSON.stringify(response))
-    }
-
-     */
-
     const search = useSearchParams()
     const id = search.get("id")
 
     const approveEmail = async () => {
-        const url = `${window.location.origin}${api.emails}${api.approveEmail}?id=${id}`
+        const url = `${window.location.origin}/api${api.emails}approve/?id=${id}`
         const sessionToken = getSessionToken()
 
         const response = await fetch(url, {
             method: "POST",
+            body: JSON.stringify({}),
             headers: {
                 "Content-Type": "application/json",
                 "Authorization": `Bearer ${sessionToken}`,
@@ -58,34 +36,61 @@ export default function EmailApprovalForm() {
 
     }
 
-    if (!id || isNaN(Number(id))) {
+    const [sessionToken, setSessionToken] = useState<string | null>()
+    const [baseUrl, setBaseUrl] = useState("")
+
+    useEffect(() => {
+        const url = `${window.location.origin}/api`
+        setBaseUrl(url)
+        setSessionToken(getSessionToken())
+    }, [])
+
+    const fetcher = async (url: string) => {
+        const response = await fetch(url, {
+            method: "GET",
+            headers: {
+                "Authorization": `Bearer ${sessionToken}`
+            }
+        })
+        if (response.ok) {
+            return await response.json()
+        }
+        return response.text()
+    }
+
+    const {data, error} = useSWR((baseUrl && sessionToken) ? `${baseUrl}${api.email}?id=${id}` : null, fetcher)
+
+    if (error) {
+        return <div>Error</div>
+    }
+    if (!data) {
+        return <div>Loading</div>
+    } else if (data.message !== "Successfully fetched email!") {
         return <div>Error</div>
     }
 
-    // TODO: Figure out how to send data to email view while also hiding approve button if no email was found
+    const email: Email = data.data
+    const rcpts = email.rcpt.join(", ")
 
     return (
         <>
-            <EmailView />
+
+            <div className="">
+                <div data-testid="email-title" className="border-b border-black py-2">To: {rcpts}</div>
+                <div data-testid="email-subject" className="border-b border-black py-2">From: {email.sender}</div>
+            </div>
+            <div data-testid="email-content" className="border border-black py-5 px-4 min-h-[50vh] bg-neutral-700">
+                {email.content}
+            </div>
+
+
             <div className="flex flex-row justify-end py-6 px-3">
                 <div className="p-2">
-                    <button className="bg-green-600 text-white p-2 rounded-xl hover:bg-green-700" onClick={approveEmail}>Approve</button>
+                    <button className="bg-green-600 text-white p-2 rounded-xl hover:bg-green-700"
+                            onClick={approveEmail}>Approve
+                    </button>
                 </div>
             </div>
-
-
-            {/*
-            <br/>
-            <br/>
-            <h1>This is a post test</h1>
-            <div>
-                <h2>Testing posts</h2>
-                <input type="text" value={title} onChange={e => setTitle(e.target.value)}/>
-                <input type="text" value={body} onChange={e => setBody(e.target.value)}/>
-
-                <button onClick={submitApproval}>Submit</button>
-            </div>
-            */}
         </>
     )
 }
