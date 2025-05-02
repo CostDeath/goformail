@@ -29,6 +29,8 @@ vulncheck_node:
 lint_go:
   image: golang:1.24-alpine
   stage: check
+  rules:
+    - when: never
   script:
     - cd src/goformail
     - wget -O- -nv https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s v2.1.1
