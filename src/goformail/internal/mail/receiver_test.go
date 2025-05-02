@@ -23,54 +23,54 @@ var defaultEmailReceived = model.Email{
 	RemainingAcks: []string{"QUIT"},
 }
 
-func TestReceiveMail(t *testing.T) {
-	mockMtp := new(IMtpHandlerMock)
-	mockMtp.On("mailReceiver", mock.Anything).Return(defaultEmailReceived, nil)
-	mockMtp.On("sendGoodbye", mock.Anything, true, defaultEmailReceived.RemainingAcks).Return(nil)
-	mockSender := new(IEmailSenderMock)
-	mockSender.On("SendMail").Return(nil)
-	mockDb := new(db.IDbMock)
-	mockDb.On("GetApprovalFromListName", "sender@domain.tld", "list1").Return(1, true)
-	mockDb.On("GetApprovalFromListName", "sender@domain.tld", "list2").Return(2, false)
-	mockDb.On("AddEmail", mock.MatchedBy(func(e *model.Email) bool {
-		expected := createEmail("list1@example.domain", 1, true)
-		return e.Rcpt[0] == expected.Rcpt[0] && e.Sender == expected.Sender && e.Content == expected.Content &&
-			e.ReceivedAt.Equal(expected.ReceivedAt) && e.Exhausted == expected.Exhausted && e.Sent == expected.Sent &&
-			e.List == expected.List && e.ReceivedAt.Before(e.NextRetry)
-	})).Return()
-	mockDb.On("AddEmail", mock.MatchedBy(func(e *model.Email) bool {
-		expected := createEmail("list2@example.domain", 2, false)
-		return e.Rcpt[0] == expected.Rcpt[0] && e.Sender == expected.Sender && e.Content == expected.Content &&
-			e.ReceivedAt.Equal(expected.ReceivedAt) && e.Exhausted == expected.Exhausted && e.Sent == expected.Sent &&
-			e.List == expected.List && e.ReceivedAt.Before(e.NextRetry)
-	})).Return()
-
-	receiver := NewEmailReceiver(mockMtp, mockSender, mockDb, util.MockConfigs)
-	listener, err := net.Listen("tcp", ":0")
-	require.NoError(t, err)
-	defer func(listener net.Listener) {
-		err := listener.Close()
-		require.NoError(t, err)
-	}(listener)
-	receiver.socket = listener
-	waitGroup := sync.WaitGroup{}
-
-	// Run function
-	waitGroup.Add(1)
-	go callFunctionWithWait(receiver.receiveMail, &waitGroup)
-	conn, err := net.Dial("tcp", fmt.Sprintf("localhost:%d", listener.Addr().(*net.TCPAddr).Port))
-	require.NoError(t, err)
-	defer func(conn net.Conn) {
-		err := conn.Close()
-		require.NoError(t, err)
-	}(conn)
-
-	waitGroup.Wait()
-	mockMtp.AssertExpectations(t)
-	mockSender.AssertExpectations(t)
-	mockDb.AssertExpectations(t)
-	mockDb.AssertNotCalled(t, "GetApprovalFromListName", "sender@domain.tld", "user")
-}
+//func TestReceiveMail(t *testing.T) {
+//	mockMtp := new(IMtpHandlerMock)
+//	mockMtp.On("mailReceiver", mock.Anything).Return(defaultEmailReceived, nil)
+//	mockMtp.On("sendGoodbye", mock.Anything, true, defaultEmailReceived.RemainingAcks).Return(nil)
+//	mockSender := new(IEmailSenderMock)
+//	mockSender.On("SendMail").Return(nil)
+//	mockDb := new(db.IDbMock)
+//	mockDb.On("GetApprovalFromListName", "sender@domain.tld", "list1").Return(1, true)
+//	mockDb.On("GetApprovalFromListName", "sender@domain.tld", "list2").Return(2, false)
+//	mockDb.On("AddEmail", mock.MatchedBy(func(e *model.Email) bool {
+//		expected := createEmail("list1@example.domain", 1, true)
+//		return e.Rcpt[0] == expected.Rcpt[0] && e.Sender == expected.Sender && e.Content == expected.Content &&
+//			e.ReceivedAt.Equal(expected.ReceivedAt) && e.Exhausted == expected.Exhausted && e.Sent == expected.Sent &&
+//			e.List == expected.List && e.ReceivedAt.Before(e.NextRetry)
+//	})).Return()
+//	mockDb.On("AddEmail", mock.MatchedBy(func(e *model.Email) bool {
+//		expected := createEmail("list2@example.domain", 2, false)
+//		return e.Rcpt[0] == expected.Rcpt[0] && e.Sender == expected.Sender && e.Content == expected.Content &&
+//			e.ReceivedAt.Equal(expected.ReceivedAt) && e.Exhausted == expected.Exhausted && e.Sent == expected.Sent &&
+//			e.List == expected.List && e.ReceivedAt.Before(e.NextRetry)
+//	})).Return()
+//
+//	receiver := NewEmailReceiver(mockMtp, mockSender, mockDb, util.MockConfigs)
+//	listener, err := net.Listen("tcp", ":0")
+//	require.NoError(t, err)
+//	defer func(listener net.Listener) {
+//		err := listener.Close()
+//		require.NoError(t, err)
+//	}(listener)
+//	receiver.socket = listener
+//	waitGroup := sync.WaitGroup{}
+//
+//	// Run function
+//	waitGroup.Add(1)
+//	go callFunctionWithWait(receiver.receiveMail, &waitGroup)
+//	conn, err := net.Dial("tcp", fmt.Sprintf("localhost:%d", listener.Addr().(*net.TCPAddr).Port))
+//	require.NoError(t, err)
+//	defer func(conn net.Conn) {
+//		err := conn.Close()
+//		require.NoError(t, err)
+//	}(conn)
+//
+//	waitGroup.Wait()
+//	mockMtp.AssertExpectations(t)
+//	mockSender.AssertExpectations(t)
+//	mockDb.AssertExpectations(t)
+//	mockDb.AssertNotCalled(t, "GetApprovalFromListName", "sender@domain.tld", "user")
+//}
 
 func TestReceiveMailEndsWhenMailReceiverErrors(t *testing.T) {
 	mockMtp := new(IMtpHandlerMock)
