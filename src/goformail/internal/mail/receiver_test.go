@@ -32,18 +32,18 @@ func TestReceiveMail(t *testing.T) {
 	mockDb := new(db.IDbMock)
 	mockDb.On("GetApprovalFromListName", "sender@domain.tld", "list1").Return(1, true)
 	mockDb.On("GetApprovalFromListName", "sender@domain.tld", "list2").Return(2, false)
-	//mockDb.On("AddEmail", mock.MatchedBy(func(e *model.Email) bool {
-	//	expected := createEmail("list1@example.domain", 1, true)
-	//	return e.Rcpt[0] == expected.Rcpt[0] && e.Sender == expected.Sender && e.Content == expected.Content &&
-	//		e.ReceivedAt.Equal(expected.ReceivedAt) && e.Exhausted == expected.Exhausted && e.Sent == expected.Sent &&
-	//		e.List == expected.List && e.ReceivedAt.Before(e.NextRetry)
-	//})).Return()
-	//mockDb.On("AddEmail", mock.MatchedBy(func(e *model.Email) bool {
-	//	expected := createEmail("list2@example.domain", 2, false)
-	//	return e.Rcpt[0] == expected.Rcpt[0] && e.Sender == expected.Sender && e.Content == expected.Content &&
-	//		e.ReceivedAt.Equal(expected.ReceivedAt) && e.Exhausted == expected.Exhausted && e.Sent == expected.Sent &&
-	//		e.List == expected.List && e.ReceivedAt.Before(e.NextRetry)
-	//})).Return()
+	mockDb.On("AddEmail", mock.MatchedBy(func(e *model.Email) bool {
+		expected := createEmail("list1@example.domain", 1, true)
+		return e.Rcpt[0] == expected.Rcpt[0] && e.Sender == expected.Sender && e.Content == expected.Content &&
+			e.ReceivedAt.Equal(expected.ReceivedAt) && e.Exhausted == expected.Exhausted && e.Sent == expected.Sent &&
+			e.List == expected.List && e.ReceivedAt.Before(e.NextRetry)
+	})).Return()
+	mockDb.On("AddEmail", mock.MatchedBy(func(e *model.Email) bool {
+		expected := createEmail("list2@example.domain", 2, false)
+		return e.Rcpt[0] == expected.Rcpt[0] && e.Sender == expected.Sender && e.Content == expected.Content &&
+			e.ReceivedAt.Equal(expected.ReceivedAt) && e.Exhausted == expected.Exhausted && e.Sent == expected.Sent &&
+			e.List == expected.List && e.ReceivedAt.Before(e.NextRetry)
+	})).Return()
 
 	receiver := NewEmailReceiver(mockMtp, mockSender, mockDb, util.MockConfigs)
 	listener, err := net.Listen("tcp", ":0")
