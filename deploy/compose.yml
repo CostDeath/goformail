@@ -1,0 +1,36 @@
+version: '3.9'
+
+services:
+  database:
+    image: postgres:latest
+    container_name: gfm_database
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: goformail
+      POSTGRES_USER: goformail
+      POSTGRES_PASSWORD: deez
+    volumes:
+      - db_data:/var/lib/mysql
+
+  goformail:
+    image: costwynn/goformail:latest
+    container_name: gfm_goformail
+    restart: unless-stopped
+    ports:
+      - "8024:24"
+      - "8420:8080"
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - /etc/postfix:/app/maps
+      - ./config/configs.cf:/app/configs.cf
+
+volumes:
+  db_data:
+
+networks:  
+  default:  
+    ipam:  
+      driver: default  
+      config:  
+        - subnet: "172.20.0.0/16"

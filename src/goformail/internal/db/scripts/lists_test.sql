@@ -27,3 +27,6 @@ VALUES ('delete-test-0', ARRAY['example@domain.tld'], ARRAY[1], ARRAY['example@d
 
 INSERT INTO lists (name, recipients, mods, approved_senders, locked)
 VALUES ('patch-test-4', ARRAY['example@domain.tld'], ARRAY[1], ARRAY['example@domain.tld'], true);  -- ID: 7
+
+INSERT INTO lists (name, recipients, mods, approved_senders, locked)
+VALUES ('get-test-1', ARRAY['example@domain.tld'], ARRAY[1], ARRAY['example@domain.tld'], true);    -- ID: 8
