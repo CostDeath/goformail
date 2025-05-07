@@ -104,14 +104,15 @@ func (db *Db) GetAllLists() (*[]*model.ListResponse, *Error) {
 
 func (db *Db) GetApprovalFromListName(sender string, name string) (int, bool, *Error) {
 	id := 0
+	locked := false
 	approved := false
 	if err := db.conn.QueryRow(`
-		SELECT id, $1 = ANY(approved_senders)
+		SELECT id, locked, COALESCE($1 = ANY(approved_senders), false) AS is_sender_approved
 		FROM lists WHERE name = $2;
 	`, sender, name,
-	).Scan(&id, &approved); err != nil {
+	).Scan(&id, &locked, &approved); err != nil {
 		return 0, false, getError(err)
 	}
 
-	return id, approved, nil
+	return id, !locked || approved, nil
 }

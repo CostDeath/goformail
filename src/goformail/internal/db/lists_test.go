@@ -267,19 +267,27 @@ func (suite *DbListsSuite) TestGetAllList() {
 }
 
 func (suite *DbListsSuite) TestGetApprovalFromListNameOnApprovedSenders() {
-	actualId, actualApproved, err := suite.db.GetApprovalFromListName("example@domain.tld", "get-test-0")
+	actualId, actualApproved, err := suite.db.GetApprovalFromListName("example@domain.tld", "get-test-1")
 
 	suite.Nil(err)
-	suite.Equal(1, actualId)
+	suite.Equal(8, actualId)
 	suite.True(actualApproved)
 }
 
-func (suite *DbListsSuite) TestGetApprovalFromListNameOnUnapprovedSenders() {
+func (suite *DbListsSuite) TestGetApprovalFromListNameOnUnapprovedSendersOnLockedList() {
+	actualId, actualApproved, err := suite.db.GetApprovalFromListName("random@domain.tld", "get-test-1")
+
+	suite.Nil(err)
+	suite.Equal(8, actualId)
+	suite.False(actualApproved)
+}
+
+func (suite *DbListsSuite) TestGetApprovalFromListNameOnUnapprovedSendersOnUnlockedList() {
 	actualId, actualApproved, err := suite.db.GetApprovalFromListName("random@domain.tld", "get-test-0")
 
 	suite.Nil(err)
 	suite.Equal(1, actualId)
-	suite.False(actualApproved)
+	suite.True(actualApproved)
 }
 
 func (suite *DbListsSuite) TestGetApprovalFromListNameReturnsNoRowsOnInvalidName() {
